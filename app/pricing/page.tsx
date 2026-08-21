@@ -1,0 +1,10 @@
+import Link from "next/link";
+import ThemeToggle from "../../components/theme-toggle";
+
+const plans = [
+  { name: "Explorer", price: "Free", description: "For the first idea you want to pressure-test.", features: ["1 co-founder session", "Business score & verdict", "A concise decision brief"], cta: "Start free" },
+  { name: "Founder", price: "₹999", period: " / month", description: "For founders validating several directions.", features: ["10 research sessions each month", "Full research trace & sources", "7-day and 30-day execution plans", "Saved decision library"], cta: "Choose Founder", featured: true },
+  { name: "Studio", price: "₹2,499", period: " / month", description: "For serious builders who want deeper context.", features: ["Everything in Founder", "30 research sessions each month", "Deep-dive research mode", "Priority research queue"], cta: "Choose Studio" }
+];
+
+export default function Pricing() { return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/new">New idea</Link><ThemeToggle/></div></header><section className="pricing-page"><div className="eyebrow"><span></span> SIMPLE PRICING FOR EARLY THINKING</div><h1>Pay for clarity,<br/><em>not false confidence.</em></h1><p>Start with one idea. Upgrade only when your co-founder room becomes part of your rhythm.</p><div className="billing"><b>Monthly</b><span>Yearly <small>Save 20%</small></span></div><div className="plan-grid">{plans.map(plan => <article className={plan.featured ? "plan featured" : "plan"} key={plan.name}>{plan.featured && <label>MOST POPULAR</label>}<h2>{plan.name}</h2><p>{plan.description}</p><div className="price">{plan.price}<small>{plan.period}</small></div><button className={plan.featured ? "primary-action" : "plan-button"}>{plan.cta} →</button><hr/><ul>{plan.features.map(feature => <li key={feature}>✓ <span>{feature}</span></li>)}</ul></article>)}</div><small className="pricing-note">No payment flow is enabled in this prototype. Pricing is a presentation page for now.</small></section></main>; }
