@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   if (!cleanIdea) return NextResponse.json({ error: "Please enter a business idea." }, { status: 400 });
   const title = cleanIdea.split(/[.!?]/)[0].slice(0, 72) || "New venture";
   let report = fallback(title); let warning: string | undefined;
-  try { report = await generateAnalysis(cleanIdea, title); } catch { warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
+  try { report = await generateAnalysis(cleanIdea, title); } catch (error) { console.error("[api/analyze] Gemini generation failed", { message: error instanceof Error ? error.message : "Unknown error" }); warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
   if (hasSupabaseConfig()) { const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims(); const userId = claims?.claims?.sub; if (userId) { const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea: cleanIdea, title: report.title, verdict: report.verdict, score: report.score, report }).select("id").single(); if (error) warning = "Your report was generated but could not be saved."; else return NextResponse.json({ ...report, id: data.id, saved: true, warning }); } }
   return NextResponse.json({ ...report, saved: false, warning });
 }
