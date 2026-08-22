@@ -1,29 +1,36 @@
 import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 
+type Verdict = "BUILD" | "TEST FIRST" | "AVOID";
+type Analysis = { score: number; verdict: Verdict; title: string; summary: string; market: string; customer: string; problem: string; competitors: string; gap: string; businessModel: string; pricing: string; risks: string[]; mvp: string[]; avoid: string[]; firstCustomers: string[]; plan7: string[]; plan30: string[]; assumptions: string[]; sources: string[]; generatedBy: "gemini" | "fallback" };
+
+const fallback = (title: string): Analysis => ({ score: 74, verdict: "TEST FIRST", title, summary: "The idea contains a potentially valuable customer problem, but its appeal, price sensitivity and differentiation need evidence before a full product investment.", market: "AI estimate: start with a narrow segment and validate demand through customer conversations before relying on market-size claims.", customer: "AI estimate: identify one role with a frequent, urgent problem and a clear budget owner.", problem: "Early customers are likely buying a faster, more dependable way to complete an important job—not technology for its own sake.", competitors: "Assumption: existing alternatives include manual work, spreadsheets, agencies, and broad software tools.", gap: "The strongest opening is a narrow audience, a specific high-frequency problem and a result that customers can measure.", businessModel: "AI estimate: test a simple subscription or paid pilot tied to a measurable customer outcome.", pricing: "Assumption: interview customers about current spend before selecting a price.", risks: ["Demand may be weaker than assumed", "Customer acquisition may cost more than expected", "Existing tools may already solve enough of the problem"], mvp: ["One workflow that solves the highest-friction customer job", "A clear before/after outcome", "Manual support behind the scenes where needed", "Measurement for the primary customer result"], avoid: ["Broad platform features", "Premature automation", "Complex permissions", "Anything not required to test willingness to pay"], firstCustomers: ["Interview 10 target customers", "Offer a concierge pilot", "Ask for a paid commitment before building more"], plan7: ["Write one target-customer hypothesis", "Book five interviews", "Create a one-page landing page", "Test a clear offer"], plan30: ["Complete 15 interviews", "Run 3 pilots", "Measure one customer outcome", "Decide whether to build, pivot, or stop"], assumptions: ["The stated problem occurs frequently", "A reachable segment will pay for improvement", "A narrow MVP can create a measurable result"], sources: ["AI-generated directional analysis — no live web verification", "Founder interviews required for validation"], generatedBy: "fallback" });
+
+function asList(value: unknown, limit = 5) { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").map(item => item.slice(0, 240)).slice(0, limit) : []; }
+function normalize(value: unknown, title: string): Analysis {
+  const base = fallback(title); const raw = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const verdict: Verdict = raw.verdict === "BUILD" || raw.verdict === "AVOID" || raw.verdict === "TEST FIRST" ? raw.verdict : base.verdict;
+  const text = (key: keyof Analysis) => typeof raw[key] === "string" ? (raw[key] as string).slice(0, 900) : base[key] as string;
+  const list = (key: string, backup: string[]) => { const values = asList(raw[key]); return values.length ? values : backup; };
+  return { ...base, score: typeof raw.score === "number" ? Math.max(0, Math.min(100, Math.round(raw.score))) : base.score, verdict, title: typeof raw.title === "string" ? raw.title.slice(0, 72) : title, summary: text("summary"), market: text("market"), customer: text("customer"), problem: text("problem"), competitors: text("competitors"), gap: text("gap"), businessModel: text("businessModel"), pricing: text("pricing"), risks: list("risks", base.risks), mvp: list("mvp", base.mvp), avoid: list("avoid", base.avoid), firstCustomers: list("firstCustomers", base.firstCustomers), plan7: list("plan7", base.plan7), plan30: list("plan30", base.plan30), assumptions: list("assumptions", base.assumptions), sources: ["AI-generated directional analysis — no live web verification", "Founder interviews required for validation"], generatedBy: "gemini" };
+}
+
+async function generateAnalysis(idea: string, title: string): Promise<Analysis> {
+  if (!process.env.GEMINI_API_KEY) return fallback(title);
+  const prompt = `You are AI Co-Founder, a candid startup intelligence team. Analyze this business idea: ${idea}\n\nSix roles collaborate: Mira (market demand), Asha (customer), Theo (competitors), Owen (business model), Rhea (risks), and Nova (MVP/execution). Produce one concise JSON decision brief. Be skeptical; choose AVOID when appropriate. Do not invent verified facts, statistics, named competitors, web sources, or certainty. Phrase market, customer, competition, and pricing claims as AI estimates or assumptions. Provide concrete validation actions. Score 0-100 and verdict BUILD, TEST FIRST, or AVOID.`;
+  const schema = { type: "OBJECT", properties: { score: { type: "INTEGER" }, verdict: { type: "STRING", enum: ["BUILD", "TEST FIRST", "AVOID"] }, title: { type: "STRING" }, summary: { type: "STRING" }, market: { type: "STRING" }, customer: { type: "STRING" }, problem: { type: "STRING" }, competitors: { type: "STRING" }, gap: { type: "STRING" }, businessModel: { type: "STRING" }, pricing: { type: "STRING" }, risks: { type: "ARRAY", items: { type: "STRING" } }, mvp: { type: "ARRAY", items: { type: "STRING" } }, avoid: { type: "ARRAY", items: { type: "STRING" } }, firstCustomers: { type: "ARRAY", items: { type: "STRING" } }, plan7: { type: "ARRAY", items: { type: "STRING" } }, plan30: { type: "ARRAY", items: { type: "STRING" } }, assumptions: { type: "ARRAY", items: { type: "STRING" } } }, required: ["score", "verdict", "title", "summary", "market", "customer", "problem", "competitors", "gap", "businessModel", "pricing", "risks", "mvp", "avoid", "firstCustomers", "plan7", "plan30", "assumptions"] };
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema, maxOutputTokens: 2200, temperature: 0.35 } }) });
+  if (!response.ok) throw new Error(`Gemini request failed (${response.status})`);
+  const payload = await response.json(); const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return normalize(JSON.parse(text), title);
+}
+
 export async function POST(request: Request) {
-  const { idea } = await request.json();
-  const title = typeof idea === "string" && idea.trim() ? idea.trim().split(/[.!?]/)[0].slice(0, 72) : "New venture";
-  // This transparent fallback keeps the UI usable before a provider is configured.
-  // Replace with a server-side model call plus retrieved/cited sources for production.
-  const report = {
-    score: 74, verdict: "TEST FIRST", title,
-    summary: "The idea contains a potentially valuable customer problem, but its appeal, price sensitivity and differentiation need evidence before a full product investment.",
-    problem: "Early customers are likely buying a faster, more dependable way to complete an important job—not technology for its own sake.",
-    gap: "The strongest opening is a narrow audience, a specific high-frequency problem and a result that customers can measure.",
-    mvp: ["One workflow that solves the highest-friction customer job", "A clear before/after outcome", "Manual support behind the scenes where needed", "Measurement for the primary customer result"],
-    avoid: ["Broad platform features", "Premature automation", "Complex permissions", "Anything not required to test willingness to pay"],
-    sources: ["Research source collection pending provider configuration", "Founder interviews — required validation", "AI-generated directional assessment"]
-  };
-  if (hasSupabaseConfig()) {
-    const supabase = await createClient();
-    const { data: claims } = await supabase.auth.getClaims();
-    const userId = claims?.claims?.sub;
-    if (userId) {
-      const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea: typeof idea === "string" ? idea : "", title: report.title, verdict: report.verdict, score: report.score, report }).select("id").single();
-      if (error) return NextResponse.json({ ...report, warning: "Your report was generated but could not be saved." });
-      return NextResponse.json({ ...report, id: data.id, saved: true });
-    }
-  }
-  return NextResponse.json({ ...report, saved: false });
+  const { idea } = await request.json(); const cleanIdea = typeof idea === "string" ? idea.trim().slice(0, 2000) : "";
+  if (!cleanIdea) return NextResponse.json({ error: "Please enter a business idea." }, { status: 400 });
+  const title = cleanIdea.split(/[.!?]/)[0].slice(0, 72) || "New venture";
+  let report = fallback(title); let warning: string | undefined;
+  try { report = await generateAnalysis(cleanIdea, title); } catch { warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
+  if (hasSupabaseConfig()) { const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims(); const userId = claims?.claims?.sub; if (userId) { const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea: cleanIdea, title: report.title, verdict: report.verdict, score: report.score, report }).select("id").single(); if (error) warning = "Your report was generated but could not be saved."; else return NextResponse.json({ ...report, id: data.id, saved: true, warning }); } }
+  return NextResponse.json({ ...report, saved: false, warning });
 }
