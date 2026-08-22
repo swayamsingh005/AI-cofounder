@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 
 type Verdict = "BUILD" | "TEST FIRST" | "AVOID";
@@ -18,11 +19,11 @@ function normalize(value: unknown, title: string): Analysis {
 async function generateAnalysis(idea: string, title: string): Promise<Analysis> {
   if (!process.env.GEMINI_API_KEY) return fallback(title);
   const prompt = `You are AI Co-Founder, a candid startup intelligence team. Analyze this business idea: ${idea}\n\nSix roles collaborate: Mira (market demand), Asha (customer), Theo (competitors), Owen (business model), Rhea (risks), and Nova (MVP/execution). Produce one concise JSON decision brief. Be skeptical; choose AVOID when appropriate. Do not invent verified facts, statistics, named competitors, web sources, or certainty. Phrase market, customer, competition, and pricing claims as AI estimates or assumptions. Provide concrete validation actions. Score 0-100 and verdict BUILD, TEST FIRST, or AVOID.`;
-  const schema = { type: "OBJECT", properties: { score: { type: "INTEGER" }, verdict: { type: "STRING", enum: ["BUILD", "TEST FIRST", "AVOID"] }, title: { type: "STRING" }, summary: { type: "STRING" }, market: { type: "STRING" }, customer: { type: "STRING" }, problem: { type: "STRING" }, competitors: { type: "STRING" }, gap: { type: "STRING" }, businessModel: { type: "STRING" }, pricing: { type: "STRING" }, risks: { type: "ARRAY", items: { type: "STRING" } }, mvp: { type: "ARRAY", items: { type: "STRING" } }, avoid: { type: "ARRAY", items: { type: "STRING" } }, firstCustomers: { type: "ARRAY", items: { type: "STRING" } }, plan7: { type: "ARRAY", items: { type: "STRING" } }, plan30: { type: "ARRAY", items: { type: "STRING" } }, assumptions: { type: "ARRAY", items: { type: "STRING" } } }, required: ["score", "verdict", "title", "summary", "market", "customer", "problem", "competitors", "gap", "businessModel", "pricing", "risks", "mvp", "avoid", "firstCustomers", "plan7", "plan30", "assumptions"] };
-  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema, maxOutputTokens: 2200, temperature: 0.35 } }) });
-  if (!response.ok) throw new Error(`Gemini request failed (${response.status})`);
-  const payload = await response.json(); const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-  return normalize(JSON.parse(text), title);
+  const schema = { type: "object", properties: { score: { type: "integer" }, verdict: { type: "string", enum: ["BUILD", "TEST FIRST", "AVOID"] }, title: { type: "string" }, summary: { type: "string" }, market: { type: "string" }, customer: { type: "string" }, problem: { type: "string" }, competitors: { type: "string" }, gap: { type: "string" }, businessModel: { type: "string" }, pricing: { type: "string" }, risks: { type: "array", items: { type: "string" } }, mvp: { type: "array", items: { type: "string" } }, avoid: { type: "array", items: { type: "string" } }, firstCustomers: { type: "array", items: { type: "string" } }, plan7: { type: "array", items: { type: "string" } }, plan30: { type: "array", items: { type: "string" } }, assumptions: { type: "array", items: { type: "string" } } }, required: ["score", "verdict", "title", "summary", "market", "customer", "problem", "competitors", "gap", "businessModel", "pricing", "risks", "mvp", "avoid", "firstCustomers", "plan7", "plan30", "assumptions"], additionalProperties: false };
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const response = await ai.models.generateContent({ model: "gemini-2.5-flash-lite", contents: prompt, config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 2200, temperature: 0.35 } });
+  if (!response.text) throw new Error("Gemini returned an empty response");
+  return normalize(JSON.parse(response.text), title);
 }
 
 export async function POST(request: Request) {
