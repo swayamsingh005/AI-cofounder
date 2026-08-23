@@ -46,7 +46,8 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   const content = report.report;
   const verdictLine = report.verdict === "BUILD" ? "A strong opportunity, with a clear reason to pursue the next validation step." : report.verdict === "AVOID" ? "The current risks outweigh the likely opportunity." : "Promising direction, but earn the right to build through customer evidence.";
   const plan = content.plan7?.length ? content.plan7 : ["Write one target-customer hypothesis", "Book five customer conversations", "Create a simple offer page", "Ask for one paid pilot"];
-  const scorecard = content.scorecard ?? { market: Math.min(88, report.score + 4), pain: Math.min(90, report.score + 7), differentiation: Math.max(25, report.score - 12), economics: Math.max(30, report.score - 4), execution: Math.max(25, report.score - 8) };
+  const scorecardRaw = content.scorecard;
+  const scorecard = { market: scorecardRaw?.market ?? Math.min(88, report.score + 4), pain: scorecardRaw?.pain ?? Math.min(90, report.score + 7), differentiation: scorecardRaw?.differentiation ?? Math.max(25, report.score - 12), economics: scorecardRaw?.economics ?? Math.max(30, report.score - 4), execution: scorecardRaw?.execution ?? Math.max(25, report.score - 8) };
   const dimensions = [["Market", scorecard.market], ["Customer pain", scorecard.pain], ["Differentiation", scorecard.differentiation], ["Economics", scorecard.economics], ["Execution", scorecard.execution]] as const;
   const evidence = content.evidence ?? {};
   const hasVerified = Object.values(evidence).some(value => value === "verified");
@@ -60,8 +61,8 @@ export default async function Report({ params }: { params: Promise<{ id: string 
       <div className="report-cover print-only"><span>AI CO-FOUNDER</span><h1>{report.title}</h1><p>Founder decision brief · Generated {new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(report.created_at))}</p><div><span>SCORE {report.score}/100</span><span>{report.verdict}</span></div></div>
       <div className="report-top"><div><Link className="back" href="/reports">← All reports</Link><div className="eyebrow"><span></span> CO-FOUNDER DECISION BRIEF</div><h1>{report.title}</h1><p>Generated {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(report.created_at))} · Six specialist perspectives</p></div><ReportActions plan={plan} mode="export" /></div>
       <Tilt intensity={2.5}><div className="verdict-row"><div className="score"><small>BUSINESS SCORE</small><strong>{report.score}</strong><span>/100</span></div><div className="verdict"><small>RECOMMENDATION</small><h2><i></i>{report.verdict}</h2><p>{verdictLine}</p></div><div className="confidence"><small>RESEARCH STATUS</small><b>{researchStatus}</b><p>Claims are labelled to separate evidence from estimates.</p></div></div></Tilt>
-      {content.evidenceApplied && <section className="evidence-banner section-break"><span>EVIDENCE-INFORMED UPDATE</span><h3>{content.priorVerdict && content.priorVerdict !== report.verdict ? `Verdict moved from ${content.priorVerdict} to ${report.verdict}` : "Verdict reviewed against founder evidence"}{typeof content.priorScore === "number" && content.priorScore !== report.score && ` · score ${content.priorScore} → ${report.score}`}</h3><p>{content.evidenceSummary}</p>{content.evidenceReasoning && <p className="muted">{content.evidenceReasoning}</p>}{!!content.repeatedSignals?.length && <ul>{content.repeatedSignals.map(item => <li key={item}>→ {item}</li>)}</ul>}<small>Based on {content.evidenceCount} founder-collected evidence entries{content.evidenceRecomputedAt ? ` · reviewed ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(content.evidenceRecomputedAt))}` : ""}.</small></section>}
-      <section className="scorecard"><div><span>DIRECTIONAL SCORECARD</span><h2>What is carrying the decision?</h2><p>These are AI estimates based on the idea and intake submitted — not verified market facts.</p></div><div className="score-bars">{dimensions.map(([label, value]) => <div key={label}><span>{label}</span><b>{value}</b><i><em style={{ width: `${value}%` }} /></i></div>)}</div></section>
+      {content.evidenceApplied && <section className="evidence-banner section-break"><span>EVIDENCE-INFORMED UPDATE</span><h3>{content.priorVerdict && content.priorVerdict !== report.verdict ? `Verdict moved from ${content.priorVerdict} to ${report.verdict}` : "Verdict reviewed against founder evidence"}{typeof content.priorScore === "number" && content.priorScore !== report.score && ` · score ${content.priorScore} → ${report.score}`}</h3><p>{content.evidenceSummary}</p>{content.evidenceReasoning && <p className="muted">{content.evidenceReasoning}</p>}{typeof content.priorScore === "number" && <ScoreMovement prior={content.priorScore} current={report.score} />}{!!content.repeatedSignals?.length && <ul>{content.repeatedSignals.map(item => <li key={item}>→ {item}</li>)}</ul>}<small>Based on {content.evidenceCount} founder-collected evidence entries{content.evidenceRecomputedAt ? ` · reviewed ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(content.evidenceRecomputedAt))}` : ""}.</small></section>}
+      <section className="scorecard"><div><span>DIRECTIONAL SCORECARD</span><h2>What is carrying the decision?</h2><p>These are AI estimates based on the idea and intake submitted — not verified market facts.</p></div><div className="score-visuals"><div className="score-bars">{dimensions.map(([label, value]) => <div key={label}><span>{label}</span><b>{value}</b><i><em style={{ width: `${value}%` }} /></i></div>)}</div><ScoreRadar scorecard={scorecard} /></div></section>
       <section className="agent-strip"><div><span>THE ROOM</span><h2>Six specialists reviewed this idea.</h2></div><div className="agent-chips">{agents.map(([name, role, code], index) => <Tilt key={name} intensity={9}><article className={`agent-chip agent-${index}`}><b>{code}</b><div><strong>{name}</strong><small>{role}</small></div></article></Tilt>)}</div></section>
       <div className="report-grid">
         <div className="report-main">
@@ -85,6 +86,34 @@ export default async function Report({ params }: { params: Promise<{ id: string 
       <div className="print-page-number print-only" />
     </section>
   </main>;
+}
+
+function ScoreRadar({ scorecard }: { scorecard: { market: number; pain: number; differentiation: number; economics: number; execution: number } }) {
+  const axes: [string, number][] = [["Market", scorecard.market], ["Pain", scorecard.pain], ["Diff.", scorecard.differentiation], ["Econ.", scorecard.economics], ["Exec.", scorecard.execution]];
+  const size = 220, center = size / 2, maxR = 82;
+  const angle = (i: number) => (Math.PI * 2 * i) / axes.length - Math.PI / 2;
+  const pointAt = (i: number, frac: number) => { const r = maxR * frac; const a = angle(i); return [center + r * Math.cos(a), center + r * Math.sin(a)] as const; };
+  const ring = (frac: number) => axes.map((_, i) => pointAt(i, frac).join(",")).join(" ");
+  const shape = axes.map(([, value], i) => pointAt(i, Math.max(0.06, value / 100)).join(",")).join(" ");
+  return <svg viewBox={`0 0 ${size} ${size}`} className="radar-chart" role="img" aria-label="Scorecard radar chart">
+    {[0.25, 0.5, 0.75, 1].map(frac => <polygon key={frac} points={ring(frac)} className="radar-ring" />)}
+    {axes.map((_, i) => { const [x, y] = pointAt(i, 1); return <line key={i} x1={center} y1={center} x2={x} y2={y} className="radar-axis" />; })}
+    <polygon points={shape} className="radar-fill" />
+    {axes.map(([label, value], i) => { const [x, y] = pointAt(i, 1.2); return <text key={label} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="radar-label">{label} {value}</text>; })}
+  </svg>;
+}
+
+function ScoreMovement({ prior, current }: { prior: number; current: number }) {
+  const width = 200, height = 46, padX = 18, padY = 8;
+  const yFor = (value: number) => height - padY - (Math.max(0, Math.min(100, value)) / 100) * (height - padY * 2);
+  const y1 = yFor(prior), y2 = yFor(current);
+  return <svg viewBox={`0 0 ${width} ${height}`} className="movement-chart" role="img" aria-label={`Score moved from ${prior} to ${current}`}>
+    <line x1={padX} y1={y1} x2={width - padX} y2={y2} className="movement-line" />
+    <circle cx={padX} cy={y1} r={4} className="movement-dot prior" />
+    <circle cx={width - padX} cy={y2} r={5} className="movement-dot current" />
+    <text x={padX} y={y1 - 8} className="movement-text">{prior}</text>
+    <text x={width - padX} y={y2 - 10} textAnchor="end" className="movement-text current">{current}</text>
+  </svg>;
 }
 
 function ReportBlock({ tag, title, text, list, confidence }: { tag: string; title: string; text?: string; list?: string[]; confidence?: Confidence }) {

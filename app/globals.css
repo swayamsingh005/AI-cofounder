@@ -122,3 +122,21 @@ html[data-theme='dark'] .v2-linked{background:#132a1f;border-color:#2c4a37;color
 .report-shell .decision-frame{box-shadow:0 20px 44px -20px #0009,inset 0 1px 0 rgba(255,255,255,.04)}
 @media(prefers-reduced-motion:reduce){.tilt-3d{transition:none;transform:none!important}}
 @media print{.tilt-3d{transform:none!important;box-shadow:none!important}.tilt-3d::after{display:none}}
+
+/* --- Session: research charts (radar + score movement) --- */
+.score-visuals{display:flex;align-items:center;gap:34px;flex-wrap:wrap}
+.score-visuals .score-bars{flex:1;min-width:230px}
+.radar-chart{width:190px;height:190px;flex:none}
+.radar-ring{fill:none;stroke:#2d3953;stroke-width:1}
+.radar-axis{stroke:#2d3953;stroke-width:1}
+.radar-fill{fill:#7468eb4a;stroke:#9d90ff;stroke-width:2;filter:drop-shadow(0 4px 10px #4f46e560)}
+.radar-label{fill:#9eabd0;font:8px 'DM Mono'}
+.movement-chart{width:180px;height:42px;display:block;margin-top:14px}
+.movement-line{stroke:#7fe0c1;stroke-width:2}
+.movement-dot{stroke-width:2;fill:#0f2a26}
+.movement-dot.prior{stroke:#8fb8a8}
+.movement-dot.current{stroke:#7fe0c1;filter:drop-shadow(0 0 4px #7fe0c188)}
+.movement-text{fill:#c6ded2;font:9px 'DM Mono'}
+.movement-text.current{fill:#8fe6c6;font-weight:700}
+@media(max-width:750px){.score-visuals{flex-direction:column;align-items:flex-start}.radar-chart{align-self:center}}
+@media print{.radar-ring,.radar-axis{stroke:#bbb!important}.radar-fill{fill:#7468eb26!important;stroke:#555!important;filter:none!important}.radar-label{fill:#333!important}.movement-line{stroke:#333!important}.movement-dot{stroke:#333!important;fill:#fff!important}.movement-text,.movement-text.current{fill:#111!important}}
