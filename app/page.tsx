@@ -24,7 +24,7 @@ export default function Home() {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!idea.trim()) { setPrompt("Start with one sentence about the business you want to build."); return; }
-    router.push(`/workspace?idea=${encodeURIComponent(idea.trim())}`);
+    router.push(`/new?idea=${encodeURIComponent(idea.trim())}`);
   }
   return <main>
     <nav><a className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</a><div className="nav-links"><a href="#team">Meet the team</a><a href="/v2">V2 workspace</a><a href="/pricing">Pricing</a><a href="/reports">My reports</a><ThemeToggle/><button className="signin" onClick={() => router.push("/auth")}>Sign in <span>↗</span></button></div></nav>

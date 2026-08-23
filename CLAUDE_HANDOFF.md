@@ -308,3 +308,21 @@ The right next task is not more generic features. It is:
 > Rebuild the report generation workflow around richer founder intake + grounded current research + structured citations + founder-collected evidence.
 
 Do not modify Sahayak. Do not expose API keys. Do not add payments, autonomous outreach, financial transactions, or enterprise features without explicit request.
+
+## Session log — Claude, 2026-08-23
+
+Implemented the top of the "Recommended next AI work" list:
+
+1. **Multi-field intake.** `/new` is now a real form (customer, geography, business model, known alternatives, founder constraints, desired outcome — idea is the only required field). It's a client component; on submit it stores the intake object in `sessionStorage` under `cofounder-intake` and routes to `/workspace?idea=...`. The home page's quick idea box now routes to `/new?idea=...` (prefilled) instead of straight to `/workspace`, so the default path always offers the richer intake. `/workspace` reads the stored intake (falling back to just the idea line if it's missing, e.g. someone opens `/workspace` directly) and POSTs the full object to `/api/analyze`.
+
+2. **Structured citations.** `/api/analyze` now returns `sources` as `{ title, url, domain }[]` instead of plain strings, deduped by URL. The report page renders them as real clickable links with the domain shown, and adds a print-only "Source appendix" section with the full list.
+
+3. **Claims classification.** The model now also returns an `evidence` object (`market`, `customer`, `competitors`, `businessModel`, each `"verified" | "estimate" | "assumption"`). The report page uses this to label each section's badge correctly instead of a blanket "AI ESTIMATE" on every block, and to compute a "Research status" summary (AI directional / mixed evidence / grounded research).
+
+4. **Evidence-based recompute.** New route `POST /api/recompute` (`app/api/recompute/route.ts`): given a `reportId`, it pulls `founder_memories` rows tied to that report (`report_id = reportId`), asks Gemini to look for repeated pain points/objections/buying signals, and — only if the evidence actually supports it — updates the report's `score`/`verdict` in Supabase. It refuses to run with zero linked evidence and is explicitly told to be skeptical of thin evidence. The report page shows a "Founder evidence" section (visible when signed in) listing memories linked to that report, a link to add more (`/v2?reportId=...`), and a "Recompute verdict with my evidence →" button (`components/recompute-action.tsx`). `/v2` now accepts `?reportId=` and tags new founder-memory entries with it so evidence collected there is actually attributable to a specific report. No schema changes were needed — this reuses `founder_memories.report_id`, which already existed in `v2-schema.sql`.
+
+5. **Print quality.** Extended the print styles in `app/globals.css`: a print-only cover page (title, score, verdict), `break-before: page` on major sections, a source appendix, and a fixed page-number footer via the `counter(page)` trick. Screen styles are untouched — all additions are new rules appended at the end of the file, not edits to existing selectors.
+
+Not done yet (still open from the recommended list): a paid mode is intentionally still out of scope. The `evidence` confidence classification is model-self-reported, not independently verified — treat it as directional, same caveat as the scorecard. Gemini quota status was not re-verified in this session (still unknown whether `f61f7cb`'s grounding works end-to-end); test a real signed-in report once quota/billing is confirmed and check `generatedBy === "gemini"` with non-empty `sources[].url` before trusting grounded output.
+
+No Supabase schema changes were required. `npm run build` passes with zero TypeScript errors as of this commit.
