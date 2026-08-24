@@ -3,13 +3,19 @@
 // this file replaced @google/genai across the app because the Gemini free-tier quota was too tight for
 // the number of calls this app makes per report.
 //
-// Model name is configurable via GROQ_MODEL because hosted-model line-ups on Groq change over time and
-// a stale hardcoded name is the single most common way this silently breaks. Check current model IDs at
-// https://console.groq.com/docs/models before assuming the default below still exists.
+// Model selection: set GROQ_MODEL to pin an exact model id (recommended — check current ids at
+// https://console.groq.com/docs/models). If unset, groqComplete() tries a short hardcoded candidate
+// list in order and moves on when one 404s as "model not found" — a safety net against line-up churn,
+// not a substitute for setting GROQ_MODEL explicitly once you know a working id.
 
 export type Source = { title: string; url: string; domain: string };
 
-const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
+// If GROQ_MODEL is set, that's the only model tried — trust an explicit choice. If it's not set,
+// try this short list in order, moving to the next only on a "model not found"-shaped error (not on
+// auth/rate-limit/timeout errors, which trying a different model name won't fix). This is a best-effort
+// safety net, not a guarantee — Groq's line-up will keep changing, and console.groq.com/docs/models is
+// still the authoritative source. Setting GROQ_MODEL explicitly is the more reliable long-term fix.
+const CANDIDATE_MODELS = ["openai/gpt-oss-20b", "llama-3.1-8b-instant", "gemma2-9b-it", "llama-3.3-70b-versatile"];
 
 export function domainOf(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url.slice(0, 40); }
@@ -21,12 +27,7 @@ function stripJsonFence(text: string) {
   return fenced ? fenced[1] : trimmed;
 }
 
-/** Chat completion against Groq. Set json:true to request strict JSON-object output (best-effort — Groq
- * enforces valid JSON syntax in this mode, not an exact schema, so callers must still validate shape). */
-export async function groqComplete(system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number } = {}): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
-  const model = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
+async function callGroq(model: string, apiKey: string, system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number }): Promise<string> {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -44,8 +45,28 @@ export async function groqComplete(system: string, user: string, opts: { json?: 
   }
   const data = await response.json();
   const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim()) throw new Error("Groq returned an empty response");
+  if (typeof content !== "string" || !content.trim()) throw new Error(`Groq returned an empty response (model "${model}")`);
   return content;
+}
+
+/** Chat completion against Groq. Set json:true to request strict JSON-object output (best-effort — Groq
+ * enforces valid JSON syntax in this mode, not an exact schema, so callers must still validate shape). */
+export async function groqComplete(system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number } = {}): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  const candidates = process.env.GROQ_MODEL ? [process.env.GROQ_MODEL] : CANDIDATE_MODELS;
+  let lastError: Error = new Error("No Groq model candidates configured");
+  for (const model of candidates) {
+    try {
+      return await callGroq(model, apiKey, system, user, opts);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const isMissingModel = /404|model_not_found|does not exist/i.test(lastError.message);
+      if (!isMissingModel || model === candidates[candidates.length - 1]) throw lastError;
+      console.error(`[lib/ai] Groq model "${model}" unavailable, trying next candidate`, { message: lastError.message });
+    }
+  }
+  throw lastError;
 }
 
 export async function groqJson<T = unknown>(system: string, user: string, opts: { maxTokens?: number; temperature?: number } = {}): Promise<T> {

@@ -412,3 +412,17 @@ Fixed: `WorkspaceContent` now tracks the full API result instead of defaulting t
 **This means:** to actually get a saved, viewable report, the person must be signed in *before* generating. If the owner wants unsigned-in visitors to see their generated report too (not just a message telling them to sign in), that needs a different mechanism — e.g. storing the full generated report in `sessionStorage` and adding a client-rendered preview route that doesn't require a Supabase row. Flagging this as a real product decision rather than deciding it unilaterally; the current fix makes the existing behavior honest, it doesn't change what the behavior actually is.
 
 npm run build passes, CSS brace-balanced (1070/1070).
+
+## Session log — Claude, follow-up 7 (same day) — confirmed root cause, added model fallback chain
+
+Owner got the exact error from Vercel's runtime logs, confirming the suspected cause:
+
+```
+Groq request failed (404 on model "llama-3.3-70b-versatile"): {"error":{"message":"The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.","type":"invalid_request_error","code":"model_not_found"}}
+```
+
+`GROQ_API_KEY` is correctly configured (this error only happens *after* a successful auth — it's the model id that's wrong, not the key). Asked the owner to check https://console.groq.com/docs/models directly and set `GROQ_MODEL` to a real current id, since that's authoritative and I have no live way to check it from this sandbox.
+
+Also hardened `lib/ai.ts` so a single bad model name doesn't take the whole app down again: `groqComplete()` now tries a short candidate list (`openai/gpt-oss-20b`, `llama-3.1-8b-instant`, `gemma2-9b-it`, `llama-3.3-70b-versatile`) in order when `GROQ_MODEL` isn't set, moving to the next candidate only on a "model not found"-shaped error (404 / `model_not_found` / "does not exist") — not on auth errors, rate limits, or timeouts, where trying a different model name wouldn't help and would just waste time before failing anyway. If `GROQ_MODEL` **is** set, it's used exclusively — an explicit choice is trusted over the fallback list. **This candidate list is a guess based on training data, same caveat as before** — it's a safety net, not a substitute for the owner setting `GROQ_MODEL` to a confirmed-working id from Groq's own docs.
+
+npm run build passes.
