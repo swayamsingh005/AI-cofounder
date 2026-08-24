@@ -34,7 +34,7 @@ The existing static report should be treated as free triage or a starting hypoth
 - React 19
 - CSS-only styling in `app/globals.css` (no Tailwind)
 - Supabase Auth + Postgres + Row Level Security
-- Gemini via `@google/genai` 2.18.0
+- Groq (LLM, OpenAI-compatible chat completions API) + Tavily (web search grounding) — switched from Gemini as of the session below; see the log for why
 - Vercel production deployment connected to the GitHub `main` branch
 
 ## Local project location
@@ -57,7 +57,10 @@ Local `.env.local` and Vercel Production + Preview must have:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
-GEMINI_API_KEY=...
+GEMINI_API_KEY=... # no longer used by code — see session log below; safe to leave or remove
+GROQ_API_KEY=...
+GROQ_MODEL=... # optional, defaults to llama-3.3-70b-versatile — verify current model IDs at console.groq.com/docs/models before relying on the default
+TAVILY_API_KEY=... # optional — without it, analysis runs ungrounded (no web sources, all fields default to "assumption" confidence)
 ```
 
 The user's Gemini key begins with `AQ...`. This is a valid current Google AI Studio authorization key. Do not tell the user it must begin with `AIza`.
@@ -352,3 +355,21 @@ Owner reported research still "looking generic" and asked for more elaborate res
 Same caveat as before still applies and is now more important given the extra API calls: if `GEMINI_API_KEY`/quota isn't actually working, none of this touches the fallback path, which is unchanged and will still read identically every time by design. Confirm `generatedBy === "gemini"` on a real report before judging output quality.
 
 Still not verified in this sandbox: an actual signed-in report run against live Gemini (still no network path to test outside the allowlisted domains, and this sandbox has no browser/screenshot tool). `npm run build` passes with zero TypeScript errors as of this commit.
+
+## Session log — Claude, follow-up 3 (same day) — switched Gemini → Groq + Tavily
+
+Owner said the Gemini free tier was too tight for real usage and asked to move to a free alternative. Clarified two commonly-confused names first: **Grok** (xAI) has built-in search but is paid, not free; **Groq** (unrelated company, hosts open models like Llama fast) has a genuinely generous free tier but no built-in web search. Owner chose Groq. Implemented:
+
+- **New `lib/ai.ts`** — shared helpers, replacing `@google/genai` everywhere:
+  - `groqComplete(system, user, opts)` — calls Groq's OpenAI-compatible `POST /openai/v1/chat/completions`. Model is `process.env.GROQ_MODEL || "llama-3.3-70b-versatile"` — **the default is a guess based on training-data knowledge of Groq's model lineup and may be stale by the time this runs; verify current model IDs at https://console.groq.com/docs/models and set `GROQ_MODEL` if the default 404s.**
+  - `groqJson<T>()` — same, parses the response as JSON (strips markdown fences defensively — Groq's `response_format: {type:"json_object"}` guarantees valid JSON syntax but not an exact schema, unlike Gemini's `responseJsonSchema` which enforced shape server-side).
+  - `tavilySearch(query)` — calls Tavily's search API. Returns `{text, sources}`. If `TAVILY_API_KEY` is missing or the request fails, it returns empty results rather than throwing, so a missing search key degrades to ungrounded analysis instead of breaking the whole report.
+- **`/api/analyze`**: three parallel `tavilySearch` calls (market/competitors, customer language, pricing/risk — same three angles as the previous Gemini version) feed into one `groqComplete` call with the schema described in the system prompt instead of enforced via `responseJsonSchema`. The existing `normalize()` function (already defensive — it was built to tolerate malformed/missing fields) is now doing more work here since Groq doesn't enforce shape, but no changes were needed to it. `generatedBy` renamed `"gemini" → "groq"` throughout — **if you have code or dashboards checking `generatedBy === "gemini"`, update them to `"groq"`.**
+- **`/api/recompute`**: same swap. Added a `normalizeRecompute()` function (didn't exist before) since this route previously relied entirely on Gemini's schema enforcement and had no defensive parsing of its own — now it does, matching the analyze route's pattern.
+- **`/api/customer-toolkit`**: same swap, added a `normalize()` for the same reason.
+- Removed `@google/genai` from `package.json` entirely and ran `npm install` to regenerate the lockfile without it. Swept the repo for leftover `GEMINI`/`gemini` references outside this doc — none found in source.
+- `GEMINI_API_KEY` can stay in Vercel/local env harmlessly (nothing reads it anymore) or be removed — your call. `GROQ_API_KEY` is required for any AI generation to run (without it, `/api/analyze` returns the same static `fallback()` object as before, now guarded by `if (!process.env.GROQ_API_KEY)` instead of the Gemini check). `TAVILY_API_KEY` is optional but strongly recommended — without it every report runs fully ungrounded (no citations, everything defaults to `"assumption"` confidence).
+
+**Not verified in this sandbox** (no network path here to `api.groq.com` or `api.tavily.com`, both outside the sandbox's domain allowlist, and no browser tool to test a live deploy): a real end-to-end call to either API. Before trusting this in production: add `GROQ_API_KEY` (and ideally `TAVILY_API_KEY`) to Vercel, redeploy, run one signed-in report, and confirm (a) it doesn't 502/error, (b) `generatedBy === "groq"` in the response, (c) if Tavily is configured, `sources[]` has real URLs. If the Groq call fails with a 404-style model error, that's almost certainly the `GROQ_MODEL` default being stale — check the docs link above and set the env var.
+
+`npm run build` passes with zero TypeScript errors as of this commit.

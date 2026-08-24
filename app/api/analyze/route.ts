@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { groqComplete, tavilySearch } from "../../../lib/ai";
 import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 
 type Verdict = "BUILD" | "TEST FIRST" | "AVOID";
@@ -9,7 +9,7 @@ type Evidence = { market: Confidence; customer: Confidence; competitors: Confide
 type Source = { title: string; url: string; domain: string };
 type Intake = { idea: string; customer: string; geography: string; businessModel: string; alternatives: string; constraints: string; outcome: string };
 type NextMove = { headline: string; detail: string };
-type Analysis = { score: number; scorecard: Scorecard; verdict: Verdict; title: string; summary: string; market: string; customer: string; problem: string; competitors: string; gap: string; businessModel: string; pricing: string; risks: string[]; mvp: string[]; avoid: string[]; firstCustomers: string[]; plan7: string[]; plan30: string[]; assumptions: string[]; sources: Source[]; evidence: Evidence; intake: Intake; nextMove: NextMove; generatedBy: "gemini" | "fallback" };
+type Analysis = { score: number; scorecard: Scorecard; verdict: Verdict; title: string; summary: string; market: string; customer: string; problem: string; competitors: string; gap: string; businessModel: string; pricing: string; risks: string[]; mvp: string[]; avoid: string[]; firstCustomers: string[]; plan7: string[]; plan30: string[]; assumptions: string[]; sources: Source[]; evidence: Evidence; intake: Intake; nextMove: NextMove; generatedBy: "groq" | "fallback" };
 
 const emptyIntake: Intake = { idea: "", customer: "", geography: "", businessModel: "", alternatives: "", constraints: "", outcome: "" };
 const fallbackSources: Source[] = [{ title: "AI-generated directional analysis — no live web verification", url: "", domain: "No source" }, { title: "Founder interviews required for validation", url: "", domain: "No source" }];
@@ -30,10 +30,8 @@ function normalize(value: unknown, title: string, researchSources: Source[], int
   const evidence: Evidence = { market: asConfidence(rawEvidence.market, researchSources.length ? "estimate" : "assumption"), customer: asConfidence(rawEvidence.customer, "assumption"), competitors: asConfidence(rawEvidence.competitors, researchSources.length ? "estimate" : "assumption"), businessModel: asConfidence(rawEvidence.businessModel, "assumption") };
   const rawNextMove = raw.nextMove && typeof raw.nextMove === "object" ? raw.nextMove as Record<string, unknown> : {};
   const nextMove: NextMove = { headline: typeof rawNextMove.headline === "string" && rawNextMove.headline.trim() ? rawNextMove.headline.slice(0, 140) : base.nextMove.headline, detail: typeof rawNextMove.detail === "string" && rawNextMove.detail.trim() ? rawNextMove.detail.slice(0, 400) : base.nextMove.detail };
-  return { ...base, score: typeof raw.score === "number" ? Math.max(0, Math.min(100, Math.round(raw.score))) : base.score, scorecard: { market: number("market"), pain: number("pain"), differentiation: number("differentiation"), economics: number("economics"), execution: number("execution") }, verdict, title: typeof raw.title === "string" ? raw.title.slice(0, 72) : title, summary: text("summary"), market: text("market"), customer: text("customer"), problem: text("problem"), competitors: text("competitors"), gap: text("gap"), businessModel: text("businessModel"), pricing: text("pricing"), risks: list("risks", base.risks), mvp: list("mvp", base.mvp), avoid: list("avoid", base.avoid), firstCustomers: list("firstCustomers", base.firstCustomers), plan7: list("plan7", base.plan7), plan30: list("plan30", base.plan30), assumptions: list("assumptions", base.assumptions), sources: researchSources.length ? researchSources : fallbackSources, evidence, intake, nextMove, generatedBy: "gemini" };
+  return { ...base, score: typeof raw.score === "number" ? Math.max(0, Math.min(100, Math.round(raw.score))) : base.score, scorecard: { market: number("market"), pain: number("pain"), differentiation: number("differentiation"), economics: number("economics"), execution: number("execution") }, verdict, title: typeof raw.title === "string" ? raw.title.slice(0, 72) : title, summary: text("summary"), market: text("market"), customer: text("customer"), problem: text("problem"), competitors: text("competitors"), gap: text("gap"), businessModel: text("businessModel"), pricing: text("pricing"), risks: list("risks", base.risks), mvp: list("mvp", base.mvp), avoid: list("avoid", base.avoid), firstCustomers: list("firstCustomers", base.firstCustomers), plan7: list("plan7", base.plan7), plan30: list("plan30", base.plan30), assumptions: list("assumptions", base.assumptions), sources: researchSources.length ? researchSources : fallbackSources, evidence, intake, nextMove, generatedBy: "groq" };
 }
-
-function domainOf(url: string) { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url.slice(0, 40); } }
 
 function contextBlock(intake: Intake) {
   return [
@@ -47,27 +45,17 @@ function contextBlock(intake: Intake) {
   ].filter(Boolean).join("\n");
 }
 
-async function groundedSearch(ai: GoogleGenAI, contents: string): Promise<{ text: string; sources: Source[] }> {
-  const research = await ai.models.generateContent({ model: "gemini-3.5-flash-lite", contents, config: { tools: [{ googleSearch: {} }], maxOutputTokens: 1100, temperature: 0.3 } as never });
-  const metadata = (research.candidates?.[0] as unknown as { groundingMetadata?: { groundingChunks?: Array<{ web?: { title?: string; uri?: string } }> } } | undefined)?.groundingMetadata;
-  const sources: Source[] = (metadata?.groundingChunks ?? []).flatMap(chunk => {
-    const uri = chunk.web?.uri; if (!uri) return [];
-    return [{ title: chunk.web?.title ?? "Web source", url: uri, domain: domainOf(uri) }];
-  });
-  return { text: research.text ?? "", sources };
-}
-
 async function generateAnalysis(intake: Intake, title: string): Promise<Analysis> {
-  if (!process.env.GEMINI_API_KEY) return fallback(title, intake);
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  if (!process.env.GROQ_API_KEY) return fallback(title, intake);
   const context = contextBlock(intake);
 
-  // Three targeted, parallel research passes instead of one broad shallow one — each digs into a
-  // different angle so the analysis prompt below has enough specific material to work with.
+  // Three targeted, parallel Tavily searches instead of one broad shallow one — each digs into a
+  // different angle so the analysis prompt below has enough specific material to work with. If
+  // TAVILY_API_KEY is missing, these come back empty and the analysis proceeds ungrounded.
   const [marketPass, customerPass, businessPass] = await Promise.all([
-    groundedSearch(ai, `Research the market and competitive landscape for this idea using current public web sources.\n${context}\n\nFind: (1) named, currently operating alternatives or competitors — actual product/company names, not categories — and what each one does; (2) any pricing you can find for those alternatives; (3) market size, growth rate, or adoption trend signals specific to this space and geography. Cite specifics (numbers, names, dates) wherever the sources support them. If you find nothing concrete on a point, say so plainly instead of guessing.`),
-    groundedSearch(ai, `Research how the target customer described below actually talks about this problem, using current public web sources (forums, reviews, communities, articles, complaints).\n${context}\n\nFind: (1) direct or paraphrased language this customer uses to describe the pain, in their own words if possible; (2) what workaround or tool they currently use instead; (3) any evidence of what they already pay for adjacent solutions. If nothing specific turns up, say so rather than inventing a persona.`),
-    groundedSearch(ai, `Research pricing norms, willingness-to-pay signals, and material risks for this idea using current public web sources.\n${context}\n\nFind: (1) typical pricing models or price points for comparable products in this space; (2) any regulatory, legal, technical, or trust-related risk specific to this idea or geography; (3) signs of how hard or easy customer acquisition tends to be in this space. Be specific about numbers and sources where they exist.`),
+    tavilySearch(`${intake.idea} ${intake.geography} market size competitors alternatives pricing`.trim()),
+    tavilySearch(`${intake.customer || intake.idea} problem forum reviews complaints workaround`.trim()),
+    tavilySearch(`${intake.idea} ${intake.businessModel} pricing model risks regulation`.trim()),
   ]);
 
   const seen = new Set<string>();
@@ -80,13 +68,35 @@ async function generateAnalysis(intake: Intake, title: string): Promise<Analysis
     marketPass.text && `MARKET & COMPETITORS RESEARCH:\n${marketPass.text}`,
     customerPass.text && `CUSTOMER LANGUAGE & CURRENT WORKAROUNDS RESEARCH:\n${customerPass.text}`,
     businessPass.text && `PRICING & RISK RESEARCH:\n${businessPass.text}`,
-  ].filter(Boolean).join("\n\n") || "No grounded research was returned by any of the three research passes.";
+  ].filter(Boolean).join("\n\n") || "No grounded research was returned (TAVILY_API_KEY may be missing, or the searches returned nothing). Treat every finding below as an AI estimate or assumption, not verified.";
 
-  const prompt = `You are AI Co-Founder, a candid startup intelligence team. Analyze this business idea using the founder's full intake below, not just the one-line idea.\n\n${context}\n\nHere is grounded web research from three separate research passes (market/competitors, customer language, pricing/risk). Use it for specific context, but separate verified findings from AI estimates. Do not invent facts, named competitors, prices, or citations beyond this material:\n${combinedResearch}\n\nSix roles collaborate: Mira (market demand), Asha (customer), Theo (competitors), Owen (business model), Rhea (risks), and Nova (MVP/execution). Produce a precise, decision-useful JSON brief specific to the stated customer and geography — do not write generic advice that would apply to any idea. Be skeptical; choose AVOID when appropriate. Name concrete alternatives only if present in the research or founder intake. Scorecard values are directional AI estimates, not facts. Provide validation actions that would change the verdict. Score 0-100 and verdict BUILD, TEST FIRST, or AVOID.\n\nWrite market, customer, problem, competitors, gap, and businessModel as 3-5 sentences each, dense with specifics pulled from the research above (names, numbers, direct language) — not one-line generalities. If a research pass turned up nothing concrete for a section, say plainly what is unknown rather than padding with vague filler.\n\nBan generic startup-advice filler. Never write bare instructions like "interview 10 customers" or "talk to your target market" with no specifics — every action item in firstCustomers, plan7, and plan30 must name who exactly to contact (the role or channel from the intake), what to ask or offer, and, wherever it fits, a concrete number: a price to test, a headcount, a days-to-decision window. Prefer "ask a $200/month pilot fee" over "validate pricing."\n\nAlso produce a "nextMove" object: the single most important thing this specific founder should do in the next 7 days to get evidence that someone will actually pay — not just talk. "headline" is one punchy sentence naming the concrete paid ask (a deposit, a pilot fee, a signed LOI, a pre-order) tailored to this idea's customer and price point if one is implied; "detail" is 1-2 sentences on how to ask for it and what a pass/fail result looks like. Do not reuse boilerplate like "talk to 10 customers" — make it specific to this idea.\n\nAlso return an "evidence" object classifying how grounded each of market, customer, competitors, businessModel is: "verified" only if the grounded research directly names a specific supporting fact, "estimate" if it is a reasonable directional judgment without a direct source, "assumption" if it depends entirely on unverified founder input.`;
-  const schema = { type: "object", properties: { score: { type: "integer" }, scorecard: { type: "object", properties: { market: { type: "integer" }, pain: { type: "integer" }, differentiation: { type: "integer" }, economics: { type: "integer" }, execution: { type: "integer" } }, required: ["market", "pain", "differentiation", "economics", "execution"], additionalProperties: false }, verdict: { type: "string", enum: ["BUILD", "TEST FIRST", "AVOID"] }, title: { type: "string" }, summary: { type: "string" }, market: { type: "string" }, customer: { type: "string" }, problem: { type: "string" }, competitors: { type: "string" }, gap: { type: "string" }, businessModel: { type: "string" }, pricing: { type: "string" }, risks: { type: "array", items: { type: "string" } }, mvp: { type: "array", items: { type: "string" } }, avoid: { type: "array", items: { type: "string" } }, firstCustomers: { type: "array", items: { type: "string" } }, plan7: { type: "array", items: { type: "string" } }, plan30: { type: "array", items: { type: "string" } }, assumptions: { type: "array", items: { type: "string" } }, nextMove: { type: "object", properties: { headline: { type: "string" }, detail: { type: "string" } }, required: ["headline", "detail"], additionalProperties: false }, evidence: { type: "object", properties: { market: { type: "string", enum: ["verified", "estimate", "assumption"] }, customer: { type: "string", enum: ["verified", "estimate", "assumption"] }, competitors: { type: "string", enum: ["verified", "estimate", "assumption"] }, businessModel: { type: "string", enum: ["verified", "estimate", "assumption"] } }, required: ["market", "customer", "competitors", "businessModel"], additionalProperties: false } }, required: ["score", "scorecard", "verdict", "title", "summary", "market", "customer", "problem", "competitors", "gap", "businessModel", "pricing", "risks", "mvp", "avoid", "firstCustomers", "plan7", "plan30", "assumptions", "nextMove", "evidence"], additionalProperties: false };
-  const response = await ai.models.generateContent({ model: "gemini-3.5-flash-lite", contents: prompt, config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 3200, temperature: 0.35 } });
-  if (!response.text) throw new Error("Gemini returned an empty response");
-  return normalize(JSON.parse(response.text), title, researchSources, intake);
+  const system = `You are AI Co-Founder, a candid startup intelligence team. Produce a precise, decision-useful JSON brief specific to the stated customer and geography — do not write generic advice that would apply to any idea. Be skeptical; choose AVOID when appropriate. Name concrete alternatives only if present in the research or founder intake. Scorecard values are directional AI estimates, not facts. Never invent facts, named competitors, prices, or citations beyond the research material given to you. Respond with a single JSON object only — no markdown fences, no commentary outside the JSON.
+
+Required JSON shape (all fields required):
+{
+  "score": integer 0-100,
+  "scorecard": {"market": int 0-100, "pain": int 0-100, "differentiation": int 0-100, "economics": int 0-100, "execution": int 0-100},
+  "verdict": "BUILD" | "TEST FIRST" | "AVOID",
+  "title": string (<=72 chars),
+  "summary": string,
+  "market": string, "customer": string, "problem": string, "competitors": string, "gap": string, "businessModel": string, "pricing": string,
+  "risks": string[], "mvp": string[], "avoid": string[], "firstCustomers": string[], "plan7": string[], "plan30": string[], "assumptions": string[],
+  "nextMove": {"headline": string, "detail": string},
+  "evidence": {"market": "verified"|"estimate"|"assumption", "customer": "verified"|"estimate"|"assumption", "competitors": "verified"|"estimate"|"assumption", "businessModel": "verified"|"estimate"|"assumption"}
+}
+
+Write market, customer, problem, competitors, gap, and businessModel as 3-5 sentences each, dense with specifics pulled from the research (names, numbers, direct language) — not one-line generalities. If a research pass turned up nothing concrete for a section, say plainly what is unknown rather than padding with vague filler.
+
+Ban generic startup-advice filler. Never write bare instructions like "interview 10 customers" or "talk to your target market" with no specifics — every action item in firstCustomers, plan7, and plan30 must name who exactly to contact (the role or channel from the intake), what to ask or offer, and, wherever it fits, a concrete number: a price to test, a headcount, a days-to-decision window. Prefer "ask a $200/month pilot fee" over "validate pricing."
+
+"nextMove" is the single most important thing this specific founder should do in the next 7 days to get evidence that someone will actually pay — not just talk. "headline" is one punchy sentence naming the concrete paid ask (a deposit, a pilot fee, a signed LOI, a pre-order) tailored to this idea's customer and price point if one is implied; "detail" is 1-2 sentences on how to ask for it and what a pass/fail result looks like. Do not reuse boilerplate like "talk to 10 customers" — make it specific to this idea.
+
+"evidence" classifies how grounded each of market, customer, competitors, businessModel is: "verified" only if the research directly names a specific supporting fact, "estimate" if it's a reasonable directional judgment without a direct source, "assumption" if it depends entirely on unverified founder input.`;
+
+  const user = `${context}\n\nHere is web research from three separate search passes (market/competitors, customer language, pricing/risk). Use it for specific context, but separate verified findings from AI estimates:\n${combinedResearch}\n\nSix roles collaborate on this brief: Mira (market demand), Asha (customer), Theo (competitors), Owen (business model), Rhea (risks), and Nova (MVP/execution). Return the JSON object now.`;
+
+  const raw = await groqComplete(system, user, { json: true, maxTokens: 3200, temperature: 0.35 });
+  return normalize(JSON.parse(raw), title, researchSources, intake);
 }
 
 export async function POST(request: Request) {
@@ -97,7 +107,7 @@ export async function POST(request: Request) {
   const intake: Intake = { idea, customer: clean(body?.customer, 300), geography: clean(body?.geography, 200), businessModel: clean(body?.businessModel, 300), alternatives: clean(body?.alternatives, 400), constraints: clean(body?.constraints, 400), outcome: clean(body?.outcome, 300) };
   const title = idea.split(/[.!?]/)[0].slice(0, 72) || "New venture";
   let report = fallback(title, intake); let warning: string | undefined;
-  try { report = await generateAnalysis(intake, title); } catch (error) { console.error("[api/analyze] Gemini generation failed", { message: error instanceof Error ? error.message : "Unknown error" }); warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
+  try { report = await generateAnalysis(intake, title); } catch (error) { console.error("[api/analyze] Groq generation failed", { message: error instanceof Error ? error.message : "Unknown error" }); warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
   if (hasSupabaseConfig()) { const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims(); const userId = claims?.claims?.sub; if (userId) { const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea, title: report.title, verdict: report.verdict, score: report.score, report }).select("id").single(); if (error) warning = "Your report was generated but could not be saved."; else return NextResponse.json({ ...report, id: data.id, saved: true, warning }); } }
   return NextResponse.json({ ...report, saved: false, warning });
 }
