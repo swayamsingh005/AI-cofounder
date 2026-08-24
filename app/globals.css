@@ -140,3 +140,123 @@ html[data-theme='dark'] .v2-linked{background:#132a1f;border-color:#2c4a37;color
 .movement-text.current{fill:#8fe6c6;font-weight:700}
 @media(max-width:750px){.score-visuals{flex-direction:column;align-items:flex-start}.radar-chart{align-self:center}}
 @media print{.radar-ring,.radar-axis{stroke:#bbb!important}.radar-fill{fill:#7468eb26!important;stroke:#555!important;filter:none!important}.radar-label{fill:#333!important}.movement-line{stroke:#333!important}.movement-dot{stroke:#333!important;fill:#fff!important}.movement-text,.movement-text.current{fill:#111!important}}
+
+/* --- Session: full retheme — warm ink/charcoal + amber/gold + olive, replacing the
+   generic indigo/violet/mint 'AI SaaS' dark scheme used across the whole app before. */
+html[data-theme='dark'] body{background:#0f0d0a;color:#f0e9dc}
+html[data-theme='dark'] .hero{background:radial-gradient(circle at 74% 12%,#4a2c0f88,transparent 26%),radial-gradient(circle at 12% 76%,#2a3a1470,transparent 34%),#0f0d0a}
+html[data-theme='dark'] .hero h1 em,html[data-theme='dark'] .section-head em,html[data-theme='dark'] .proof h2 em{color:#e8a63c}
+html[data-theme='dark'] .holo-panel i{background:linear-gradient(90deg,#e8a63c 74%,#ffffff44 74%)}
+html[data-theme='dark'] .idea-cockpit button{background:linear-gradient(145deg,#f0b95c,#c9781f)!important;border-color:#f6d599!important;box-shadow:0 5px 0 #7a4d12,0 9px 16px #0005!important;color:#2b1a06}
+html[data-theme='dark'] .avatars i{border-color:#0f0d0a;background:#e8a63c;color:#2b1a06}
+html[data-theme='dark'] .agent-section{background:linear-gradient(155deg,#201a10,#181410)}
+html[data-theme='dark'] .agent-section:before{background:radial-gradient(circle at 12% 90%,#8a5a1c44,transparent 25%),radial-gradient(circle at 90% 8%,#4f7a3444,transparent 24%)}
+html[data-theme='dark'] .agent-card{background:linear-gradient(145deg,#241d13,#171310);border-color:#4a3c28;box-shadow:0 7px 0 #0a0806}
+html[data-theme='dark'] .agent-card>b{color:#e8a63c}
+html[data-theme='dark'] .mini-orb{background:linear-gradient(135deg,#f0b95c,#c9781f);box-shadow:inset -5px -5px #7a4d1266,0 4px 0 #171310}
+html[data-theme='dark'] .proof{background:#0f0d0a}
+html[data-theme='dark'] .process span{color:#e8a63c}
+html[data-theme='dark'] .proof-card{background:linear-gradient(145deg,#241c12,#171310);border-color:#4a3c28;box-shadow:10px 12px 0 #0a0806,0 20px 40px #0006}
+html[data-theme='dark'] footer{background:#0f0d0a;border-color:#3c3020;color:#b3a48c}
+html[data-theme='dark'] .app-shell{background:radial-gradient(circle at 88% 8%,#4a2c0f88,transparent 24%),radial-gradient(circle at 5% 80%,#2a3a1470,transparent 31%),#0f0d0a}
+html[data-theme='dark'] .workspace-side,html[data-theme='dark'] .run-list,html[data-theme='dark'] .saved-report,html[data-theme='dark'] .empty-report,html[data-theme='dark'] .settings-card,html[data-theme='dark'] .plan,html[data-theme='dark'] .source-card{background:linear-gradient(145deg,#241d13,#171310);border-color:#4a3c28;box-shadow:0 7px 0 #0a0806}
+html[data-theme='dark'] .workspace-side hr,html[data-theme='dark'] .run{border-color:#3c3020}
+html[data-theme='dark'] .pricing-page h1 em{color:#e8a63c}
+html[data-theme='dark'] .plan hr{border-color:#3c3020}
+html[data-theme='dark'] .plan li{color:#e8a63c}
+html[data-theme='dark'] .auth-page{background:radial-gradient(circle at 20% 15%,#8a5a1c55,transparent 25%),radial-gradient(circle at 80% 85%,#4f7a3466,transparent 32%),#0f0d0a}
+html[data-theme='dark'] .auth-card{background:linear-gradient(145deg,#241d13,#171310);border-color:#4a3c28;box-shadow:0 20px 0 #0a0806,0 35px 60px #0008}
+.v2 h1 em{color:#e8a63c}
+.v2-card{border-color:#4a3c28;background:linear-gradient(145deg,#241d13,#171310);box-shadow:0 13px 34px #0004}
+.plan-modal section{border-color:#8a5a1c;background:linear-gradient(145deg,#2b2013,#171310);box-shadow:0 28px 80px #0009;color:#f6efe3}
+.plan-modal li{border-color:#4a3c28;background:#171310}
+.modal-done{background:#e8a63c;color:#2b1a06}
+html[data-theme='dark'] .v2-linked{background:#1c2410;border-color:#3a4a1e;color:#c3dd96}
+.report-shell{background:radial-gradient(circle at 82% 8%,#4a2c0f 0,transparent 26%),radial-gradient(circle at 8% 30%,#2a3a14 0,transparent 35%),#120f0b;color:#f0e9dc}
+.report-shell .app-nav{border-color:#3c3020}
+.report-shell .brand,.report-shell h1,.report-shell h2,.report-shell h3,.report-shell b{color:#f6efe3}
+.report-shell .app-nav a:not(.brand),.report-shell p{color:#c9baa3}
+.report-shell .back,.report-shell .eyebrow{color:#b3a48c}
+.report-shell .eyebrow span{background:#e8a63c;box-shadow:0 0 0 4px #e8a63c33}
+.report-shell .verdict-row{border-color:#3c3020;background:linear-gradient(120deg,#241c12dd,#171310dd);box-shadow:0 26px 65px #0004}
+.report-shell .verdict-row>div{border-color:#3c3020}
+.report-shell .verdict-row small,.report-shell .block>span,.report-shell .side-card>span,.report-shell .source-card>span,.report-shell .agent-strip>div>span{color:#b3a48c}
+.report-shell .score strong{color:#f3c877}
+.report-shell .score span{color:#b3a48c}
+.report-shell .verdict h2{color:#a9d47f}
+.report-shell .verdict h2 i{background:#8fbf5a;box-shadow:0 0 0 5px #8fbf5a33,0 3px 6px #0006}
+.report-shell .confidence b{color:#f3c877}
+.report-shell .block{border-color:#3c3020}
+.report-shell .block h2{color:#f6efe3}
+.report-shell .block p{color:#c9baa3}
+.report-shell .block li{color:#e4dac6;background:#201a10;border-color:#3c3020}
+.report-shell .block li b{color:#e8a63c}
+.report-shell .data-tag{color:#b3a48c}
+.report-shell .side-card{background:linear-gradient(155deg,#4a3116,#2b1c0c);border-color:#8a5a1c;box-shadow:0 16px 37px #0005,0 20px 44px -18px #8a5a1c60,0 6px 14px #0007,inset 0 1px 0 rgba(255,255,255,.06)}
+.report-shell .side-card h3{color:#f6efe3}
+.report-shell .side-card p{color:#ecdfc9}
+.report-shell .side-card .plan-open{background:#fff3de;color:#5a3a12;border-color:#fff3de}
+.report-shell .side-card .plan-open span{color:#8a5a1c}
+.report-shell .source-card{background:#171310;border-color:#3c3020}
+.report-shell .source-card p,.report-shell .source-card small{color:#c9baa3}
+.report-shell .source-card hr{border-color:#3c3020}
+.report-shell .verified{background:#8fbf5a}
+.report-shell .estimate{background:#e8a63c}
+.report-shell .assume{background:#a99a7c}
+.report-shell .source-card a.source-link small{color:#a9d47f}
+.report-shell .source-card a.source-link em{color:#b3a48c}
+.report-shell .founder-evidence{border-color:#3c3020}
+.report-shell .founder-evidence>div>span{color:#b3a48c}
+.report-shell .founder-evidence>div>p{color:#c9baa3}
+.report-shell .evidence-list li{border-color:#3c3020;background:#171310}
+.report-shell .evidence-list p{color:#c9baa3}
+.report-shell .recompute-box small{color:#b3a48c}
+.report-shell .agent-chip.tilt-3d:hover{box-shadow:0 22px 40px -14px #e8a63c55,0 4px 10px #0007;border-color:#7a5c2e}
+.report-shell .block.tilt-3d:hover{box-shadow:0 18px 34px -18px #e8a63c44}
+.report-shell .verdict-row.tilt-3d{box-shadow:0 30px 70px -24px #e8a63c44,0 10px 26px -10px #0008}
+.report-shell .score strong{text-shadow:0 1px 0 #f3c877,0 3px 0 #c98a2e,0 7px 14px #e8a63c55}
+.report-shell .agent-chip{background:linear-gradient(155deg,#241d13,#171310);box-shadow:0 10px 22px -10px #0008,inset 0 1px 0 rgba(255,255,255,.04)}
+.report-shell .side-card{box-shadow:0 20px 44px -18px #e8a63c44,0 6px 14px #0007,inset 0 1px 0 rgba(255,255,255,.06)}
+.report-shell .scorecard{box-shadow:0 24px 54px -22px #e8a63c44,inset 0 1px 0 rgba(255,255,255,.05);background:linear-gradient(130deg,#201a10,#171310);border-color:#3c3020}
+.report-shell .decision-frame{box-shadow:0 20px 44px -20px #0009,inset 0 1px 0 rgba(255,255,255,.04);background:#171310;border-color:#3c3020}
+.report-shell .agent-chip>b{background:#3a2c14;color:#e8c67c}
+.report-shell .agent-chip small{color:#a99a7c}
+.report-shell .agent-1>b{background:#3a2f16;color:#d7c98a}
+.report-shell .agent-2>b{background:#402616;color:#f0b878}
+.report-shell .agent-3>b{background:#4a3620;color:#ffcf8e}
+.report-shell .agent-4>b{background:#452012;color:#f2a25c}
+.report-shell .agent-5>b{background:#33220f;color:#c9dd8a}
+.report-shell .scorecard>div>span,.report-shell .decision-frame span{color:#e8a63c}
+.report-shell .scorecard p{color:#c9baa3}
+.report-shell .score-bars span{color:#e4dac6}
+.report-shell .score-bars b{color:#f3c877}
+.report-shell .score-bars i{background:#241d13}
+.report-shell .score-bars em{background:linear-gradient(90deg,#e8a63c,#8fbf5a)}
+.report-shell .decision-frame h2,.report-shell .decision-frame h3{color:#f6efe3}
+.report-shell .decision-frame li>b{background:#3a2c14;color:#e8c67c}
+.report-shell .decision-frame li p,.report-shell .decision-frame li{color:#c9baa3}
+.report-shell .decision-frame>div:last-child{border-left-color:#3c3020}
+.report-shell .radar-ring,.report-shell .radar-axis{stroke:#4a3c28}
+.report-shell .radar-fill{fill:#e8a63c4a;stroke:#f3c877;filter:drop-shadow(0 4px 10px #e8a63c55)}
+.report-shell .radar-label{fill:#b3a48c}
+.report-shell .movement-line{stroke:#8fbf5a}
+.report-shell .movement-dot.prior{stroke:#a99a7c}
+.report-shell .movement-dot.current{stroke:#8fbf5a;filter:drop-shadow(0 0 4px #8fbf5a88)}
+.report-shell .movement-text{fill:#c9baa3}
+.report-shell .movement-text.current{fill:#c3dd96}
+.report-shell .evidence-banner{border-color:#8fbf5a;background:linear-gradient(120deg,#1e2410dd,#161c0cdd)}
+.report-shell .evidence-banner>span{color:#a9d47f}
+.report-shell .evidence-banner p{color:#c9baa3}
+.report-shell .evidence-banner small{color:#a99a7c}
+.report-shell .recompute-button{border-color:#8fbf5a;background:linear-gradient(135deg,#6f9236,#425c1e)}
+
+/* --- Session: confidence-mix donut chart (research trace panel) --- */
+.donut-chart{width:104px;height:104px;display:block;margin:14px auto 6px}
+.donut-track{fill:none;stroke:#241d13;stroke-width:14}
+.donut-seg{fill:none;stroke-width:14;stroke-linecap:butt;transition:stroke-dasharray .3s ease}
+.donut-verified{stroke:#8fbf5a}
+.donut-estimate{stroke:#e8a63c}
+.donut-assumption{stroke:#a99a7c}
+.donut-total{font:700 22px 'Playfair Display';fill:#f6efe3}
+.donut-sub{font:8px 'DM Mono';fill:#b3a48c;letter-spacing:.5px}
+@media print{.donut-track{stroke:#eee}.donut-verified{stroke:#4a7a2e}.donut-estimate{stroke:#a06a1a}.donut-assumption{stroke:#888}.donut-total{fill:#111}.donut-sub{fill:#555}}

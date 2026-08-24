@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const evidence = (memories ?? []) as Memory[];
   if (!evidence.length) return NextResponse.json({ error: "No evidence is linked to this report yet. Save interview notes, outreach replies, or pilot results to this report from the workspace first." }, { status: 400 });
 
-  if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "Groq is not configured." }, { status: 400 });
+  if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "AI evidence review is not configured." }, { status: 400 });
 
   const evidenceText = evidence.map(item => `[${item.kind}] ${item.title}: ${item.content}`).join("\n");
   const currentVerdict = asVerdict(reportRow.verdict, "TEST FIRST");

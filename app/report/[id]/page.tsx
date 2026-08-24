@@ -12,7 +12,7 @@ type ReportContent = {
   scorecard?: { market?: number; pain?: number; differentiation?: number; economics?: number; execution?: number };
   summary?: string; market?: string; customer?: string; problem?: string; competitors?: string; gap?: string; businessModel?: string; pricing?: string;
   risks?: string[]; mvp?: string[]; avoid?: string[]; firstCustomers?: string[]; plan7?: string[]; plan30?: string[]; assumptions?: string[];
-  sources?: Source[]; evidence?: Evidence; nextMove?: { headline?: string; detail?: string }; generatedBy?: "gemini" | "fallback";
+  sources?: Source[]; evidence?: Evidence; nextMove?: { headline?: string; detail?: string }; generatedBy?: "groq" | "fallback";
   intake?: { customer?: string; geography?: string; businessModel?: string; alternatives?: string; constraints?: string; outcome?: string };
   evidenceApplied?: boolean; evidenceRecomputedAt?: string; evidenceCount?: number; evidenceSummary?: string; evidenceReasoning?: string; repeatedSignals?: string[]; priorScore?: number; priorVerdict?: string;
 };
@@ -54,6 +54,8 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   const sources = content.sources ?? [];
   const researchStatus = content.generatedBy === "fallback" ? "AI directional" : hasVerified ? "Grounded research" : "Mixed evidence";
   const nextMove = content.nextMove?.headline ? { headline: content.nextMove.headline, detail: content.nextMove.detail || "Ask for money, not just a conversation — a deposit, pilot fee, or signed intent." } : { headline: content.firstCustomers?.[0] || "Get one specific customer to commit money.", detail: "Ask for a paid pilot, deposit, or signed intent — not just a conversation. This report predates the paid-validation field; run a new session to get an idea-specific ask." };
+  const evidenceCounts = { verified: 0, estimate: 0, assumption: 0 };
+  (Object.values(evidence) as (Confidence | undefined)[]).forEach(value => { if (value) evidenceCounts[value] += 1; });
 
   return <main className="app-shell report-shell">
     <header className="app-nav"><Link className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/new">New idea</Link></div></header>
@@ -79,13 +81,34 @@ export default async function Report({ params }: { params: Promise<{ id: string 
         </div>
         <aside>
           <Tilt intensity={5}><div className="side-card"><span>YOUR NEXT MOVE</span><h3>{nextMove.headline}</h3><p>{nextMove.detail}</p><ReportActions plan={plan} mode="plan" /></div></Tilt>
-          <Tilt intensity={4}><div className="source-card"><span>RESEARCH TRACE</span><p><i className="verified"></i> Verified information</p><p><i className="estimate"></i> AI estimates</p><p><i className="assume"></i> Assumptions</p><hr />{sources.map((source, index) => source.url ? <a key={source.url + index} href={source.url} target="_blank" rel="noreferrer" className="source-link"><small>↗ {source.title}</small><em>{source.domain}</em></a> : <small key={source.title + index} className="source-plain">{source.title}</small>)}</div></Tilt>
+          <Tilt intensity={4}><div className="source-card"><span>RESEARCH TRACE</span><ConfidenceDonut counts={evidenceCounts} /><p><i className="verified"></i> Verified information</p><p><i className="estimate"></i> AI estimates</p><p><i className="assume"></i> Assumptions</p><hr />{sources.map((source, index) => source.url ? <a key={source.url + index} href={source.url} target="_blank" rel="noreferrer" className="source-link"><small>↗ {source.title}</small><em>{source.domain}</em></a> : <small key={source.title + index} className="source-plain">{source.title}</small>)}</div></Tilt>
         </aside>
       </div>
       <section className="source-appendix print-only"><span>SOURCE APPENDIX</span><h2>Full citation list</h2><ol>{sources.length ? sources.map((source, index) => <li key={source.title + index}>{source.title}{source.url ? ` — ${source.url}` : ""}</li>) : <li>No live web citations for this report — treat all findings as AI-directional.</li>}</ol></section>
       <div className="print-page-number print-only" />
     </section>
   </main>;
+}
+
+function ConfidenceDonut({ counts }: { counts: { verified: number; estimate: number; assumption: number } }) {
+  const total = counts.verified + counts.estimate + counts.assumption;
+  const size = 128, radius = 46, center = size / 2, circumference = 2 * Math.PI * radius;
+  const segments: [string, number, string][] = [["verified", counts.verified, "donut-verified"], ["estimate", counts.estimate, "donut-estimate"], ["assumption", counts.assumption, "donut-assumption"]];
+  let offset = 0;
+  return <svg viewBox={`0 0 ${size} ${size}`} className="donut-chart" role="img" aria-label={`${counts.verified} of ${total || 4} report sections are independently verified`}>
+    <circle cx={center} cy={center} r={radius} className="donut-track" />
+    <g transform={`rotate(-90 ${center} ${center})`}>
+      {segments.map(([key, value, cls]) => {
+        if (!value || !total) return null;
+        const length = (value / total) * circumference;
+        const el = <circle key={key} cx={center} cy={center} r={radius} className={`donut-seg ${cls}`} strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-offset} />;
+        offset += length;
+        return el;
+      })}
+    </g>
+    <text x={center} y={center - 2} textAnchor="middle" className="donut-total">{counts.verified}</text>
+    <text x={center} y={center + 15} textAnchor="middle" className="donut-sub">of {total || 4} verified</text>
+  </svg>;
 }
 
 function ScoreRadar({ scorecard }: { scorecard: { market: number; pain: number; differentiation: number; economics: number; execution: number } }) {
