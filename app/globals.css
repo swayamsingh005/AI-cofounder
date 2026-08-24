@@ -422,3 +422,14 @@ html[data-theme='dark'] .v2-linked{background:#1d2518;border-color:#2c4a37;color
 .report-shell .side-card{box-shadow:0 20px 44px -18px #e5a54660,0 6px 14px #0007,inset 0 1px 0 rgba(255,255,255,.06)}
 .report-shell .scorecard{box-shadow:0 24px 54px -22px #e5a54660,inset 0 1px 0 rgba(255,255,255,.05)}
 
+
+/* --- Session: fallback-visibility banner + per-section AI agent attribution --- */
+.fallback-banner{border:1px solid #a8562f;border-radius:14px;padding:16px 20px;margin:0 0 34px;background:linear-gradient(120deg,#2b1710dd,#1f120bdd);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.fallback-banner>span{font:700 11px 'DM Mono';letter-spacing:1px;color:#e8935f}
+.fallback-banner>p{margin:0;font-size:13px;color:#e4c9b8;line-height:1.5}
+.fallback-banner a{color:#f3c877;font-weight:700;text-decoration:underline}
+.block-agent{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.block-agent>b{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#3a2c14;color:#e8c67c;font:700 8px 'DM Mono';flex:none}
+.block-agent>span{font:600 12px 'Manrope';color:#e4dac6}
+.block-agent em{font-style:normal;font-weight:400;color:#b3a48c;font-size:11px}
+@media print{.fallback-banner{display:none}.block-agent>b{background:#eee;color:#333}.block-agent>span{color:#111}.block-agent em{color:#555}}

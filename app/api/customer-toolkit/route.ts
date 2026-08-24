@@ -17,6 +17,8 @@ function normalize(raw: unknown): Toolkit {
   };
 }
 
+export const maxDuration = 30;
+
 export async function POST(request: Request) {
   if (!hasSupabaseConfig() || !process.env.GROQ_API_KEY) return NextResponse.json({ error: "AI workspace is not configured." }, { status: 503 });
   const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims();

@@ -18,6 +18,8 @@ function normalizeRecompute(raw: unknown, backup: Verdict, backupScore: number):
   return { score, verdict, changed: verdict !== backup || score !== backupScore, evidenceSummary, reasoning, repeatedSignals };
 }
 
+export const maxDuration = 30;
+
 export async function POST(request: Request) {
   if (!hasSupabaseConfig()) return NextResponse.json({ error: "Supabase is not configured." }, { status: 400 });
   const { reportId } = await request.json().catch(() => ({}));

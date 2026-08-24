@@ -99,6 +99,8 @@ Ban generic startup-advice filler. Never write bare instructions like "interview
   return normalize(JSON.parse(raw), title, researchSources, intake);
 }
 
+export const maxDuration = 60; // Vercel default is 10s on some plans — 3 parallel Tavily calls + 1 large Groq completion can exceed that and get killed mid-request, which looks identical to any other failure (silent fallback). Raise your plan's function timeout if this still isn't enough.
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const clean = (value: unknown, limit: number) => typeof value === "string" ? value.trim().slice(0, limit) : "";
@@ -107,7 +109,16 @@ export async function POST(request: Request) {
   const intake: Intake = { idea, customer: clean(body?.customer, 300), geography: clean(body?.geography, 200), businessModel: clean(body?.businessModel, 300), alternatives: clean(body?.alternatives, 400), constraints: clean(body?.constraints, 400), outcome: clean(body?.outcome, 300) };
   const title = idea.split(/[.!?]/)[0].slice(0, 72) || "New venture";
   let report = fallback(title, intake); let warning: string | undefined;
-  try { report = await generateAnalysis(intake, title); } catch (error) { console.error("[api/analyze] Groq generation failed", { message: error instanceof Error ? error.message : "Unknown error" }); warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
-  if (hasSupabaseConfig()) { const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims(); const userId = claims?.claims?.sub; if (userId) { const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea, title: report.title, verdict: report.verdict, score: report.score, report }).select("id").single(); if (error) warning = "Your report was generated but could not be saved."; else return NextResponse.json({ ...report, id: data.id, saved: true, warning }); } }
+  if (!process.env.GROQ_API_KEY) {
+    // Distinct from a runtime failure below — this means the key genuinely isn't set on this
+    // deployment (or wasn't picked up by the last deploy). Every report will look identical
+    // until this is fixed, no matter how good the prompt is.
+    warning = "AI analysis is not configured on this deployment yet; showing a directional fallback.";
+    console.error("[api/analyze] GROQ_API_KEY is not set — every report will be the static fallback until this is fixed.");
+  } else {
+    try { report = await generateAnalysis(intake, title); } catch (error) { console.error("[api/analyze] AI generation failed", { message: error instanceof Error ? error.message : "Unknown error" }); warning = "AI analysis is temporarily unavailable; a directional fallback was used."; }
+  }
+  const reportToSave = warning ? { ...report, warning } : report;
+  if (hasSupabaseConfig()) { const supabase = await createClient(); const { data: claims } = await supabase.auth.getClaims(); const userId = claims?.claims?.sub; if (userId) { const { data, error } = await supabase.from("reports").insert({ user_id: userId, idea, title: report.title, verdict: report.verdict, score: report.score, report: reportToSave }).select("id").single(); if (error) warning = "Your report was generated but could not be saved."; else return NextResponse.json({ ...report, id: data.id, saved: true, warning }); } }
   return NextResponse.json({ ...report, saved: false, warning });
 }
