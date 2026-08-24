@@ -433,3 +433,8 @@ html[data-theme='dark'] .v2-linked{background:#1d2518;border-color:#2c4a37;color
 .block-agent>span{font:600 12px 'Manrope';color:#e4dac6}
 .block-agent em{font-style:normal;font-weight:400;color:#b3a48c;font-size:11px}
 @media print{.fallback-banner{display:none}.block-agent>b{background:#eee;color:#333}.block-agent>span{color:#111}.block-agent em{color:#555}}
+
+/* --- Session: honest workspace outcome messaging (no more silent demo fallback) --- */
+.workspace-notice{margin-top:22px;padding:16px 18px;border:1px solid #a8562f;border-radius:12px;background:#2b1710}
+.workspace-notice p{margin:0 0 12px;font-size:13px;color:#e4c9b8;line-height:1.5}
+.workspace-notice .primary-action{margin:0}
