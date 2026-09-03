@@ -6,6 +6,7 @@ import AskCofounder from "../../../components/ask-cofounder";
 import TaskItem from "../../../components/task-item";
 import DecisionPanel from "../../../components/decision-panel";
 import LocalTime from "../../../components/local-time";
+import { getOrCreateDailyBrief } from "../../../lib/daily-brief";
 
 const ACTIVITY_ICON: Record<string, string> = {
   company_created: "✦", goal_created: "◎", mission_created: "▶", task_completed: "✓",
@@ -21,6 +22,8 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
 
   const ctx = await loadCompanyContext(supabase, id);
   if (!ctx) notFound();
+
+  const brief = await getOrCreateDailyBrief(supabase, id, claims.claims.sub);
 
   const { data: milestones } = await supabase.from("milestones").select("id,title,status,sort_order").eq("mission_id", ctx.activeMission?.id ?? "").order("sort_order", { ascending: true });
   const tasksByMilestone = new Map<string, { id: string; title: string; status: string; priority: string }[]>();
@@ -45,6 +48,23 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
           <div className="eyebrow"><span></span> {ctx.company.stage.toUpperCase()}</div>
           <h1>{ctx.company.name}</h1>
         </div>
+
+        {brief && (
+          <div className="daily-brief">
+            <span>DAILY BRIEF</span>
+            <p className="brief-priority">{brief.recommendedPriority}</p>
+            {brief.attentionItems.length > 0 && (
+              <ul className="brief-attention">
+                {brief.attentionItems.map((item, index) => (
+                  <li key={index} className={`brief-${item.severity}`}>
+                    <i>{item.severity === "high" ? "🔴" : item.severity === "medium" ? "🟡" : "💡"}</i>
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {ctx.primaryGoal ? (
           <div className="company-goal">

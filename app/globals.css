@@ -561,3 +561,15 @@ html[data-theme='dark'] .decision-panel-body p,html[data-theme='dark'] .decision
 /* --- Fix: surface real task-update errors instead of silently reverting --- */
 .task{flex-wrap:wrap}
 .task-error{flex-basis:100%;color:#b5533c;font-size:11px;margin-top:2px}
+
+/* --- V2 Company OS Phase 3a: Daily Founder Brief --- */
+.daily-brief{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:24px;background:#faf7ef}
+.daily-brief>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e}
+.brief-priority{font-size:15px;font-weight:600;margin:8px 0 0;line-height:1.5}
+.brief-attention{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:6px}
+.brief-attention li{display:flex;align-items:baseline;gap:8px;font-size:13px}
+.brief-attention i{font-style:normal;font-size:11px}
+.brief-attention span{color:var(--muted)}
+html[data-theme='dark'] .daily-brief{background:#171310;border-color:#3c3020}
+html[data-theme='dark'] .brief-priority{color:#f0e9dc}
+html[data-theme='dark'] .brief-attention span{color:#c9baa3}
