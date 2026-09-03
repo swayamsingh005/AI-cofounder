@@ -63,7 +63,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   (Object.values(evidence) as (Confidence | undefined)[]).forEach(value => { if (value) evidenceCounts[value] += 1; });
 
   return <main className="app-shell report-shell">
-    <header className="app-nav"><Link className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/new">New idea</Link></div></header>
+    <header className="app-nav"><Link className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/new">New idea</Link></div></header>
     <section className="report">
       <div className="report-cover print-only"><span>AI CO-FOUNDER</span><h1>{report.title}</h1><p>Founder decision brief · Generated {new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(report.created_at))}</p><div><span>SCORE {report.score}/100</span><span>{report.verdict}</span></div></div>
       <div className="report-top"><div><Link className="back" href="/reports">← All reports</Link><div className="eyebrow"><span></span> CO-FOUNDER DECISION BRIEF</div><h1>{report.title}</h1><p>Generated {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(report.created_at))} · Six specialist perspectives</p></div><ReportActions plan={plan} mode="export" /></div>

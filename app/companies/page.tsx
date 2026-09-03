@@ -17,7 +17,7 @@ export default async function CompaniesList() {
   return (
     <main className="app-shell">
       <header className="app-nav">
-        <Link className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</Link>
+        <Link className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI Co-Founder</Link>
         <div><Link href="/reports">Reports</Link><Link href="/new">New idea</Link></div>
       </header>
       <section className="list-page">

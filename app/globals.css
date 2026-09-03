@@ -904,3 +904,9 @@ html[data-theme='dark'] .task-modal{background:#141416;border-color:#26272b}
 html[data-theme='dark'] .task-modal p,html[data-theme='dark'] .task-modal-priority{color:#97989d}
 html[data-theme='dark'] .task-modal-actions button{border-color:#26272b;color:#e8e8ea}
 html[data-theme='dark'] .cofounder-actions button{border-color:#3c3020;color:#c9baa3}
+
+/* --- Real logo mark: was a colored badge with a unicode star, now the actual brand image.
+   Overriding every previous background/box-shadow variant since those would otherwise show
+   through the image's transparent areas. Appended last so it wins regardless of theme/context. */
+.brand-mark{width:auto;height:26px;background:none!important;box-shadow:none!important;border-radius:0!important;margin-right:8px;vertical-align:middle;display:inline-block}
+.sidebar-brand .brand-mark{height:22px}

@@ -29,7 +29,7 @@ function IntakeForm() {
   }
 
   return <main className="app-shell">
-    <header className="app-nav"><Link className="brand" href="/"><span className="brand-mark">✦</span> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/settings">Settings</Link><ThemeToggle /></div></header>
+    <header className="app-nav"><Link className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/settings">Settings</Link><ThemeToggle /></div></header>
     <section className="new-page intake-page">
       <div className="eyebrow"><span></span> START A CO-FOUNDER SESSION</div>
       <h1>What are you<br />considering?</h1>

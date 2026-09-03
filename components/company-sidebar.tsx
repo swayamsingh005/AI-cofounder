@@ -17,7 +17,7 @@ export default function CompanySidebar({ companyId, companyName, stage }: { comp
 
   return (
     <nav className="company-sidebar">
-      <Link href="/" className="sidebar-brand"><span className="brand-mark">✦</span> AI Co-Founder</Link>
+      <Link href="/" className="sidebar-brand"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI Co-Founder</Link>
 
       <div className="sidebar-company">
         <Link href="/companies" className="sidebar-company-switch">
