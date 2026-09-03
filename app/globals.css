@@ -604,3 +604,187 @@ html[data-theme='dark'] .command-form-actions button[type=button]{border-color:#
 
 .standalone-tasks h3{color:#4a3c28}
 html[data-theme='dark'] .standalone-tasks h3{color:#f0e9dc}
+
+/* ============================================================================
+   PHASE 3c — Full graphite/near-black redesign, per the original spec's literal
+   direction ("intelligence terminal x command centre x premium B2B SaaS", dark-
+   first, near-black/graphite, thin borders, subtle elevation, small amounts of
+   accent colour). Supersedes the warm amber/charcoal palette from the earlier
+   session. Appended at the very end so it wins the cascade — nothing above this
+   point was edited or deleted.
+   ============================================================================ */
+
+/* --- 1. Programmatic sweep: desaturate every warm-family background/border/muted-
+   text color to true neutral graphite. Vivid accent colors (buttons, score numbers,
+   progress fills, badges — saturation >= 46%) were deliberately left untouched, per
+   'small amounts of accent colour', not 'no accent colour'. */
+html[data-theme='dark'] body{background:#0d0c0c;color:#e6e6e6}
+html[data-theme='dark'] .hero{background:radial-gradient(circle at 74% 12%,#4a2c0f88,transparent 26%),radial-gradient(circle at 12% 76%,#2a3a1470,transparent 34%),#0d0c0c}
+html[data-theme='dark'] .avatars i{border-color:#0d0c0c;background:#e8a63c;color:#2b1a06}
+html[data-theme='dark'] .agent-section{background:linear-gradient(155deg,#181818,#141414)}
+html[data-theme='dark'] .agent-section:before{background:radial-gradient(circle at 12% 90%,#00000055,transparent 25%),radial-gradient(circle at 90% 8%,#4f7a3444,transparent 24%)}
+html[data-theme='dark'] .agent-card{background:linear-gradient(145deg,#1c1b1b,#141313);border-color:#3a3838;box-shadow:0 7px 0 #080808}
+html[data-theme='dark'] .mini-orb{background:linear-gradient(135deg,#f0b95c,#c9781f);box-shadow:inset -5px -5px #7a4d1266,0 4px 0 #141313}
+html[data-theme='dark'] .proof{background:#0d0c0c}
+html[data-theme='dark'] .proof-card{background:linear-gradient(145deg,#1b1b1b,#141313);border-color:#3a3838;box-shadow:10px 12px 0 #080808,0 20px 40px #0006}
+html[data-theme='dark'] footer{background:#0d0c0c;border-color:#2f2d2d;color:#a19e9e}
+html[data-theme='dark'] .app-shell{background:radial-gradient(circle at 88% 8%,#4a2c0f88,transparent 24%),radial-gradient(circle at 5% 80%,#2a3a1470,transparent 31%),#0d0c0c}
+html[data-theme='dark'] .workspace-side,html[data-theme='dark'] .run-list,html[data-theme='dark'] .saved-report,html[data-theme='dark'] .empty-report,html[data-theme='dark'] .settings-card,html[data-theme='dark'] .plan,html[data-theme='dark'] .source-card{background:linear-gradient(145deg,#1c1b1b,#141313);border-color:#3a3838;box-shadow:0 7px 0 #080808}
+html[data-theme='dark'] .workspace-side hr,html[data-theme='dark'] .run{border-color:#2f2d2d}
+html[data-theme='dark'] .plan hr{border-color:#2f2d2d}
+html[data-theme='dark'] .auth-page{background:radial-gradient(circle at 20% 15%,#8a5a1c55,transparent 25%),radial-gradient(circle at 80% 85%,#4f7a3466,transparent 32%),#0d0c0c}
+html[data-theme='dark'] .auth-card{background:linear-gradient(145deg,#1c1b1b,#141313);border-color:#3a3838;box-shadow:0 20px 0 #080808,0 35px 60px #0008}
+.report-shell{background:radial-gradient(circle at 82% 8%,#4a2c0f 0,transparent 26%),radial-gradient(circle at 8% 30%,#2a3a14 0,transparent 35%),#0f0e0e;color:#e6e6e6}
+.report-shell .app-nav{border-color:#2f2d2d}
+.report-shell .app-nav a:not(.brand),.report-shell p{color:#b7b5b5}
+.report-shell .back,.report-shell .eyebrow{color:#a19e9e}
+.report-shell .verdict-row{border-color:#2f2d2d;background:linear-gradient(120deg,#1b1b1bdd,#141313dd);box-shadow:0 26px 65px #0004}
+.report-shell .verdict-row>div{border-color:#2f2d2d}
+.report-shell .verdict-row small,.report-shell .block>span,.report-shell .side-card>span,.report-shell .source-card>span,.report-shell .agent-strip>div>span{color:#a19e9e}
+.report-shell .score span{color:#a19e9e}
+.report-shell .block{border-color:#2f2d2d}
+.report-shell .block p{color:#b7b5b5}
+.report-shell .block li{color:#d6d4d4;background:#181818;border-color:#2f2d2d}
+.report-shell .data-tag{color:#a19e9e}
+.report-shell .side-card{background:linear-gradient(155deg,#4a3116,#2b1c0c);border-color:#8a5a1c;box-shadow:0 16px 37px #0005,0 20px 44px -18px #00000055,0 6px 14px #0007,inset 0 1px 0 rgba(255,255,255,.06)}
+.report-shell .source-card{background:#141313;border-color:#2f2d2d}
+.report-shell .source-card p,.report-shell .source-card small{color:#b7b5b5}
+.report-shell .source-card hr{border-color:#2f2d2d}
+.report-shell .assume{background:#949191}
+.report-shell .source-card a.source-link em{color:#a19e9e}
+.report-shell .founder-evidence{border-color:#2f2d2d}
+.report-shell .founder-evidence>div>span{color:#a19e9e}
+.report-shell .founder-evidence>div>p{color:#b7b5b5}
+.report-shell .evidence-list li{border-color:#2f2d2d;background:#141313}
+.report-shell .evidence-list p{color:#b7b5b5}
+.report-shell .recompute-box small{color:#a19e9e}
+.report-shell .agent-chip.tilt-3d:hover{box-shadow:0 22px 40px -14px #00000055,0 4px 10px #0007;border-color:#555353}
+.report-shell .block.tilt-3d:hover{box-shadow:0 18px 34px -18px #00000055}
+.report-shell .verdict-row.tilt-3d{box-shadow:0 30px 70px -24px #00000055,0 10px 26px -10px #0008}
+.report-shell .score strong{text-shadow:0 1px 0 #f3c877,0 3px 0 #c98a2e,0 7px 14px #00000055}
+.report-shell .agent-chip{background:linear-gradient(155deg,#1c1b1b,#141313);box-shadow:0 10px 22px -10px #0008,inset 0 1px 0 rgba(255,255,255,.04)}
+.report-shell .side-card{box-shadow:0 20px 44px -18px #00000055,0 6px 14px #0007,inset 0 1px 0 rgba(255,255,255,.06)}
+.report-shell .scorecard{box-shadow:0 24px 54px -22px #00000055,inset 0 1px 0 rgba(255,255,255,.05);background:linear-gradient(130deg,#181818,#141313);border-color:#2f2d2d}
+.report-shell .decision-frame{box-shadow:0 20px 44px -20px #0009,inset 0 1px 0 rgba(255,255,255,.04);background:#141313;border-color:#2f2d2d}
+.report-shell .agent-chip small{color:#949191}
+.report-shell .agent-1>b{background:#292727;color:#d7c98a}
+.report-shell .agent-3>b{background:#363434;color:#ffcf8e}
+.report-shell .scorecard p{color:#b7b5b5}
+.report-shell .score-bars span{color:#d6d4d4}
+.report-shell .score-bars i{background:#1c1b1b}
+.report-shell .decision-frame li p,.report-shell .decision-frame li{color:#b7b5b5}
+.report-shell .decision-frame>div:last-child{border-left-color:#2f2d2d}
+.report-shell .radar-ring,.report-shell .radar-axis{stroke:#3a3838}
+.report-shell .radar-fill{fill:#e8a63c4a;stroke:#f3c877;filter:drop-shadow(0 4px 10px #00000055)}
+.report-shell .radar-label{fill:#a19e9e}
+.report-shell .movement-dot.prior{stroke:#949191}
+.report-shell .movement-text{fill:#b7b5b5}
+.report-shell .evidence-banner p{color:#b7b5b5}
+.report-shell .evidence-banner small{color:#949191}
+.report-shell{background:radial-gradient(circle at 82% 8%,#583f19 0,transparent 26%),radial-gradient(circle at 8% 30%,#2f2e2e 0,transparent 35%),#191818;color:#fef8ee}
+.report-shell .verdict-row{border:1px solid #6f4f20;border-radius:18px;background:linear-gradient(120deg,#242323dd,#1e1e1edd);overflow:hidden;box-shadow:0 26px 65px #0004}
+.report-shell .block li{color:#f2e5d2;background:#252424;border:1px solid #63471d;border-radius:10px;padding:11px}
+.report-shell .source-card{background:#212121;border-color:#63471d;border-radius:17px}
+html[data-theme='dark'] body{background:#161515;color:#fef8ee}
+html[data-theme='dark'] .brand-mark{background:linear-gradient(145deg,#e9b465,#ae7d33);color:#fff;box-shadow:inset 0 -3px #73501b,0 4px 0 #2a2828}
+html[data-theme='dark'] .signin,html[data-theme='dark'] .theme-toggle{background:#2a2828;border-color:#755422;color:#fdf6eb;box-shadow:0 3px 0 #101010}
+html[data-theme='dark'] .hero{background:radial-gradient(circle at 74% 12%,#70502088,transparent 26%),radial-gradient(circle at 12% 76%,#553a1270,transparent 34%),#161515}
+html[data-theme='dark'] .speech{background:#2b2a2a;color:#fdf5e8;border-color:#876127;box-shadow:0 7px 0 #151515}
+html[data-theme='dark'] .speech-top:after{background:#2b2a2a;border-color:#876127}
+html[data-theme='dark'] .character-label b{color:#302e2e}
+html[data-theme='dark'] .idea-cockpit{background:linear-gradient(120deg,#323030,#232222 56%,#323030)!important;border-color:#ca9649!important;box-shadow:0 8px 0 #141313,0 25px 50px #0008!important}
+html[data-theme='dark'] .cockpit-label span{background:#272525;color:#fcefdb;box-shadow:0 3px 0 #755422}
+html[data-theme='dark'] .idea-cockpit .cockpit-side{background:#222121;border-color:#7c5924}
+html[data-theme='dark'] .idea-cockpit button{background:linear-gradient(145deg,#f7d6a3,#ddac63)!important;border-color:#f9e0bb!important;box-shadow:0 5px 0 #966b2b,0 9px 16px #0005!important;color:#302f2f}
+html[data-theme='dark'] .idea-cockpit button b{color:#302f2f}
+html[data-theme='dark'] .avatars i{border-color:#161515;background:#f1c481;color:#232121}
+html[data-theme='dark'] .agent-section{background:linear-gradient(155deg,#1f1e1e,#212121)}
+html[data-theme='dark'] .agent-card{background:linear-gradient(145deg,#2e2c2c,#232121);border-color:#6f4f20;box-shadow:0 7px 0 #111010}
+html[data-theme='dark'] .agent-card:hover{box-shadow:0 14px 0 #151515,0 19px 35px #e5a54626}
+html[data-theme='dark'] .mini-orb{background:linear-gradient(135deg,#f7d29b,#d4a45b);box-shadow:inset -5px -5px #8a622566,0 4px 0 #1f1f1f}
+html[data-theme='dark'] .proof{background:#161515}
+html[data-theme='dark'] .proof-card{background:linear-gradient(145deg,#312f2f,#222121);border-color:#8b6328;box-shadow:10px 12px 0 #121212,0 20px 40px #0006}
+html[data-theme='dark'] footer{background:#161515;border-color:#583f1a;color:#dcba87}
+html[data-theme='dark'] .app-shell{background:radial-gradient(circle at 88% 8%,#62461c88,transparent 24%),radial-gradient(circle at 5% 80%,#583d1470,transparent 31%),#161515}
+html[data-theme='dark'] .workspace-side,html[data-theme='dark'] .run-list,html[data-theme='dark'] .saved-report,html[data-theme='dark'] .empty-report,html[data-theme='dark'] .settings-card,html[data-theme='dark'] .plan,html[data-theme='dark'] .source-card{background:linear-gradient(145deg,#2d2c2c,#1f1f1f);border-color:#6e4f20;box-shadow:0 7px 0 #111010}
+html[data-theme='dark'] .run.active{background:#2a2929}
+html[data-theme='dark'] .primary-action,html[data-theme='dark'] .large-start{background:linear-gradient(145deg,#f7d199,#dcaa5e);box-shadow:0 4px 0 #946a2b;color:#2b2a2a}
+html[data-theme='dark'] .large-start b{color:#2b2a2a}
+html[data-theme='dark'] .report-score{background:linear-gradient(135deg,#f7d39c,#ddaa5d);color:#292828;box-shadow:inset -5px -5px #966b2b44}
+html[data-theme='dark'] .settings-card input,html[data-theme='dark'] .settings-card select{background:#1c1b1b;border-color:#755422;color:#fef8ef}
+html[data-theme='dark'] .billing{background:#2a2929;border-color:#745322}
+html[data-theme='dark'] .plan-button{background:#2a2929;border-color:#a97931;color:#fbf2e4}
+html[data-theme='dark'] .auth-page{background:radial-gradient(circle at 20% 15%,#cc994d55,transparent 25%),radial-gradient(circle at 80% 85%,#54901f66,transparent 32%),#161515}
+html[data-theme='dark'] .auth-card{background:linear-gradient(145deg,#2d2c2c,#1f1f1f);border-color:#765422;box-shadow:0 20px 0 #0d0d0d,0 35px 60px #0008}
+html[data-theme='dark'] .auth-card input{background:#1c1b1b;border-color:#755422;color:#fef8ee}
+.report-shell .evidence-list li{border-color:#63471d;background:#212121}
+.report-shell .agent-chip{background:linear-gradient(155deg,#313030,#242323);box-shadow:0 10px 22px -10px #0008,inset 0 1px 0 rgba(255,255,255,.04)}
+.report-shell .build-company-cta{background:linear-gradient(150deg,#1a1919,#141313);border-color:#3a3838}
+.report-shell .build-company-cta>span{color:#a19e9e}
+.report-shell .build-company-cta p{color:#b7b5b5}
+html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,html[data-theme='dark'] .cofounder-panel,html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .task,html[data-theme='dark'] .company-empty,html[data-theme='dark'] .company-card{border-color:#2f2d2d;background:#141313}
+html[data-theme='dark'] .company-header h1,html[data-theme='dark'] .company-goal h2,html[data-theme='dark'] .company-mission h2,html[data-theme='dark'] .milestone h3,html[data-theme='dark'] .company-card h3,html[data-theme='dark'] .company-empty p{color:#e6e6e6}
+html[data-theme='dark'] .company-goal p,html[data-theme='dark'] .company-mission>p,html[data-theme='dark'] .cofounder-answer,html[data-theme='dark'] .company-empty-inline,html[data-theme='dark'] .company-card small,html[data-theme='dark'] .task em{color:#b7b5b5}
+html[data-theme='dark'] .cofounder-question{color:#e6e6e6}
+html[data-theme='dark'] .cofounder-form input{background:#1a1919;border-color:#2f2d2d;color:#e6e6e6}
+html[data-theme='dark'] .cofounder-block{color:#b7b5b5}
+html[data-theme='dark'] .task-mark{background:#1a1919;border-color:#2f2d2d}
+html[data-theme='dark'] .decision-add,html[data-theme='dark'] .decision-form-actions button[type=button],html[data-theme='dark'] .decision-actions button{border-color:#2f2d2d;color:#b7b5b5}
+html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-form textarea{background:#1a1919;border-color:#2f2d2d;color:#e6e6e6}
+html[data-theme='dark'] .decision-panel-body p,html[data-theme='dark'] .decision-panel-body em,html[data-theme='dark'] .activity-panel li small{color:#b7b5b5}
+html[data-theme='dark'] .daily-brief{background:#141313;border-color:#2f2d2d}
+html[data-theme='dark'] .brief-priority{color:#e6e6e6}
+html[data-theme='dark'] .brief-attention span{color:#b7b5b5}
+html[data-theme='dark'] .command-trigger{background:#1a1919;border-color:#2f2d2d;color:#b7b5b5;box-shadow:0 4px 14px #0006}
+html[data-theme='dark'] .command-bar{background:#141313;border-color:#2f2d2d}
+html[data-theme='dark'] .command-list button{color:#e6e6e6}
+html[data-theme='dark'] .command-list button:hover{background:#1a1919}
+html[data-theme='dark'] .command-hint{color:#b7b5b5}
+html[data-theme='dark'] .command-form input{background:#1a1919;border-color:#2f2d2d;color:#e6e6e6}
+html[data-theme='dark'] .command-form-actions button[type=button]{border-color:#2f2d2d;color:#b7b5b5}
+html[data-theme='dark'] .standalone-tasks h3{color:#e6e6e6}
+/* --- 2. Flat backgrounds — remove the "giant glowing blob" radial-gradient washes the spec
+   explicitly says to avoid. These are unconditional (not saturation-gated) since a decorative
+   background glow is exactly the pattern to remove regardless of how saturated it is. */
+html[data-theme='dark'] body,html[data-theme='dark'] .hero,html[data-theme='dark'] .app-shell,html[data-theme='dark'] .auth-page{background:#0b0b0c}
+html[data-theme='dark'] .agent-section:before{background:none}
+.report-shell{background:#0b0b0c;color:#e8e8ea}
+
+/* --- 3. Typography — strong sans-serif headings instead of the editorial serif (Playfair
+   Display), closer to the Linear/Vercel/Raycast direction named in the spec. !important is
+   deliberate here: there are dozens of individual heading rules across the file with their own
+   explicit `font: ... 'Playfair Display'` shorthand, and overriding font-family specifically
+   (not size/weight) on every one of them individually would be far more error-prone than one
+   broad, unambiguous rule. */
+html[data-theme='dark'] h1,html[data-theme='dark'] h2,html[data-theme='dark'] h3,
+html[data-theme='dark'] .brand{font-family:Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;letter-spacing:-.01em}
+
+/* --- 4. Subtle elevation, thin borders — flatten the colored glow box-shadows from the earlier
+   3D pass into plain neutral shadows, and thin/dim the borders. */
+html[data-theme='dark'] .agent-chip.tilt-3d:hover,html[data-theme='dark'] .block.tilt-3d:hover,
+html[data-theme='dark'] .verdict-row.tilt-3d,html[data-theme='dark'] .side-card,html[data-theme='dark'] .scorecard{box-shadow:0 1px 0 #ffffff08 inset,0 8px 24px -12px #000000aa!important}
+html[data-theme='dark'] .tilt-3d::after{opacity:0!important} /* the mouse-tracked glare shine reads as decorative sparkle, not state/hierarchy — spec explicitly discourages this class of animation */
+html[data-theme='dark'] .block,html[data-theme='dark'] .agent-chip,html[data-theme='dark'] .side-card,html[data-theme='dark'] .source-card,
+html[data-theme='dark'] .scorecard,html[data-theme='dark'] .decision-frame,html[data-theme='dark'] .verdict-row,
+html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,html[data-theme='dark'] .cofounder-panel,
+html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .activity-panel,html[data-theme='dark'] .task,
+html[data-theme='dark'] .company-empty,html[data-theme='dark'] .company-card,html[data-theme='dark'] .daily-brief,
+html[data-theme='dark'] .agent-card,html[data-theme='dark'] .proof-card,html[data-theme='dark'] .workspace-side,
+html[data-theme='dark'] .run-list,html[data-theme='dark'] .saved-report,html[data-theme='dark'] .empty-report,
+html[data-theme='dark'] .settings-card,html[data-theme='dark'] .plan,html[data-theme='dark'] .auth-card,
+html[data-theme='dark'] .v2-card{border-width:1px!important;box-shadow:none!important}
+
+/* --- 5. Less rounding, tighter density — spec explicitly discourages "everything rounded
+   excessively" and asks for "high information density without clutter". Scoped to dark mode only
+   since it's the app's default/primary experience per "dark-first interface". */
+html[data-theme='dark'] .block,html[data-theme='dark'] .agent-chip,html[data-theme='dark'] .side-card,
+html[data-theme='dark'] .source-card,html[data-theme='dark'] .scorecard,html[data-theme='dark'] .decision-frame,
+html[data-theme='dark'] .verdict-row,html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,
+html[data-theme='dark'] .cofounder-panel,html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .activity-panel,
+html[data-theme='dark'] .task,html[data-theme='dark'] .company-empty,html[data-theme='dark'] .company-card,
+html[data-theme='dark'] .daily-brief,html[data-theme='dark'] .build-company-cta{border-radius:8px!important}
+html[data-theme='dark'] .command-bar{border-radius:10px!important}
+html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,html[data-theme='dark'] .cofounder-panel,
+html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .activity-panel{padding:16px 18px!important}
+html[data-theme='dark'] .company-workspace{padding-top:44px!important}
+html[data-theme='dark'] .company-grid{gap:20px!important}
