@@ -4,6 +4,7 @@ import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 import ReportActions from "../../../components/report-actions";
 import RecomputeAction from "../../../components/recompute-action";
 import Tilt from "../../../components/tilt";
+import BuildCompanyCta from "../../../components/build-company-cta";
 
 type Confidence = "verified" | "estimate" | "assumption";
 type Source = { title: string; url: string; domain: string };
@@ -30,6 +31,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   let report: StoredReport | null = id === "demo" ? demo : null;
   let memories: Memory[] = [];
   let signedIn = false;
+  let existingCompanyId: string | null = null;
   if (!report && hasSupabaseConfig()) {
     const supabase = await createClient();
     const { data: claims } = await supabase.auth.getClaims();
@@ -40,6 +42,8 @@ export default async function Report({ params }: { params: Promise<{ id: string 
       if (report) {
         const { data: memoryRows } = await supabase.from("founder_memories").select("id,kind,title,content,created_at").eq("report_id", id).order("created_at", { ascending: false }).limit(20);
         memories = memoryRows ?? [];
+        const { data: companyRow } = await supabase.from("companies").select("id").eq("report_id", id).maybeSingle();
+        existingCompanyId = companyRow?.id ?? null;
       }
     }
   }
@@ -87,6 +91,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
         </aside>
       </div>
       <section className="source-appendix print-only"><span>SOURCE APPENDIX</span><h2>Full citation list</h2><ol>{sources.length ? sources.map((source, index) => <li key={source.title + index}>{source.title}{source.url ? ` — ${source.url}` : ""}</li>) : <li>No live web citations for this report — treat all findings as AI-directional.</li>}</ol></section>
+      {signedIn && report.id && <BuildCompanyCta reportId={report.id} existingCompanyId={existingCompanyId} />}
       <div className="print-page-number print-only" />
     </section>
   </main>;

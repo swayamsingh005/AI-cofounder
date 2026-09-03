@@ -438,3 +438,73 @@ html[data-theme='dark'] .v2-linked{background:#1d2518;border-color:#2c4a37;color
 .workspace-notice{margin-top:22px;padding:16px 18px;border:1px solid #a8562f;border-radius:12px;background:#2b1710}
 .workspace-notice p{margin:0 0 12px;font-size:13px;color:#e4c9b8;line-height:1.5}
 .workspace-notice .primary-action{margin:0}
+
+/* --- V2 Company OS: Phase 1 — deliberately plain, function before visual identity --- */
+.build-company-cta{margin:60px 0 30px;padding:36px 34px;border:1px solid var(--line);border-radius:16px;text-align:center;background:#faf7ef}
+.report-shell .build-company-cta{background:linear-gradient(150deg,#211a12,#171310);border-color:#4a3c28}
+.build-company-cta>span{font:10px 'DM Mono';letter-spacing:1.5px;color:#8a9c4e}
+.report-shell .build-company-cta>span{color:#b3a48c}
+.build-company-cta h2{font:500 30px 'Playfair Display';margin:12px 0}
+.build-company-cta p{max-width:520px;margin:0 auto 22px;color:var(--muted);font-size:14px;line-height:1.6}
+.report-shell .build-company-cta p{color:#c9baa3}
+.build-company-cta button.large-start{border:0;cursor:pointer;font:inherit}
+.build-company-cta button.large-start:disabled{opacity:.6;cursor:not-allowed}
+
+.company-workspace{max-width:1080px;margin:0 auto;padding:60px 28px 100px}
+.company-header{margin-bottom:28px}
+.company-header h1{font:500 40px 'Playfair Display';margin:8px 0 0}
+.company-goal{border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:30px}
+.company-goal>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e}
+.company-goal h2{font:600 22px 'Manrope';margin:8px 0 6px}
+.company-goal p{color:var(--muted);font-size:14px;margin:0 0 14px}
+.progress-track{height:8px;border-radius:999px;background:#e7e1d2;overflow:hidden;margin-bottom:8px}
+.progress-track i{display:block;height:100%;background:linear-gradient(90deg,#c9781f,#8a9c4e);border-radius:999px}
+.company-goal small,.company-mission small{color:var(--muted);font-size:12px}
+
+.company-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:30px;align-items:start}
+.company-mission{border:1px solid var(--line);border-radius:14px;padding:22px 26px}
+.company-mission>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e}
+.company-mission h2{font:600 20px 'Manrope';margin:8px 0 6px}
+.company-mission>p{color:var(--muted);font-size:14px;margin:0 0 14px}
+.milestone-list{margin-top:22px;display:grid;gap:20px}
+.milestone h3{font:600 14px 'Manrope';margin:0 0 10px;color:#4a3c28}
+.milestone ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.task{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+.task b{color:#8a9c4e;width:16px;text-align:center;flex:none}
+.task span{flex:1}
+.task em{font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.task-completed{opacity:.55}
+.task-completed span{text-decoration:line-through}
+
+.company-side{display:grid;gap:24px}
+.cofounder-panel,.decisions-panel{border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.cofounder-panel>span,.decisions-panel>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e;display:block;margin-bottom:12px}
+.cofounder-box{display:flex;flex-direction:column;gap:12px}
+.cofounder-thread{display:flex;flex-direction:column;gap:14px;max-height:340px;overflow-y:auto}
+.cofounder-empty{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
+.cofounder-exchange{display:flex;flex-direction:column;gap:6px}
+.cofounder-question{font-weight:600;font-size:13px;margin:0}
+.cofounder-answer{font-size:13px;color:var(--muted);white-space:pre-wrap;margin:0;line-height:1.6}
+.cofounder-thinking{font-size:12px;color:var(--muted);font-style:italic;margin:0}
+.cofounder-error{color:#b5533c;font-size:12px}
+.cofounder-form{display:flex;gap:8px}
+.cofounder-form input{flex:1;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px}
+.cofounder-form button{border:0;background:var(--ink);color:#fff;border-radius:9px;padding:0 16px;font-size:13px;cursor:pointer}
+.cofounder-form button:disabled{opacity:.5;cursor:not-allowed}
+.decisions-panel ul{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:13px}
+.company-empty-inline{font-size:13px;color:var(--muted);margin:0}
+.company-empty{border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted);font-size:14px}
+.company-empty p{margin:0 0 4px;font-weight:600;color:var(--ink)}
+
+.companies-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:26px}
+.company-card{display:block;border:1px solid var(--line);border-radius:14px;padding:20px;text-decoration:none;color:inherit}
+.company-card b{font:10px 'DM Mono';letter-spacing:1px;text-transform:uppercase;color:#8a9c4e}
+.company-card h3{font:600 17px 'Manrope';margin:8px 0 6px;color:var(--ink)}
+.company-card small{color:var(--muted);font-size:11px}
+
+html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,html[data-theme='dark'] .cofounder-panel,html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .task,html[data-theme='dark'] .company-empty,html[data-theme='dark'] .company-card{border-color:#3c3020;background:#171310}
+html[data-theme='dark'] .company-header h1,html[data-theme='dark'] .company-goal h2,html[data-theme='dark'] .company-mission h2,html[data-theme='dark'] .milestone h3,html[data-theme='dark'] .company-card h3,html[data-theme='dark'] .company-empty p{color:#f0e9dc}
+html[data-theme='dark'] .company-goal p,html[data-theme='dark'] .company-mission>p,html[data-theme='dark'] .cofounder-answer,html[data-theme='dark'] .company-empty-inline,html[data-theme='dark'] .company-card small,html[data-theme='dark'] .task em{color:#c9baa3}
+html[data-theme='dark'] .cofounder-question{color:#f0e9dc}
+html[data-theme='dark'] .cofounder-form input{background:#211a12;border-color:#3c3020;color:#f0e9dc}
+@media(max-width:900px){.company-grid{grid-template-columns:1fr}}
