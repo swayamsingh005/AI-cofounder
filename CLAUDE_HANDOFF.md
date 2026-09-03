@@ -618,3 +618,11 @@ Second piece of the Dashboard/Product Experience spec: the 3-region command-cent
 **Not done in this pass** (Phase C): AI-response-to-action buttons ("Save as Decision"/"Create Task"/"Remember This" surfaced on Ask Co-Founder replies), the task detail modal (clicking a task still just cycles its status via the existing circle button, no expanded detail view), command bar's "Create Mission" action, and a proper tablet drawer for the AI panel.
 
 `npm run build` passes, CSS brace-balanced (1430/1430). **Not verified end to end** — needs a real test: navigate between Overview → Mission → Decisions → Memory and confirm the AI Co-Founder panel and its conversation thread genuinely persist (don't reset) across those transitions, confirm the sidebar's active-link highlighting matches the current page, and confirm a standalone task created from the command bar now shows up correctly on the new Tasks page.
+
+## Session log — Claude, follow-up after Phase B test — command trigger overlap
+
+Owner confirmed everything else in Phase B works correctly (sidebar, page navigation, AI panel — did not report the persistence test failing, which is the important one). One real bug: the floating "⌘K" command bar trigger uses viewport-fixed `bottom:22px;right:22px` positioning, which now sits directly on top of the persistent AI Co-Founder panel's input box in that same corner (the panel wasn't permanently docked there when the trigger was originally built).
+
+Fixed by moving the trigger to `top:16px;right:16px` — clear on every page, not just company pages, and doesn't require any conditional/page-aware CSS.
+
+npm run build passes.
