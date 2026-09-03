@@ -3,16 +3,17 @@ import { groqComplete } from "../../../../lib/ai";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 
 type ReportContent = {
-  title?: string; summary?: string; problem?: string; businessModel?: string; gap?: string;
+  title?: string; summary?: string; problem?: string[]; businessModel?: string[]; gap?: string[];
   risks?: string[]; assumptions?: string[]; nextMove?: { headline?: string };
   intake?: { idea?: string; customer?: string; geography?: string; businessModel?: string; constraints?: string };
 };
 
 type PlanTask = { title: string; description: string; priority: "low" | "medium" | "high" | "critical" };
 type PlanMilestone = { title: string; tasks: PlanTask[] };
-type Plan = { goalTitle: string; goalDescription: string; goalTarget: string; goalDeadlineDays: number; missionObjective: string; missionWhyItMatters: string; missionSuccessCriteria: string; milestones: PlanMilestone[] };
+type Plan = { companyName: string; goalTitle: string; goalDescription: string; goalTarget: string; goalDeadlineDays: number; missionObjective: string; missionWhyItMatters: string; missionSuccessCriteria: string; milestones: PlanMilestone[] };
 
 const FALLBACK_PLAN = (ideaTitle: string): Plan => ({
+  companyName: ideaTitle.split(" ").slice(0, 3).join(" ") || "New Venture",
   goalTitle: `Validate demand for ${ideaTitle}`,
   goalDescription: "Confirm real customers will pay before investing further in building.",
   goalTarget: "3 customers willing to pay or commit to a pilot",
@@ -57,6 +58,7 @@ function normalizePlan(raw: unknown, ideaTitle: string): Plan {
     return tasks.length ? { title, tasks } : null;
   }).filter((m): m is PlanMilestone => m !== null);
   return {
+    companyName: str("companyName", base.companyName).slice(0, 60),
     goalTitle: str("goalTitle", base.goalTitle), goalDescription: str("goalDescription", base.goalDescription),
     goalTarget: str("goalTarget", base.goalTarget), goalDeadlineDays: num("goalDeadlineDays", base.goalDeadlineDays),
     missionObjective: str("missionObjective", base.missionObjective), missionWhyItMatters: str("missionWhyItMatters", base.missionWhyItMatters),
@@ -80,40 +82,50 @@ export async function POST(request: Request) {
 
   const content = (reportRow.report ?? {}) as ReportContent;
   const intake = content.intake ?? {};
-  const companyName = reportRow.title || "New venture";
+  const ideaTitle = reportRow.title || "New venture";
 
   // Profile fields are mapped directly from the already-generated V1 report — no AI call needed
   // for this part, which keeps the conversion cheap. Only the goal/mission/plan below needs AI.
+  // problem/businessModel/gap are bullet arrays in the V1 report (changed from prose paragraphs
+  // for readability) — joined into plain sentences here since company_profiles columns are text.
   const profile = {
     description: content.summary ?? null,
-    problem: content.problem ?? null,
+    problem: content.problem?.length ? content.problem.join(" ") : null,
     solution: intake.idea ?? reportRow.idea ?? null,
-    business_model: content.businessModel ?? null,
+    business_model: content.businessModel?.length ? content.businessModel.join(" ") : null,
     target_customer: intake.customer ?? null,
     target_geography: intake.geography ?? null,
     constraints: intake.constraints ?? null,
-    strategy: content.gap ?? null,
+    strategy: content.gap?.length ? content.gap.join(" ") : null,
     assumptions: Array.isArray(content.assumptions) ? content.assumptions.slice(0, 8) : [],
     risks: Array.isArray(content.risks) ? content.risks.slice(0, 8) : [],
   };
 
   let warning: string | undefined;
-  let plan = FALLBACK_PLAN(companyName);
+  let plan = FALLBACK_PLAN(ideaTitle);
   if (!process.env.GROQ_API_KEY) {
     warning = "AI planning is not configured on this deployment yet; a starter plan was used instead.";
   } else {
     try {
-      const system = `You turn a validated startup idea into an initial execution plan for a founder. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}. The goal should be one measurable, time-bound outcome (e.g. "10 paying customers in 60 days"), not vague. The mission is the single most important thing to focus on right now to reach that goal. Produce 2-4 milestones, each with 2-4 concrete tasks. Tasks must be specific and actionable, not generic ("interview customers" is too vague — "interview 5 dentists about their current booking workflow" is right). Do not invent facts not implied by the company context given.`;
-      const user = `Company: ${companyName}\nWhat it does: ${profile.solution ?? profile.description ?? ""}\nProblem: ${profile.problem ?? "unknown"}\nTarget customer: ${profile.target_customer ?? "unknown"}\nGeography: ${profile.target_geography ?? "unspecified"}\nBusiness model: ${profile.business_model ?? "unknown"}\nFounder constraints: ${profile.constraints ?? "none stated"}\nKey assumptions: ${profile.assumptions.join("; ") || "none stated"}\nKey risks: ${profile.risks.join("; ") || "none stated"}\n\nReturn the JSON object now.`;
+      const system = `You turn a validated startup idea into an initial execution plan for a founder. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"companyName": string, "goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}.
+
+"companyName" is a short, brandable company name (1-3 words) — like a real startup would use, e.g. "Nova" or "LedgerAI" — not a restatement of the idea description. Do not just copy the input title.
+
+The goal should be one measurable, time-bound outcome (e.g. "10 paying customers in 60 days"), not vague. The mission is the single most important thing to focus on right now to reach that goal. Produce 2-4 milestones, each with 2-4 concrete tasks. Tasks must be specific and actionable, not generic ("interview customers" is too vague — "interview 5 dentists about their current booking workflow" is right).
+
+Any price, cost, or monetary figure anywhere in your response (goalTarget, task descriptions, anything) must use the correct currency for the given geography — ₹ for India, other local currency symbols for other named countries, $ only if the geography is genuinely global, unspecified, or explicitly US/international. Do not default to $ for a non-US market.
+
+Do not invent facts not implied by the company context given.`;
+      const user = `Idea title: ${ideaTitle}\nWhat it does: ${profile.solution ?? profile.description ?? ""}\nProblem: ${profile.problem ?? "unknown"}\nTarget customer: ${profile.target_customer ?? "unknown"}\nGeography: ${profile.target_geography ?? "unspecified"}\nBusiness model: ${profile.business_model ?? "unknown"}\nFounder constraints: ${profile.constraints ?? "none stated"}\nKey assumptions: ${profile.assumptions.join("; ") || "none stated"}\nKey risks: ${profile.risks.join("; ") || "none stated"}\n\nReturn the JSON object now.`;
       const raw = await groqComplete(system, user, { json: true, maxTokens: 1600, temperature: 0.4 });
-      plan = normalizePlan(JSON.parse(raw), companyName);
+      plan = normalizePlan(JSON.parse(raw), ideaTitle);
     } catch (error) {
       console.error("[api/company/build] AI planning failed", { message: error instanceof Error ? error.message : "Unknown error" });
       warning = "AI planning is temporarily unavailable; a starter plan was used instead. You can ask your Co-Founder to refine it once things are working again.";
     }
   }
 
-  const { data: company, error: companyError } = await supabase.from("companies").insert({ user_id: userId, report_id: reportId, name: companyName, stage: "validation" }).select("id").single();
+  const { data: company, error: companyError } = await supabase.from("companies").insert({ user_id: userId, report_id: reportId, name: plan.companyName, stage: "validation" }).select("id").single();
   if (companyError || !company) return NextResponse.json({ error: "Could not create the company." }, { status: 500 });
   const companyId = company.id as string;
 
@@ -141,7 +153,7 @@ export async function POST(request: Request) {
   if (memoryRows.length) await supabase.from("memories").insert(memoryRows);
 
   await supabase.from("activity_events").insert([
-    { company_id: companyId, user_id: userId, kind: "company_created", title: `${companyName} was created from a V1 report` },
+    { company_id: companyId, user_id: userId, kind: "company_created", title: `${plan.companyName} was created from a V1 report` },
     { company_id: companyId, user_id: userId, kind: "goal_created", title: `Primary goal set: ${plan.goalTitle}` },
     { company_id: companyId, user_id: userId, kind: "mission_created", title: `Mission started: ${plan.missionObjective}` },
   ]);
