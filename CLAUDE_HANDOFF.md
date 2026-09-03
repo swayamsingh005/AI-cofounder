@@ -538,3 +538,15 @@ Wired into `POST /api/company/tasks` (title) and `POST /api/company/decisions` (
 **Cost note**: this adds one more small Groq call (`maxTokens: 100`) per manually-created task or decision. Small, but worth knowing if usage patterns change — every command-bar task-add is now 2 AI calls total if the command-bar flow itself also involves generation elsewhere (it doesn't currently — task/decision creation via the command bar was already just 1 call each before this, now 2: the polish, then the insert has no AI call itself, so it's +1 call per creation, not doubling anything larger).
 
 `npm run build` passes (had to drop an `s` regex flag — dotAll isn't supported at the project's current TS target, not needed here anyway since polished text is single-line). Not verified end to end — needs a real test: type a task title with a typo/grammar issue into the command bar and confirm what actually gets saved is cleaned up but says the same thing.
+
+## Session log — Claude, follow-up — polishOneLine wasn't actually correcting anything
+
+Owner tested the polish feature and it returned the raw input verbatim — no grammar correction happened at all.
+
+**Likely cause**: the original prompt leaned so heavily on "preserve meaning exactly, don't change what it's asking for" that a smaller model (whichever one the fallback chain landed on) most likely interpreted that as license to just echo the input back unchanged, playing it safe. Abstract instructions like this are a known weak point for smaller open-weight models — they tend to need concrete examples to actually understand what's being asked, not just rules.
+
+Fixed by rewriting the prompt: explicit instruction that it **must** actually correct grammar/spelling/phrasing (not just repeat verbatim unless already perfect), reframed as "a grammar and clarity fix, not a rewrite of the underlying request" rather than leading with preservation language, and added three concrete before/after examples (typos, informal phrasing) so the model has a clear pattern to follow instead of an abstract rule to interpret. Also bumped temperature slightly (0.2 → 0.3) since very low temperature can bias toward the "safest" (i.e. unchanged) output.
+
+**Not independently verified this actually fixed it** — same limitation as always, no live network access here to test against the real model. If this still doesn't correct anything after this deploy, the next diagnostic step would be checking Vercel's runtime logs for whether `polishOneLine` is even being reached (rule out a code-path bug) versus the model genuinely still returning the input unchanged (a prompt/model problem) — worth testing with an obviously-broken input (e.g. "buy 5 chiar for offic") to make the correction unambiguous either way.
+
+`npm run build` passes.

@@ -82,9 +82,15 @@ export async function polishOneLine(raw: string, context?: string): Promise<stri
   const trimmed = raw.trim();
   if (!trimmed || !process.env.GROQ_API_KEY) return trimmed;
   try {
-    const system = `Rewrite the given text as one clean, grammatically correct sentence in plain English. Preserve the original meaning and intent exactly, and keep every specific detail (names, numbers, dates, currency) unchanged — do not add information that wasn't there and do not soften or change what it's asking for. Return ONLY the rewritten sentence — no quotes around it, no commentary, no markdown.`;
+    const system = `You are a copy editor. Rewrite the given text as one clean, well-formed sentence in plain English: fix grammar, spelling, punctuation, and awkward phrasing. You must actually correct the wording — do not just repeat the input verbatim unless it is already perfect. At the same time, keep every specific fact unchanged (names, numbers, dates, currency) and do not add information that wasn't there or change what it's asking for — this is a grammar and clarity fix, not a rewrite of the underlying request.
+
+Example: "buy 5 chiar for offic tommorow" → "Buy 5 chairs for the office tomorrow."
+Example: "call up rakesh re pricing discuss" → "Call Rakesh to discuss pricing."
+Example: "interview 5 dentist about booking flow" → "Interview 5 dentists about their booking flow."
+
+Return ONLY the corrected sentence — no quotes around it, no commentary, no markdown.`;
     const user = context ? `Context: ${context}\n\nText to clean up: ${trimmed}` : `Text to clean up: ${trimmed}`;
-    const result = await groqComplete(system, user, { maxTokens: 100, temperature: 0.2 });
+    const result = await groqComplete(system, user, { maxTokens: 100, temperature: 0.3 });
     const cleaned = result.trim().replace(/^["'“](.*)["'”]$/, "$1").trim();
     return cleaned || trimmed;
   } catch (error) {
