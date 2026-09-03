@@ -644,3 +644,13 @@ Last piece of the Dashboard/Product Experience spec.
 **That closes out every phase of both specs sent this session** — the original 40-section V2 build (Phases 1-3) and this follow-on Dashboard/Product Experience upgrade (Phases A-C).
 
 `npm run build` passes, CSS brace-balanced (1450/1450). **Not verified end to end** — needs a real test: click a task's title (not the circle) and confirm the modal shows real description text, use all three action buttons on an actual Ask Co-Founder answer and confirm a real decision/task/memory row shows up on the respective pages afterward.
+
+## Session log — Claude, follow-up after Phase C test — AI panel scroll bug
+
+Owner tested the AI-to-action buttons and task modal (didn't report issues with either — the task modal and Save as Decision/Create Task/Remember This buttons appear to be working) but found the AI Co-Founder panel's chat thread had no scrollbar — a long answer just overflowed with no way to see the rest.
+
+Real cause: when Phase B made the AI panel persistent (`height:100%` flex column), the chat thread's old `max-height:340px;overflow-y:auto` got replaced with `max-height:none` to let it fill the new taller panel — but nothing re-added `overflow-y:auto`, and more importantly, flex children default to `min-height:auto`, which stops `overflow` from doing anything even if you do set it, since the element just grows to fit its content instead of respecting the parent's height. Classic flexbox scroll gotcha.
+
+Fixed: `overflow-y:auto` and `min-height:0` added at every level of the flex chain (`.cofounder-panel-persistent`, `.cofounder-box`, `.cofounder-thread`) — `min-height:0` is what actually lets the browser respect the height constraint and scroll internally instead of growing unbounded.
+
+npm run build passes.
