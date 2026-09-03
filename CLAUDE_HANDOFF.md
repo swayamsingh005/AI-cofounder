@@ -626,3 +626,21 @@ Owner confirmed everything else in Phase B works correctly (sidebar, page naviga
 Fixed by moving the trigger to `top:16px;right:16px` — clear on every page, not just company pages, and doesn't require any conditional/page-aware CSS.
 
 npm run build passes.
+
+## Session log — Claude, Dashboard Upgrade spec, Phase C — AI-to-action buttons + task detail modal
+
+Last piece of the Dashboard/Product Experience spec.
+
+**`POST /api/company/memories`** (new — there was no way to manually create a memory before this; the `memories` table only ever got populated automatically during "Build This Company"). Same ownership-verification pattern as every other company-scoped route.
+
+**AI-response-to-action, per spec section 16.** `components/ask-cofounder.tsx` now shows three buttons under every answer — Save as Decision, Create Task, Remember This. Deliberately reused the existing endpoints rather than adding new logic: `/api/company/decisions` and `/api/company/tasks` already run their title through `polishOneLine()` server-side (from the earlier command-bar polish feature), so the full raw AI answer can be sent as-is and comes back as a clean one-line title — no duplicate text-cleaning logic needed client-side. "Remember This" sends the raw answer as `content` (kept full-length, not compressed, since memory entries can be longer) with `kind: "learning"`. Each button shows its own per-exchange success/error status inline. No confirmation dialog before these fire — they're additive (create a new record), not destructive, consistent with how "Record decision" elsewhere in this app already works without one.
+
+**Task detail modal, per spec section 14.** `components/task-item.tsx` — clicking the task title (not the status circle) now opens a modal with the full description (was already stored in the schema and passed around in queries, but never actually displayed anywhere until now), current status, and three explicit action buttons (Start / Mark blocked / Complete) instead of only the quick circle-click cycle. Both paths (circle-click and modal buttons) go through the same `setTaskStatus()` function, so the progress-recalculation chain from Phase A (`recalcProgress` on the mission and goal) fires identically either way — there's only one status-change code path now, not two that could drift out of sync.
+
+**Found and removed dead code while wiring this up**: `components/task-list-view.tsx` (the compact NEXT-preview-with-expand component from Phase A) was silently orphaned by Phase B's Overview redesign — Overview now links to the dedicated Mission page instead of showing an inline expandable list, so nothing imported it anymore. Deleted it rather than leave stale, unused code that could confuse a future read of the codebase into thinking it was still active.
+
+**Not done in this pass**: command bar's "Create Mission" action (mission creation still only happens via the AI planning flow in `/api/company/build`, no manual path), and the responsive/tablet drawer for the AI panel flagged as simplified back in Phase B.
+
+**That closes out every phase of both specs sent this session** — the original 40-section V2 build (Phases 1-3) and this follow-on Dashboard/Product Experience upgrade (Phases A-C).
+
+`npm run build` passes, CSS brace-balanced (1450/1450). **Not verified end to end** — needs a real test: click a task's title (not the circle) and confirm the modal shows real description text, use all three action buttons on an actual Ask Co-Founder answer and confirm a real decision/task/memory row shows up on the respective pages afterward.

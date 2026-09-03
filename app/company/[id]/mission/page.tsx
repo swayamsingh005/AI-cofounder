@@ -49,7 +49,7 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
           return (
             <div className={complete ? "milestone milestone-complete" : "milestone"} key={milestone.id}>
               <h3>{milestone.title} <small>{milestoneDone}/{tasks.length}</small></h3>
-              <ul>{tasks.map(task => <TaskItem key={task.id} id={task.id} title={task.title} priority={task.priority} initialStatus={task.status} />)}</ul>
+              <ul>{tasks.map(task => <TaskItem key={task.id} id={task.id} title={task.title} description={task.description} priority={task.priority} initialStatus={task.status} />)}</ul>
             </div>
           );
         })}

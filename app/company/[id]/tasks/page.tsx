@@ -20,7 +20,7 @@ export default async function TasksPage({ params }: { params: Promise<{ id: stri
   const { data: company } = await supabase.from("companies").select("id").eq("id", id).eq("user_id", userId).maybeSingle();
   if (!company) notFound();
 
-  const { data: tasks } = await supabase.from("tasks").select("id,title,status,priority").eq("company_id", id).order("created_at", { ascending: false });
+  const { data: tasks } = await supabase.from("tasks").select("id,title,description,status,priority").eq("company_id", id).order("created_at", { ascending: false });
   const all = tasks ?? [];
 
   return (
@@ -33,7 +33,7 @@ export default async function TasksPage({ params }: { params: Promise<{ id: stri
         return (
           <div className="task-group" key={group.status}>
             <h3>{group.label} <small>{items.length}</small></h3>
-            <ul>{items.map(task => <TaskItem key={task.id} id={task.id} title={task.title} priority={task.priority} initialStatus={task.status} />)}</ul>
+            <ul>{items.map(task => <TaskItem key={task.id} id={task.id} title={task.title} description={task.description} priority={task.priority} initialStatus={task.status} />)}</ul>
           </div>
         );
       })}

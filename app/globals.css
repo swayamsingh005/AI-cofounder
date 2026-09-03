@@ -879,3 +879,28 @@ html[data-theme='dark'] .memory-search-input{background:#141416;border-color:#26
 
 @media(max-width:1100px){.company-shell-3col{grid-template-columns:200px 1fr}.company-ai-region{display:none}}
 @media(max-width:750px){.company-shell-3col{grid-template-columns:1fr}.company-sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center}.overview-bottom{grid-template-columns:1fr}}
+
+/* --- V2 Phase C: task detail modal, AI-response-to-action buttons --- */
+.task-title-button{background:transparent;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;padding:0;flex:1}
+.task-title-button:hover{text-decoration:underline}
+
+.task-modal-overlay{position:fixed;inset:0;z-index:400;background:#00000066;display:flex;align-items:center;justify-content:center;padding:20px}
+.task-modal{width:420px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px}
+.task-modal-priority{font:10px 'DM Mono';letter-spacing:1px;color:var(--muted)}
+.task-modal h3{font:600 18px 'Manrope';margin:8px 0 10px}
+.task-modal p{color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 14px}
+.task-modal-status{font-size:13px;margin-bottom:16px}
+.task-modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.task-modal-actions button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer}
+.task-modal-actions button:disabled{opacity:.4;cursor:not-allowed}
+.task-modal-close{border:0;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:0}
+
+.cofounder-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cofounder-actions button{border:1px solid var(--line);background:transparent;border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;color:var(--muted)}
+.cofounder-actions button:disabled{opacity:.5;cursor:not-allowed}
+.cofounder-action-status{display:block;color:#8a9c4e;font-size:11px;margin-top:5px}
+
+html[data-theme='dark'] .task-modal{background:#141416;border-color:#26272b}
+html[data-theme='dark'] .task-modal p,html[data-theme='dark'] .task-modal-priority{color:#97989d}
+html[data-theme='dark'] .task-modal-actions button{border-color:#26272b;color:#e8e8ea}
+html[data-theme='dark'] .cofounder-actions button{border-color:#3c3020;color:#c9baa3}

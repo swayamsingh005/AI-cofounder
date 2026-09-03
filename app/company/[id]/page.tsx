@@ -8,7 +8,7 @@ import LocalTime from "../../../components/local-time";
 
 const ACTIVITY_ICON: Record<string, string> = {
   company_created: "✦", goal_created: "◎", mission_created: "▶", task_completed: "✓",
-  decision_recorded: "◆", decision_updated: "◆",
+  decision_recorded: "◆", decision_updated: "◆", memory_saved: "◇", task_created: "＋",
 };
 
 export default async function CompanyOverview({ params }: { params: Promise<{ id: string }> }) {

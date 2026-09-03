@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 
-type Exchange = { question: string; answer: string };
+type Exchange = { question: string; answer: string; actionStatus?: string };
 type Block = { heading: string | null; paragraphs: string[]; bullets: string[] };
+type Action = "decision" | "task" | "memory";
 
 const KNOWN_HEADINGS = ["OBSERVATION", "WHY IT MATTERS", "RECOMMENDATION", "NEXT ACTION"];
 
@@ -46,11 +47,15 @@ function AnswerBody({ answer }: { answer: string }) {
   );
 }
 
+const ACTION_LABEL: Record<Action, string> = { decision: "Save as Decision", task: "Create Task", memory: "Remember This" };
+const ACTION_SUCCESS: Record<Action, string> = { decision: "Saved as a decision.", task: "Task created.", memory: "Remembered." };
+
 export default function AskCofounder({ companyId }: { companyId: string }) {
   const [question, setQuestion] = useState("");
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [acting, setActing] = useState<{ index: number; action: Action } | null>(null);
 
   async function ask(event: React.FormEvent) {
     event.preventDefault();
@@ -68,6 +73,30 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
     setWorking(false);
   }
 
+  // Turns an AI response into a real company object. The task/decision endpoints already clean up
+  // raw text into a proper one-line title server-side (the same polish used for command-bar input),
+  // so the full raw answer can be sent as-is without duplicating that logic here.
+  async function actOnExchange(index: number, action: Action) {
+    const exchange = exchanges[index];
+    if (!exchange || acting) return;
+    setActing({ index, action });
+    try {
+      const endpoint = action === "decision" ? "/api/company/decisions" : action === "task" ? "/api/company/tasks" : "/api/company/memories";
+      const body = action === "decision"
+        ? { companyId, title: exchange.answer, reasoning: `From a conversation with the Co-Founder: "${exchange.question}"` }
+        : action === "task"
+        ? { companyId, title: exchange.answer }
+        : { companyId, content: exchange.answer, kind: "learning" };
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await response.json();
+      const status = response.ok ? ACTION_SUCCESS[action] : (data.error || "Could not save that.");
+      setExchanges(prev => prev.map((e, i) => i === index ? { ...e, actionStatus: status } : e));
+    } catch {
+      setExchanges(prev => prev.map((e, i) => i === index ? { ...e, actionStatus: "Could not reach the server." } : e));
+    }
+    setActing(null);
+  }
+
   return (
     <div className="cofounder-box">
       <div className="cofounder-thread">
@@ -76,6 +105,14 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
           <div className="cofounder-exchange" key={index}>
             <p className="cofounder-question">{exchange.question}</p>
             <AnswerBody answer={exchange.answer} />
+            <div className="cofounder-actions">
+              {(["decision", "task", "memory"] as Action[]).map(action => (
+                <button key={action} type="button" onClick={() => actOnExchange(index, action)} disabled={!!acting}>
+                  {acting?.index === index && acting.action === action ? "Saving…" : ACTION_LABEL[action]}
+                </button>
+              ))}
+            </div>
+            {exchange.actionStatus && <small className="cofounder-action-status">{exchange.actionStatus}</small>}
           </div>
         ))}
         {working && <p className="cofounder-thinking">Thinking…</p>}
