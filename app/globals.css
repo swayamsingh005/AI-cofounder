@@ -788,3 +788,27 @@ html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,h
 html[data-theme='dark'] .decisions-panel,html[data-theme='dark'] .activity-panel{padding:16px 18px!important}
 html[data-theme='dark'] .company-workspace{padding-top:44px!important}
 html[data-theme='dark'] .company-grid{gap:20px!important}
+
+/* --- V2 Phase A: Attention Center, Next Best Action, compact task preview --- */
+.progress-track i{width:0;box-sizing:border-box} /* defensive baseline in case the inline width ever fails to apply */
+
+.next-action{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:14px}
+.next-action>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e}
+.next-action h2{font:600 18px 'Manrope';margin:8px 0 4px}
+.next-action p{color:var(--muted);font-size:13px;margin:0 0 10px;line-height:1.5}
+.next-action-button{border:0;background:var(--ink);color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer}
+.next-action-button:disabled{opacity:.6;cursor:not-allowed}
+
+.attention-list>span{font:10px 'DM Mono';letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px}
+.brief-attention,.attention-list ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.attention-list li{display:flex;align-items:baseline;gap:8px;font-size:13px}
+.attention-list li i{font-style:normal;font-size:11px}
+.attention-list li span{color:var(--muted)}
+
+.task-preview{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.task-preview-label{font:10px 'DM Mono';letter-spacing:1px;color:var(--muted)}
+.task-expand,.task-collapse{align-self:flex-start;border:1px solid var(--line);background:transparent;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;color:var(--muted);margin-top:6px}
+
+html[data-theme='dark'] .next-action{border-color:#3c3020}
+html[data-theme='dark'] .next-action p,html[data-theme='dark'] .attention-list li span,html[data-theme='dark'] .task-preview-label{color:#c9baa3}
+html[data-theme='dark'] .task-expand,html[data-theme='dark'] .task-collapse{border-color:#3c3020;color:#c9baa3}

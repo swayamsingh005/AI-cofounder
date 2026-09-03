@@ -1,76 +1,96 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { groqComplete } from "./ai";
-import { loadCompanyContext, formatCompanyContext } from "./company-context";
+import { loadCompanyContext } from "./company-context";
 
-export type AttentionItem = { severity: "high" | "medium" | "info"; text: string };
-export type DailyBrief = { companyName: string; primaryGoalTitle: string | null; primaryGoalProgress: number | null; attentionItems: AttentionItem[]; recommendedPriority: string; generatedBy: "ai" | "template" };
+export type AttentionItem = { severity: "high" | "medium" | "info"; text: string; taskId: string | null };
+export type NextBestAction = { title: string; reason: string; taskId: string | null };
+export type DailyBrief = { companyName: string; primaryGoalTitle: string | null; primaryGoalProgress: number | null; attentionItems: AttentionItem[]; nextBestAction: NextBestAction; generatedBy: "template" };
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const SEVERITY_ORDER: Record<AttentionItem["severity"], number> = { high: 0, medium: 1, info: 2 };
+
 /** Computed directly from real rows, never from an AI guess — this is what keeps "needs your
- * attention" honest. If nothing here fires, there is genuinely nothing urgent, and the brief says so. */
+ * attention" honest. If nothing here fires, there is genuinely nothing urgent, and the brief says
+ * so, per the spec's explicit "do not fabricate warnings simply to fill the interface." No AI call
+ * anywhere in this file: every reason below follows directly and unambiguously from the signal
+ * type itself (overdue, blocked, critical-and-untouched), so a model call would add cost and a
+ * new failure mode without adding real clarity. */
 async function computeAttentionItems(supabase: SupabaseClient, companyId: string, activeMissionId: string | null): Promise<AttentionItem[]> {
   const items: AttentionItem[] = [];
   const today = todayDateString();
 
-  const { data: overdue } = await supabase.from("tasks").select("title,due_date").eq("company_id", companyId).lt("due_date", today).neq("status", "completed").limit(3);
-  for (const task of overdue ?? []) items.push({ severity: "high", text: `"${task.title}" is overdue (was due ${task.due_date}).` });
+  const { data: overdue } = await supabase.from("tasks").select("id,title,due_date").eq("company_id", companyId).lt("due_date", today).neq("status", "completed").limit(3);
+  for (const task of overdue ?? []) items.push({ severity: "high", text: `"${task.title}" is overdue — was due ${task.due_date}.`, taskId: task.id });
 
-  const { data: blocked } = await supabase.from("tasks").select("title").eq("company_id", companyId).eq("status", "blocked").limit(3);
-  for (const task of blocked ?? []) items.push({ severity: "high", text: `"${task.title}" is blocked.` });
+  const { data: blocked } = await supabase.from("tasks").select("id,title").eq("company_id", companyId).eq("status", "blocked").limit(3);
+  for (const task of blocked ?? []) items.push({ severity: "high", text: `"${task.title}" is blocked.`, taskId: task.id });
 
-  const { data: untouchedCritical } = await supabase.from("tasks").select("title").eq("company_id", companyId).eq("priority", "critical").eq("status", "todo").limit(3);
-  for (const task of untouchedCritical ?? []) items.push({ severity: "medium", text: `"${task.title}" is critical and hasn't been started yet.` });
+  const { data: untouchedCritical } = await supabase.from("tasks").select("id,title").eq("company_id", companyId).eq("priority", "critical").eq("status", "todo").limit(3);
+  for (const task of untouchedCritical ?? []) items.push({ severity: "medium", text: `"${task.title}" is critical and hasn't been started yet.`, taskId: task.id });
 
-  if (!activeMissionId) items.push({ severity: "medium", text: "There's no active mission set for the current goal." });
+  if (!activeMissionId) items.push({ severity: "medium", text: "There's no active mission set for the current goal.", taskId: null });
 
-  return items.slice(0, 5);
+  return items.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]).slice(0, 6);
 }
 
-/** Returns today's cached brief if one exists, otherwise computes and caches a new one. Safe to
- * call on every page load — it only does real work (and only one AI call, if any) once per day
- * per company, per the cost-control principle from the spec. */
+function reasonFor(item: AttentionItem): string {
+  if (item.text.includes("overdue")) return "This is the most time-sensitive item outstanding right now.";
+  if (item.text.includes("blocked")) return "Progress on this is stuck until it's resolved.";
+  if (item.text.includes("critical")) return "It's marked critical and likely gates other work in the mission.";
+  return "This needs a decision before the mission can move forward.";
+}
+
+/** Falls back to the next actionable todo task in the active mission (highest priority first)
+ * when nothing is actually flagged as urgent — "keep momentum" framing, not a fabricated warning. */
+async function fallbackNextAction(supabase: SupabaseClient, activeMissionId: string): Promise<NextBestAction | null> {
+  const priorityRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const { data: tasks } = await supabase.from("tasks").select("id,title,priority").eq("mission_id", activeMissionId).eq("status", "todo").limit(10);
+  if (!tasks?.length) return null;
+  const next = [...tasks].sort((a, b) => (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9))[0];
+  return { title: next.title, reason: "Nothing urgent is flagged today — moving this forward keeps the mission on track.", taskId: next.id };
+}
+
+/** Returns today's cached brief if one exists, otherwise computes and caches a new one. Purely
+ * deterministic (see computeAttentionItems) — safe and cheap to call on every page load, no AI
+ * cost regardless of caching, but still cached per calendar day so the "today's brief" framing
+ * stays stable across visits rather than recomputing (and potentially reordering) on every load. */
 export async function getOrCreateDailyBrief(supabase: SupabaseClient, companyId: string, userId: string): Promise<DailyBrief | null> {
   const briefDate = todayDateString();
-  const { data: cached } = await supabase.from("daily_briefs").select("recommended_priority,attention_items,generated_by").eq("company_id", companyId).eq("brief_date", briefDate).maybeSingle();
+  const { data: cached } = await supabase.from("daily_briefs").select("recommended_priority,attention_items,next_best_action").eq("company_id", companyId).eq("brief_date", briefDate).maybeSingle();
 
   const ctx = await loadCompanyContext(supabase, companyId);
   if (!ctx) return null;
 
-  if (cached) {
+  if (cached?.next_best_action) {
     return {
       companyName: ctx.company.name,
       primaryGoalTitle: ctx.primaryGoal?.title ?? null,
       primaryGoalProgress: ctx.primaryGoal?.progress ?? null,
       attentionItems: Array.isArray(cached.attention_items) ? cached.attention_items : [],
-      recommendedPriority: cached.recommended_priority ?? "",
-      generatedBy: cached.generated_by === "ai" ? "ai" : "template",
+      nextBestAction: cached.next_best_action as NextBestAction,
+      generatedBy: "template",
     };
   }
 
-  const attentionItems = await computeAttentionItems(supabase, companyId, ctx.activeMission?.id ?? null);
+  let attentionItems = await computeAttentionItems(supabase, companyId, ctx.activeMission?.id ?? null);
+  let nextBestAction: NextBestAction;
 
-  let recommendedPriority = "";
-  let generatedBy: "ai" | "template" = "template";
-  if (!ctx.primaryGoal && !ctx.activeMission) {
-    recommendedPriority = "No goal or mission is set yet — ask your Co-Founder to turn your current objective into one.";
-  } else if (process.env.GROQ_API_KEY) {
-    try {
-      const system = `You write one short, direct sentence recommending what a founder should prioritize today, based ONLY on the facts given below — do not invent tasks, metrics, or events not present in the context. If the facts given don't clearly point to one priority, say so plainly rather than guessing. Use the correct local currency for the company's geography if you mention any money (₹ for India, other local symbols for other countries, $ only for global/unspecified/US markets). One or two sentences maximum, plain text, no markdown.`;
-      const user = `${formatCompanyContext(ctx)}\n\nToday's flagged items (computed from real data, not guesses):\n${attentionItems.length ? attentionItems.map(i => `- [${i.severity}] ${i.text}`).join("\n") : "None — nothing overdue, blocked, or untouched."}\n\nWrite the one-sentence (or two) recommended priority for today.`;
-      recommendedPriority = (await groqComplete(system, user, { maxTokens: 500, temperature: 0.4 })).trim();
-      generatedBy = "ai";
-    } catch (error) {
-      console.error("[lib/daily-brief] AI generation failed", { message: error instanceof Error ? error.message : "Unknown error" });
-      recommendedPriority = attentionItems.length ? attentionItems[0].text : "Nothing urgent flagged today — good time to move the active mission forward.";
-    }
+  if (attentionItems.length > 0) {
+    const top = attentionItems[0];
+    nextBestAction = { title: top.text.replace(/^"(.*)".*$/, "$1"), reason: reasonFor(top), taskId: top.taskId };
+    attentionItems = attentionItems.slice(1); // don't show the same item twice — it's already the headline action
+  } else if (ctx.activeMission) {
+    const fallback = await fallbackNextAction(supabase, ctx.activeMission.id);
+    nextBestAction = fallback ?? { title: "Everything in the active mission is either done or in progress.", reason: "Ask your Co-Founder what to tackle next.", taskId: null };
+  } else if (ctx.primaryGoal) {
+    nextBestAction = { title: "No active mission is set for the current goal.", reason: "Ask your Co-Founder to turn the goal into a mission with concrete tasks.", taskId: null };
   } else {
-    recommendedPriority = attentionItems.length ? attentionItems[0].text : "Nothing urgent flagged today — good time to move the active mission forward.";
+    nextBestAction = { title: "No goal or mission is set yet.", reason: "Ask your Co-Founder to turn your current objective into one.", taskId: null };
   }
 
-  await supabase.from("daily_briefs").insert({ company_id: companyId, user_id: userId, brief_date: briefDate, recommended_priority: recommendedPriority, attention_items: attentionItems, generated_by: generatedBy });
+  await supabase.from("daily_briefs").insert({ company_id: companyId, user_id: userId, brief_date: briefDate, recommended_priority: nextBestAction.title, attention_items: attentionItems, next_best_action: nextBestAction, generated_by: "template" });
 
-  return { companyName: ctx.company.name, primaryGoalTitle: ctx.primaryGoal?.title ?? null, primaryGoalProgress: ctx.primaryGoal?.progress ?? null, attentionItems, recommendedPriority, generatedBy };
+  return { companyName: ctx.company.name, primaryGoalTitle: ctx.primaryGoal?.title ?? null, primaryGoalProgress: ctx.primaryGoal?.progress ?? null, attentionItems, nextBestAction, generatedBy: "template" };
 }

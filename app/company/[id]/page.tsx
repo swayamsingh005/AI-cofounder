@@ -4,6 +4,8 @@ import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 import { loadCompanyContext } from "../../../lib/company-context";
 import AskCofounder from "../../../components/ask-cofounder";
 import TaskItem from "../../../components/task-item";
+import TaskListView from "../../../components/task-list-view";
+import StartTaskButton from "../../../components/start-task-button";
 import DecisionPanel from "../../../components/decision-panel";
 import LocalTime from "../../../components/local-time";
 import { getOrCreateDailyBrief } from "../../../lib/daily-brief";
@@ -55,17 +57,24 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
 
         {brief && (
           <div className="daily-brief">
-            <span>DAILY BRIEF</span>
-            <p className="brief-priority">{brief.recommendedPriority}</p>
+            <div className="next-action">
+              <span>NEXT BEST ACTION</span>
+              <h2>{brief.nextBestAction.title}</h2>
+              <p>{brief.nextBestAction.reason}</p>
+              {brief.nextBestAction.taskId && <StartTaskButton taskId={brief.nextBestAction.taskId} />}
+            </div>
             {brief.attentionItems.length > 0 && (
-              <ul className="brief-attention">
-                {brief.attentionItems.map((item, index) => (
-                  <li key={index} className={`brief-${item.severity}`}>
-                    <i>{item.severity === "high" ? "🔴" : item.severity === "medium" ? "🟡" : "💡"}</i>
-                    <span>{item.text}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="attention-list">
+                <span>ALSO NEEDS ATTENTION</span>
+                <ul>
+                  {brief.attentionItems.map((item, index) => (
+                    <li key={index} className={`brief-${item.severity}`}>
+                      <i>{item.severity === "high" ? "🔴" : item.severity === "medium" ? "🟡" : "💡"}</i>
+                      <span>{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
@@ -92,18 +101,12 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
                 <div className="progress-track"><i style={{ width: `${totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0}%` }} /></div>
                 <small>{doneTasks} / {totalTasks} tasks completed</small>
 
-                <div className="milestone-list">
-                  {(milestones ?? []).map(milestone => (
-                    <div className="milestone" key={milestone.id}>
-                      <h3>{milestone.title}</h3>
-                      <ul>
-                        {(tasksByMilestone.get(milestone.id) ?? []).map(task => (
-                          <TaskItem key={task.id} id={task.id} title={task.title} priority={task.priority} initialStatus={task.status} />
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                <TaskListView
+                  milestones={(milestones ?? []).map(m => ({ id: m.id, title: m.title, status: m.status, sort_order: m.sort_order }))}
+                  tasksByMilestone={Object.fromEntries(tasksByMilestone)}
+                  excludeTaskId={brief?.nextBestAction.taskId ?? null}
+                  totalTasks={totalTasks}
+                />
               </div>
             ) : (
               <div className="company-empty"><p>Nothing is scheduled yet.</p><small>Ask your Co-Founder to turn your current objective into a mission.</small></div>

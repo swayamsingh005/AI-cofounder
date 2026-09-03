@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 import { polishOneLine } from "../../../../lib/ai";
+import { recalcProgress } from "../../../../lib/company-context";
 
 const VALID_STATUSES = ["todo", "in_progress", "blocked", "completed"] as const;
 const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
@@ -49,7 +50,7 @@ export async function PATCH(request: Request) {
 
   // Explicit user_id filter alongside RLS — never trust a client-supplied id without a scoped
   // query, even though the RLS policy would also block a cross-user update on its own.
-  const { data: task, error: taskError } = await supabase.from("tasks").select("id,company_id,title").eq("id", taskId).eq("user_id", userId).maybeSingle();
+  const { data: task, error: taskError } = await supabase.from("tasks").select("id,company_id,title,mission_id,goal_id").eq("id", taskId).eq("user_id", userId).maybeSingle();
   if (taskError || !task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
 
   // .update() alone returns no error even when it matches zero rows (e.g. a silent RLS mismatch) —
@@ -57,6 +58,13 @@ export async function PATCH(request: Request) {
   // instead of us believing it worked and logging a completion that never happened.
   const { data: updated, error: updateError } = await supabase.from("tasks").update({ status, updated_at: new Date().toISOString() }).eq("id", taskId).eq("user_id", userId).select("id,status").single();
   if (updateError || !updated || updated.status !== status) return NextResponse.json({ error: "The task didn't actually update — try again." }, { status: 500 });
+
+  // The actual fix for goal/mission progress bars that otherwise never move: recalculate and
+  // persist them from real task completion, right after the status change that could affect them.
+  await Promise.all([
+    recalcProgress(supabase, "missions", "mission_id", task.mission_id),
+    recalcProgress(supabase, "goals", "goal_id", task.goal_id),
+  ]);
 
   if (status === "completed") {
     await supabase.from("activity_events").insert({ company_id: task.company_id, user_id: userId, kind: "task_completed", title: `Completed: ${task.title}` });

@@ -6,6 +6,18 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** Recalculates and persists a mission or goal's progress from its actual linked task
+ * completion — the real fix for a "progress" column that otherwise only ever gets set once at
+ * creation (defaulting to 0 in the schema) and never updates again. Call this after any task
+ * status change on a task with a mission_id/goal_id. No-ops safely if id is null. */
+export async function recalcProgress(supabase: SupabaseClient, table: "missions" | "goals", idColumn: "mission_id" | "goal_id", id: string | null | undefined) {
+  if (!id) return;
+  const { count: total } = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq(idColumn, id);
+  const { count: done } = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq(idColumn, id).eq("status", "completed");
+  const progress = total ? Math.round(((done ?? 0) / total) * 100) : 0;
+  await supabase.from(table).update({ progress, updated_at: new Date().toISOString() }).eq("id", id);
+}
+
 export type CompanyContext = {
   company: { id: string; name: string; stage: string; industry: string | null };
   profile: {
