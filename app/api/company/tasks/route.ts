@@ -19,12 +19,15 @@ export async function PATCH(request: Request) {
   const { data: task, error: taskError } = await supabase.from("tasks").select("id,company_id,title").eq("id", taskId).eq("user_id", userId).maybeSingle();
   if (taskError || !task) return NextResponse.json({ error: "Task not found." }, { status: 404 });
 
-  const { error: updateError } = await supabase.from("tasks").update({ status, updated_at: new Date().toISOString() }).eq("id", taskId).eq("user_id", userId);
-  if (updateError) return NextResponse.json({ error: "Could not update the task." }, { status: 500 });
+  // .update() alone returns no error even when it matches zero rows (e.g. a silent RLS mismatch) —
+  // chaining .select().single() forces a real error if the row wasn't actually found and updated,
+  // instead of us believing it worked and logging a completion that never happened.
+  const { data: updated, error: updateError } = await supabase.from("tasks").update({ status, updated_at: new Date().toISOString() }).eq("id", taskId).eq("user_id", userId).select("id,status").single();
+  if (updateError || !updated || updated.status !== status) return NextResponse.json({ error: "The task didn't actually update — try again." }, { status: 500 });
 
   if (status === "completed") {
     await supabase.from("activity_events").insert({ company_id: task.company_id, user_id: userId, kind: "task_completed", title: `Completed: ${task.title}` });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, status: updated.status });
 }

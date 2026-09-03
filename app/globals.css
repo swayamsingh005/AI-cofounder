@@ -557,3 +557,7 @@ html[data-theme='dark'] .task-mark{background:#211a12;border-color:#3c3020}
 html[data-theme='dark'] .decision-add,html[data-theme='dark'] .decision-form-actions button[type=button],html[data-theme='dark'] .decision-actions button{border-color:#3c3020;color:#c9baa3}
 html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-form textarea{background:#211a12;border-color:#3c3020;color:#f0e9dc}
 html[data-theme='dark'] .decision-panel-body p,html[data-theme='dark'] .decision-panel-body em,html[data-theme='dark'] .activity-panel li small{color:#c9baa3}
+
+/* --- Fix: surface real task-update errors instead of silently reverting --- */
+.task{flex-wrap:wrap}
+.task-error{flex-basis:100%;color:#b5533c;font-size:11px;margin-top:2px}

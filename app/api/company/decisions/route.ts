@@ -46,8 +46,8 @@ export async function PATCH(request: Request) {
   const { data: decision } = await supabase.from("decisions").select("id,company_id,title").eq("id", decisionId).eq("user_id", userId).maybeSingle();
   if (!decision) return NextResponse.json({ error: "Decision not found." }, { status: 404 });
 
-  const { error } = await supabase.from("decisions").update({ status, updated_at: new Date().toISOString() }).eq("id", decisionId).eq("user_id", userId);
-  if (error) return NextResponse.json({ error: "Could not update the decision." }, { status: 500 });
+  const { data: updated, error } = await supabase.from("decisions").update({ status, updated_at: new Date().toISOString() }).eq("id", decisionId).eq("user_id", userId).select("id,status").single();
+  if (error || !updated || updated.status !== status) return NextResponse.json({ error: "The decision didn't actually update — try again." }, { status: 500 });
 
   await supabase.from("activity_events").insert({ company_id: decision.company_id, user_id: userId, kind: "decision_updated", title: `Decision marked ${status}: ${decision.title}` });
 

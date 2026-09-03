@@ -67,8 +67,8 @@ export async function POST(request: Request) {
     priorVerdict: reportRow.verdict,
   };
 
-  const { error: updateError } = await supabase.from("reports").update({ score: parsed.score, verdict: parsed.verdict, report: updatedReport }).eq("id", reportId);
-  if (updateError) return NextResponse.json({ error: "Recomputed, but could not save the update." }, { status: 500 });
+  const { data: updated, error: updateError } = await supabase.from("reports").update({ score: parsed.score, verdict: parsed.verdict, report: updatedReport }).eq("id", reportId).select("id,score,verdict").single();
+  if (updateError || !updated || updated.score !== parsed.score || updated.verdict !== parsed.verdict) return NextResponse.json({ error: "Recomputed, but could not save the update — try again." }, { status: 500 });
 
   return NextResponse.json({ score: parsed.score, verdict: parsed.verdict, changed: parsed.changed, evidenceSummary: parsed.evidenceSummary, reasoning: parsed.reasoning, repeatedSignals: parsed.repeatedSignals, evidenceCount: evidence.length });
 }

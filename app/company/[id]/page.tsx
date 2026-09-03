@@ -5,6 +5,7 @@ import { loadCompanyContext } from "../../../lib/company-context";
 import AskCofounder from "../../../components/ask-cofounder";
 import TaskItem from "../../../components/task-item";
 import DecisionPanel from "../../../components/decision-panel";
+import LocalTime from "../../../components/local-time";
 
 const ACTIVITY_ICON: Record<string, string> = {
   company_created: "✦", goal_created: "◎", mission_created: "▶", task_completed: "✓",
@@ -102,7 +103,7 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
                 <ul>{ctx.recentActivity.map((event, index) => (
                   <li key={index}>
                     <b>{ACTIVITY_ICON[event.kind] ?? "•"}</b>
-                    <div><p>{event.title}</p><small>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</small></div>
+                    <div><p>{event.title}</p><small><LocalTime iso={event.createdAt} /></small></div>
                   </li>
                 ))}</ul>
               ) : (
