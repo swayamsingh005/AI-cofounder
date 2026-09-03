@@ -812,3 +812,70 @@ html[data-theme='dark'] .company-grid{gap:20px!important}
 html[data-theme='dark'] .next-action{border-color:#3c3020}
 html[data-theme='dark'] .next-action p,html[data-theme='dark'] .attention-list li span,html[data-theme='dark'] .task-preview-label{color:#c9baa3}
 html[data-theme='dark'] .task-expand,html[data-theme='dark'] .task-collapse{border-color:#3c3020;color:#c9baa3}
+
+/* --- V2 Phase B: 3-region command-center shell (sidebar + main + AI panel) --- */
+.company-shell-3col{display:grid;grid-template-columns:220px 1fr 380px;min-height:100vh;background:var(--paper)}
+.company-sidebar{border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-brand{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;text-decoration:none;color:var(--ink);padding:0 8px}
+.sidebar-company{padding:0 4px}
+.sidebar-company-switch{display:block;text-decoration:none;color:inherit;padding:9px 8px;border-radius:8px}
+.sidebar-company-switch:hover{background:#f2ede0}
+.sidebar-company-switch b{display:block;font-size:14px;color:var(--ink)}
+.sidebar-company-switch small{font:9px 'DM Mono';letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px}
+.sidebar-link{text-decoration:none;color:var(--muted);font-size:13px;padding:8px 12px;border-radius:7px}
+.sidebar-link:hover{background:#f2ede0;color:var(--ink)}
+.sidebar-link.active{background:var(--ink);color:#fff}
+.sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.sidebar-link-muted{font-size:12px}
+
+.company-main-region{padding:36px 40px;overflow-y:auto;min-width:0}
+.company-ai-region{border-left:1px solid var(--line);padding:20px;position:sticky;top:0;height:100vh}
+.cofounder-panel-persistent{height:100%;display:flex;flex-direction:column;border:0;padding:0}
+.cofounder-panel-persistent .cofounder-box{flex:1;display:flex;flex-direction:column}
+.cofounder-panel-persistent .cofounder-thread{flex:1;max-height:none}
+.cofounder-scope{display:block;color:var(--muted);font-size:11px;margin:-6px 0 12px}
+
+.overview-page{max-width:760px}
+.company-tagline{color:var(--muted);font-size:14px;margin:6px 0 0}
+.company-mission-link{display:block;text-decoration:none;color:inherit}
+.overview-bottom{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+.overview-view-all{display:inline-block;margin-top:10px;font-size:12px;color:var(--muted);text-decoration:none}
+
+.page-section{max-width:760px}
+.page-header{margin-bottom:18px}
+.page-header>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e}
+.page-header h1{font:600 26px 'Manrope';margin:6px 0 0}
+.page-intro{color:var(--muted);font-size:13px;max-width:480px;margin:0 0 22px}
+.mission-why,.mission-success{color:var(--muted);font-size:13px;margin:0 0 14px;line-height:1.5}
+.milestone-list-full{margin-top:20px}
+.milestone h3 small{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+.milestone-complete{opacity:.6}
+.task-group{margin-bottom:26px}
+.task-group h3{font-size:13px;font-weight:600;margin:0 0 10px}
+.task-group h3 small{font-weight:400;color:var(--muted)}
+.task-group ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+
+.memory-search-input{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:14px;box-sizing:border-box;margin-bottom:22px}
+.memory-group{margin-bottom:22px}
+.memory-group h3{font-size:13px;font-weight:600;margin:0 0 10px;text-transform:capitalize}
+.memory-group h3 small{font-weight:400;color:var(--muted)}
+.memory-group ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.memory-group li{border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.memory-group li b{display:block;font-size:13px;margin-bottom:3px}
+.memory-group li p{margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+
+html[data-theme='dark'] .company-shell-3col{background:#0b0b0c}
+html[data-theme='dark'] .company-sidebar,html[data-theme='dark'] .company-ai-region{border-color:#26272b}
+html[data-theme='dark'] .sidebar-brand,html[data-theme='dark'] .sidebar-company-switch b,html[data-theme='dark'] .page-header h1{color:#e8e8ea}
+html[data-theme='dark'] .sidebar-company-switch:hover,html[data-theme='dark'] .sidebar-link:hover{background:#17181b}
+html[data-theme='dark'] .sidebar-link{color:#97989d}
+html[data-theme='dark'] .sidebar-bottom{border-color:#26272b}
+html[data-theme='dark'] .company-tagline,html[data-theme='dark'] .cofounder-scope,html[data-theme='dark'] .page-intro,
+html[data-theme='dark'] .mission-why,html[data-theme='dark'] .mission-success,html[data-theme='dark'] .overview-view-all,
+html[data-theme='dark'] .task-group h3 small,html[data-theme='dark'] .memory-group h3 small,html[data-theme='dark'] .memory-group li p{color:#97989d}
+html[data-theme='dark'] .memory-group li{border-color:#26272b}
+html[data-theme='dark'] .memory-search-input{background:#141416;border-color:#26272b;color:#e8e8ea}
+
+@media(max-width:1100px){.company-shell-3col{grid-template-columns:200px 1fr}.company-ai-region{display:none}}
+@media(max-width:750px){.company-shell-3col{grid-template-columns:1fr}.company-sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center}.overview-bottom{grid-template-columns:1fr}}
