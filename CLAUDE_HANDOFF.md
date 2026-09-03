@@ -526,3 +526,15 @@ Second piece of Phase 3, per the agreed sequencing (brief → command bar → fu
 - **Found and fixed a real gap while wiring this up**: tasks created with no `mission_id` had nowhere to render — the dashboard only ever looped over the active mission's own milestones. A command-bar-created task would have been created successfully in the database and then be permanently invisible in the UI. Added a new "Other tasks" section to `app/company/[id]/page.tsx` (a second query for `mission_id IS NULL`, rendered with the same `TaskItem` component) so this doesn't happen. Caught this by actually thinking through what happens after the route succeeds, not by testing live (still no browser access in this sandbox) — worth a real test to confirm it works as designed.
 
 `npm run build` passes, CSS brace-balanced (1213/1213). **Not verified end to end** — needs a real test: press Cmd/Ctrl+K (or Ctrl+K on non-Mac) on a company page, try all three inline actions, and confirm a command-bar-created task actually shows up under "Other tasks" after the page refreshes.
+
+## Session log — Claude, follow-up after command bar test — auto-polish raw text
+
+Owner tested the command bar and asked for a genuinely good improvement: when a task (or decision) is typed quickly into the command bar, it may have grammar issues or be phrased awkwardly — asked for an AI pass to clean it into one proper sentence before saving, same meaning, just polished.
+
+New `polishOneLine()` in `lib/ai.ts` — reusable, not task-specific. Explicitly told to preserve meaning and every specific detail (names, numbers, dates, currency) exactly, never add new information, and return only the rewritten sentence with no quotes/commentary/markdown. Falls back silently to the original raw text if `GROQ_API_KEY` is missing or the call fails — a failed polish should never block creating the thing itself, this is a nice-to-have, not a required step.
+
+Wired into `POST /api/company/tasks` (title) and `POST /api/company/decisions` (title only — deliberately did **not** polish `reasoning`, since that field can legitimately be several sentences and forcing it into "one clean sentence" would lose meaning, not just fix grammar).
+
+**Cost note**: this adds one more small Groq call (`maxTokens: 100`) per manually-created task or decision. Small, but worth knowing if usage patterns change — every command-bar task-add is now 2 AI calls total if the command-bar flow itself also involves generation elsewhere (it doesn't currently — task/decision creation via the command bar was already just 1 call each before this, now 2: the polish, then the insert has no AI call itself, so it's +1 call per creation, not doubling anything larger).
+
+`npm run build` passes (had to drop an `s` regex flag — dotAll isn't supported at the project's current TS target, not needed here anyway since polished text is single-line). Not verified end to end — needs a real test: type a task title with a typo/grammar issue into the command bar and confirm what actually gets saved is cleaned up but says the same thing.

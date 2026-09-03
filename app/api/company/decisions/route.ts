@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
+import { polishOneLine } from "../../../../lib/ai";
 
 const VALID_STATUSES = ["active", "reconsidered", "reversed"] as const;
 
@@ -20,9 +21,13 @@ export async function POST(request: Request) {
   const { data: company } = await supabase.from("companies").select("id").eq("id", companyId).eq("user_id", userId).maybeSingle();
   if (!company) return NextResponse.json({ error: "Company not found." }, { status: 404 });
 
+  // Clean up the title only — reasoning stays as typed, since it can legitimately be several
+  // sentences and forcing it into "one clean sentence" would lose meaning, not just fix grammar.
+  const cleanTitle = await polishOneLine(title.trim().slice(0, 400), "This is the title of a startup decision being recorded.");
+
   const { data: decision, error } = await supabase.from("decisions").insert({
     company_id: companyId, user_id: userId,
-    title: title.trim().slice(0, 300),
+    title: cleanTitle.slice(0, 300),
     reasoning: typeof reasoning === "string" ? reasoning.trim().slice(0, 1000) : null,
   }).select("id,title,reasoning,status,created_at").single();
   if (error || !decision) return NextResponse.json({ error: "Could not record the decision." }, { status: 500 });

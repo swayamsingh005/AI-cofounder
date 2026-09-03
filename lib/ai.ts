@@ -74,6 +74,25 @@ export async function groqJson<T = unknown>(system: string, user: string, opts: 
   return JSON.parse(stripJsonFence(raw)) as T;
 }
 
+/** Rewrites a short piece of raw user text (a task title, a decision title, etc.) into one clean,
+ * grammatically correct sentence — same meaning, same specifics (names, numbers, dates), just
+ * polished. Falls back to the original text unchanged if AI isn't configured or the call fails —
+ * a failed polish should never block whatever's being created from being created. */
+export async function polishOneLine(raw: string, context?: string): Promise<string> {
+  const trimmed = raw.trim();
+  if (!trimmed || !process.env.GROQ_API_KEY) return trimmed;
+  try {
+    const system = `Rewrite the given text as one clean, grammatically correct sentence in plain English. Preserve the original meaning and intent exactly, and keep every specific detail (names, numbers, dates, currency) unchanged — do not add information that wasn't there and do not soften or change what it's asking for. Return ONLY the rewritten sentence — no quotes around it, no commentary, no markdown.`;
+    const user = context ? `Context: ${context}\n\nText to clean up: ${trimmed}` : `Text to clean up: ${trimmed}`;
+    const result = await groqComplete(system, user, { maxTokens: 100, temperature: 0.2 });
+    const cleaned = result.trim().replace(/^["'“](.*)["'”]$/, "$1").trim();
+    return cleaned || trimmed;
+  } catch (error) {
+    console.error("[lib/ai] polishOneLine failed, using raw text instead", { message: error instanceof Error ? error.message : "Unknown error" });
+    return trimmed;
+  }
+}
+
 /** Web search via Tavily. Returns a compact text digest for prompting plus structured sources for citations.
  * Returns empty results (never throws) if TAVILY_API_KEY is missing or the request fails, so a missing
  * search key degrades to ungrounded analysis rather than failing the whole report. */

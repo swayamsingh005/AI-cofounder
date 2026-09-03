@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
+import { polishOneLine } from "../../../../lib/ai";
 
 const VALID_STATUSES = ["todo", "in_progress", "blocked", "completed"] as const;
 const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
@@ -21,9 +22,13 @@ export async function POST(request: Request) {
   const { data: company } = await supabase.from("companies").select("id").eq("id", companyId).eq("user_id", userId).maybeSingle();
   if (!company) return NextResponse.json({ error: "Company not found." }, { status: 404 });
 
+  // Clean up grammar/phrasing before saving — same meaning and details, just one polished
+  // sentence instead of whatever was typed quickly into the command bar.
+  const cleanTitle = await polishOneLine(title.trim().slice(0, 400), "This is a task on a startup's to-do list.");
+
   // Standalone task — no goal/mission/milestone. Shows up in the dashboard's "Other tasks"
   // section (tasks with mission_id IS NULL), separate from the active mission's task list.
-  const { data: task, error } = await supabase.from("tasks").insert({ company_id: companyId, user_id: userId, title: title.trim().slice(0, 200), priority: cleanPriority, status: "todo", source: "user" }).select("id,title,priority,status").single();
+  const { data: task, error } = await supabase.from("tasks").insert({ company_id: companyId, user_id: userId, title: cleanTitle.slice(0, 200), priority: cleanPriority, status: "todo", source: "user" }).select("id,title,priority,status").single();
   if (error || !task) return NextResponse.json({ error: "Could not create the task." }, { status: 500 });
 
   await supabase.from("activity_events").insert({ company_id: companyId, user_id: userId, kind: "task_created", title: `Task added: ${task.title}` });
