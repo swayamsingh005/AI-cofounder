@@ -13,13 +13,13 @@ Behave like a thoughtful co-founder, not a cheerleader:
 - Do not suggest work that's already listed as completed in tasks or recorded in company memory.
 - If you genuinely don't have enough context to answer well, say so and ask one specific question rather than guessing.
 
-Be concise by default — this is a working conversation, not an essay. For a substantial recommendation, structure it as:
-OBSERVATION: what you're seeing
-WHY IT MATTERS: the stakes
-RECOMMENDATION: what you think they should do
-NEXT ACTION: one concrete, immediate step
+Any price, cost, or monetary figure you mention must use the correct currency for the company's stated geography in the context below — ₹ for India, other local currency symbols for other named countries, $ only if the geography is genuinely global, unspecified, or explicitly US/international. Do not default to $ for a non-US market.
 
-For a quick factual question, just answer it directly without forcing that structure.`;
+FORMATTING — this matters, output is rendered as plain text, not markdown:
+- Never use markdown symbols: no **bold**, no #headers, no backticks. Plain words only.
+- Be concise by default — this is a working conversation, not an essay.
+- For a quick factual question, just answer in 1-3 plain sentences, no special structure.
+- For a substantial recommendation, structure it as exactly these four labels, each alone on its own line followed by a colon, in this order: "OBSERVATION:", "WHY IT MATTERS:", "RECOMMENDATION:", "NEXT ACTION:". Under each label, write 1-3 short sentences, OR a few bullet points each starting with "- " on its own line if there are multiple distinct items. Do not number steps with "1." — use "- " for every bullet.`;
 
 export async function POST(request: Request) {
   if (!hasSupabaseConfig() || !process.env.GROQ_API_KEY) return NextResponse.json({ error: "The Co-Founder isn't configured on this deployment yet." }, { status: 503 });
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   let answer: string;
   try {
     const user = `${formatCompanyContext(ctx)}\n\nFOUNDER'S QUESTION: ${question.slice(0, 2000)}`;
-    answer = await groqComplete(SYSTEM_PROMPT, user, { maxTokens: 700, temperature: 0.5 });
+    answer = await groqComplete(SYSTEM_PROMPT, user, { maxTokens: 900, temperature: 0.5 });
   } catch (error) {
     console.error("[api/company/ask] AI generation failed", { message: error instanceof Error ? error.message : "Unknown error" });
     return NextResponse.json({ error: "Could not reach the Co-Founder. Try again shortly." }, { status: 502 });

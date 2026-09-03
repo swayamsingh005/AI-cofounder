@@ -461,3 +461,16 @@ Owner tested Phase 1 end to end and it worked (real, specific goal/mission/miles
 4. **Also fixed**: `/api/company/build`'s profile-mapping code, which was reading `content.problem`/`content.businessModel`/`content.gap` as plain strings for the `company_profiles` text columns — now joins the bullet arrays into a single string for those columns (the DB columns stayed `text`, only the V1 report's own JSON shape changed).
 
 `npm run build` passes, zero TypeScript errors.
+
+## Session log — Claude, follow-up — Ask Co-Founder currency + rendering fixes
+
+Owner tested the Ask Co-Founder chat (confirming it works and answers with real, specific company context — genuine Phase 1 completion) and found two bugs:
+
+1. **Currency again.** `/api/company/ask`'s `SYSTEM_PROMPT` was a separate prompt from `/api/analyze` and `/api/company/build` and had NOT gotten the currency-localization instruction added in the prior fix — same bug, different route. Fixed with the same instruction (correct local currency per company geography, ₹ for India, $ only for genuinely global/US markets). **Worth double-checking there isn't a fourth prompt somewhere still missing this** — grep for "currency" across `app/api` to confirm all AI-writing routes have it if more get added later.
+
+2. **Ugly rendering.** The Co-Founder answered with real content (genuinely good — referenced the actual "Define core feature set" task and the 3-firm pilot mission) but rendered as raw `**markdown**` asterisks showing up literally as text, in one dense unstructured blob. Two-part fix:
+   - Prompt: explicit "no markdown symbols" instruction, plus much stricter formatting rules for the OBSERVATION/WHY IT MATTERS/RECOMMENDATION/NEXT ACTION structure — each label alone on its own line with a colon, bullets always `- ` prefixed (not numbered).
+   - Rendering: `components/ask-cofounder.tsx` now has a `parseAnswer()` function that turns the plain-text response into real structured blocks (heading + paragraphs + bullet list) instead of dumping it in a single `<p>` with `white-space: pre-wrap`. **Deliberately defensive, not just prompt-reliant** — strips stray `**`/`#`/backticks regardless of whether the model obeys the "no markdown" instruction, and the heading-detection regex accepts both `"OBSERVATION"` alone on a line and `"OBSERVATION: inline text"` on one line, because a real test showed the model bolding the heading as its own line without a colon despite the original (looser) prompt asking for `"LABEL: text"` — do not tighten this parser to require an exact format the model might drift from again. Verified with a standalone Node script against the literal text from the owner's screenshot before shipping, not just build-checked.
+   - CSS: new `.cofounder-answer-body`/`.cofounder-block` rules render the heading as a small caption above its content, matching the report page's existing type/color language.
+
+`npm run build` passes. Parser tested standalone with node against two real cases (structured 4-part answer, plain short answer) before committing — both parse correctly.

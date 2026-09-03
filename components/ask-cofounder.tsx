@@ -3,6 +3,48 @@
 import { useState } from "react";
 
 type Exchange = { question: string; answer: string };
+type Block = { heading: string | null; paragraphs: string[]; bullets: string[] };
+
+const KNOWN_HEADINGS = ["OBSERVATION", "WHY IT MATTERS", "RECOMMENDATION", "NEXT ACTION"];
+
+/** Turns the Co-Founder's plain-text answer into structured blocks for real rendering — headings
+ * and bullet lists, not a wall of preformatted text. Defensively strips stray markdown (**, #, `)
+ * in case the model ignores the "no markdown" instruction, and treats "1. " / "- " / "• " prefixed
+ * lines as bullets under whichever heading (or the unlabeled intro) they fall under. */
+function parseAnswer(raw: string): Block[] {
+  const clean = raw.replace(/\*\*(.*?)\*\*/g, "$1").replace(/^#+\s*/gm, "").replace(/`/g, "");
+  const lines = clean.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+  const blocks: Block[] = [{ heading: null, paragraphs: [], bullets: [] }];
+
+  for (const line of lines) {
+    const headingMatch = KNOWN_HEADINGS.find(h => new RegExp(`^${h}\\s*:?\\s*$`, "i").test(line) || new RegExp(`^${h}\\s*:\\s*\\S`, "i").test(line));
+    if (headingMatch) {
+      const rest = line.replace(new RegExp(`^${headingMatch}\\s*:?\\s*`, "i"), "").trim();
+      blocks.push({ heading: headingMatch, paragraphs: rest ? [rest] : [], bullets: [] });
+      continue;
+    }
+    const bulletMatch = line.match(/^(?:[-•]|\d+\.)\s+(.*)$/);
+    const current = blocks[blocks.length - 1];
+    if (bulletMatch) current.bullets.push(bulletMatch[1]);
+    else current.paragraphs.push(line);
+  }
+  return blocks.filter(block => block.paragraphs.length || block.bullets.length);
+}
+
+function AnswerBody({ answer }: { answer: string }) {
+  const blocks = parseAnswer(answer);
+  return (
+    <div className="cofounder-answer-body">
+      {blocks.map((block, index) => (
+        <div className="cofounder-block" key={index}>
+          {block.heading && <b>{block.heading}</b>}
+          {block.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+          {block.bullets.length > 0 && <ul>{block.bullets.map((b, i) => <li key={i}>{b}</li>)}</ul>}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function AskCofounder({ companyId }: { companyId: string }) {
   const [question, setQuestion] = useState("");
@@ -33,7 +75,7 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
         {exchanges.map((exchange, index) => (
           <div className="cofounder-exchange" key={index}>
             <p className="cofounder-question">{exchange.question}</p>
-            <p className="cofounder-answer">{exchange.answer}</p>
+            <AnswerBody answer={exchange.answer} />
           </div>
         ))}
         {working && <p className="cofounder-thinking">Thinking…</p>}

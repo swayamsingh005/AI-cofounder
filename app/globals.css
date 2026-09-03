@@ -508,3 +508,13 @@ html[data-theme='dark'] .company-goal p,html[data-theme='dark'] .company-mission
 html[data-theme='dark'] .cofounder-question{color:#f0e9dc}
 html[data-theme='dark'] .cofounder-form input{background:#211a12;border-color:#3c3020;color:#f0e9dc}
 @media(max-width:900px){.company-grid{grid-template-columns:1fr}}
+
+/* --- V2 Company OS: structured Ask Co-Founder rendering (headings + bullets, not raw text) --- */
+.cofounder-answer-body{display:flex;flex-direction:column;gap:10px}
+.cofounder-block{font-size:13px;color:var(--muted);line-height:1.6}
+.cofounder-block b{display:block;font:700 10px 'DM Mono';letter-spacing:1px;color:#8a9c4e;margin-bottom:4px}
+.cofounder-block p{margin:0 0 4px}
+.cofounder-block ul{margin:2px 0 0;padding-left:16px}
+.cofounder-block li{margin-bottom:3px}
+html[data-theme='dark'] .cofounder-block{color:#c9baa3}
+html[data-theme='dark'] .cofounder-block b{color:#a9d47f}
