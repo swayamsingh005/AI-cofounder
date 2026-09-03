@@ -829,7 +829,7 @@ html[data-theme='dark'] .task-expand,html[data-theme='dark'] .task-collapse{bord
 .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px}
 .sidebar-link-muted{font-size:12px}
 
-.company-main-region{padding:36px 40px;overflow-y:auto;min-width:0}
+.company-main-region{padding:36px 40px;overflow-y:auto;min-width:0;min-height:0;height:100vh}
 .company-ai-region{border-left:1px solid var(--line);padding:20px;position:sticky;top:0;height:100vh}
 .cofounder-panel-persistent{height:100%;display:flex;flex-direction:column;border:0;padding:0;min-height:0}
 .cofounder-panel-persistent .cofounder-box{flex:1;display:flex;flex-direction:column;min-height:0}

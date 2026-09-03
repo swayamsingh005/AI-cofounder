@@ -654,3 +654,13 @@ Real cause: when Phase B made the AI panel persistent (`height:100%` flex column
 Fixed: `overflow-y:auto` and `min-height:0` added at every level of the flex chain (`.cofounder-panel-persistent`, `.cofounder-box`, `.cofounder-thread`) — `min-height:0` is what actually lets the browser respect the height constraint and scroll internally instead of growing unbounded.
 
 npm run build passes.
+
+## Session log — Claude, follow-up — clarified: it was the page, not the chat panel
+
+Owner clarified the scroll bug was about the main page content area, not the AI Co-Founder chat (which the previous fix did correctly address). Same root cause, different element: `.company-main-region` had `overflow-y:auto` but no explicit height — and since it's a CSS Grid item, it defaults to `min-height:auto`, which (identically to the flexbox case) means the browser lets it grow to fit its content instead of respecting any intended height constraint, so `overflow-y:auto` never had anything to actually scroll.
+
+Fixed: gave `.company-main-region` an explicit `height:100vh` plus `min-height:0` to override the grid-item default. Now all three columns (sidebar, main content, AI panel) are each exactly one viewport tall and scroll independently within themselves, rather than the page attempting to scroll as a whole (which wasn't working) or the content silently clipping.
+
+**Pattern worth remembering for this codebase**: any time `overflow-y:auto` is added to a flex or grid *item* (not a plain block element) in this app, it needs an explicit `min-height:0` alongside it, or the browser's default `min-height:auto` on flex/grid children will silently prevent the overflow from ever doing anything. This is the second time this exact bug shape has appeared in two sessions (the chat panel, now the main content region) — worth checking any future scrollable panel added to the 3-column shell for the same issue up front instead of finding it via a bug report again.
+
+npm run build passes.
