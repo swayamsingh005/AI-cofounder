@@ -2,6 +2,34 @@ import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 
 const VALID_STATUSES = ["todo", "in_progress", "blocked", "completed"] as const;
+const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
+
+export async function POST(request: Request) {
+  if (!hasSupabaseConfig()) return NextResponse.json({ error: "Supabase is not configured." }, { status: 400 });
+  const { companyId, title, priority } = await request.json().catch(() => ({}));
+  if (typeof companyId !== "string" || !companyId) return NextResponse.json({ error: "A company id is required." }, { status: 400 });
+  if (typeof title !== "string" || !title.trim()) return NextResponse.json({ error: "A task needs a title." }, { status: 400 });
+  const cleanPriority = VALID_PRIORITIES.includes(priority) ? priority : "medium";
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+
+  // Confirm ownership before writing anything tied to this company — never trust a client-supplied
+  // companyId, even though RLS would independently block a cross-user insert too.
+  const { data: company } = await supabase.from("companies").select("id").eq("id", companyId).eq("user_id", userId).maybeSingle();
+  if (!company) return NextResponse.json({ error: "Company not found." }, { status: 404 });
+
+  // Standalone task — no goal/mission/milestone. Shows up in the dashboard's "Other tasks"
+  // section (tasks with mission_id IS NULL), separate from the active mission's task list.
+  const { data: task, error } = await supabase.from("tasks").insert({ company_id: companyId, user_id: userId, title: title.trim().slice(0, 200), priority: cleanPriority, status: "todo", source: "user" }).select("id,title,priority,status").single();
+  if (error || !task) return NextResponse.json({ error: "Could not create the task." }, { status: 500 });
+
+  await supabase.from("activity_events").insert({ company_id: companyId, user_id: userId, kind: "task_created", title: `Task added: ${task.title}` });
+
+  return NextResponse.json({ task });
+}
 
 export async function PATCH(request: Request) {
   if (!hasSupabaseConfig()) return NextResponse.json({ error: "Supabase is not configured." }, { status: 400 });

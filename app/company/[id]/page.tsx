@@ -37,6 +37,10 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
   const totalTasks = fullTasks?.length ?? 0;
   const doneTasks = (fullTasks ?? []).filter(t => t.status === "completed").length;
 
+  // Tasks with no mission (e.g. quick-created from the command bar) wouldn't show up anywhere
+  // otherwise — the milestone list above only covers the active mission's own tasks.
+  const { data: standaloneTasks } = await supabase.from("tasks").select("id,title,status,priority").eq("company_id", id).is("mission_id", null).order("created_at", { ascending: false }).limit(20);
+
   return (
     <main className="app-shell company-shell">
       <header className="app-nav">
@@ -103,6 +107,13 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
               </div>
             ) : (
               <div className="company-empty"><p>Nothing is scheduled yet.</p><small>Ask your Co-Founder to turn your current objective into a mission.</small></div>
+            )}
+
+            {standaloneTasks && standaloneTasks.length > 0 && (
+              <div className="milestone standalone-tasks">
+                <h3>Other tasks</h3>
+                <ul>{standaloneTasks.map(task => <TaskItem key={task.id} id={task.id} title={task.title} priority={task.priority} initialStatus={task.status} />)}</ul>
+              </div>
             )}
           </div>
 

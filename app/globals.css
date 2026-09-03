@@ -573,3 +573,34 @@ html[data-theme='dark'] .decision-panel-body p,html[data-theme='dark'] .decision
 html[data-theme='dark'] .daily-brief{background:#171310;border-color:#3c3020}
 html[data-theme='dark'] .brief-priority{color:#f0e9dc}
 html[data-theme='dark'] .brief-attention span{color:#c9baa3}
+
+/* --- V2 Company OS Phase 3b: Command bar (Cmd/Ctrl+K) --- */
+.command-trigger{position:fixed;bottom:22px;right:22px;z-index:200;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 13px;font:12px 'DM Mono';color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:3px;box-shadow:0 4px 14px #0002}
+.command-trigger span{font-size:13px}
+html[data-theme='dark'] .command-trigger{background:#211a12;border-color:#3c3020;color:#c9baa3;box-shadow:0 4px 14px #0006}
+
+.command-overlay{position:fixed;inset:0;z-index:300;background:#00000066;backdrop-filter:blur(2px);display:flex;align-items:flex-start;justify-content:center;padding-top:14vh}
+.command-bar{width:480px;max-width:90vw;background:#fff;border-radius:16px;box-shadow:0 30px 70px #0004;overflow:hidden;border:1px solid var(--line)}
+html[data-theme='dark'] .command-bar{background:#171310;border-color:#3c3020}
+
+.command-list{display:flex;flex-direction:column;padding:10px}
+.command-list button{text-align:left;border:0;background:transparent;padding:12px 14px;border-radius:9px;font-size:14px;cursor:pointer;color:var(--ink)}
+.command-list button:hover{background:#f2ede0}
+html[data-theme='dark'] .command-list button{color:#f0e9dc}
+html[data-theme='dark'] .command-list button:hover{background:#211a12}
+.command-hint{padding:12px 14px;margin:0;font-size:12px;color:var(--muted)}
+html[data-theme='dark'] .command-hint{color:#c9baa3}
+
+.command-form{padding:16px}
+.command-form input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;box-sizing:border-box}
+html[data-theme='dark'] .command-form input{background:#211a12;border-color:#3c3020;color:#f0e9dc}
+.command-form-actions{display:flex;gap:8px;margin-top:10px}
+.command-form-actions button[type=submit]{border:0;background:var(--ink);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer}
+.command-form-actions button[type=submit]:disabled{opacity:.5;cursor:not-allowed}
+.command-form-actions button[type=button]{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--muted)}
+html[data-theme='dark'] .command-form-actions button[type=button]{border-color:#3c3020;color:#c9baa3}
+.command-result-ok{color:#8a9c4e;font-size:12px;margin:10px 0 0}
+.command-result-error{color:#b5533c;font-size:12px;margin:10px 0 0;white-space:pre-wrap;max-height:160px;overflow-y:auto}
+
+.standalone-tasks h3{color:#4a3c28}
+html[data-theme='dark'] .standalone-tasks h3{color:#f0e9dc}
