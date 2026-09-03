@@ -550,3 +550,17 @@ Fixed by rewriting the prompt: explicit instruction that it **must** actually co
 **Not independently verified this actually fixed it** — same limitation as always, no live network access here to test against the real model. If this still doesn't correct anything after this deploy, the next diagnostic step would be checking Vercel's runtime logs for whether `polishOneLine` is even being reached (rule out a code-path bug) versus the model genuinely still returning the input unchanged (a prompt/model problem) — worth testing with an obviously-broken input (e.g. "buy 5 chiar for offic") to make the correction unambiguous either way.
 
 `npm run build` passes.
+
+## Session log — Claude, follow-up — real root cause of polishOneLine failure: token budget, not prompt or rate limit
+
+Owner sent Vercel logs showing `[lib/ai] polishOneLine failed, using raw text instead` and `[lib/daily-brief] AI generation failed { message: 'Groq returned...` — confirming the AI calls were genuinely erroring, not a prompt-quality problem (the previous fix's few-shot examples never even got a chance to matter). Also checked Groq's usage graph — nowhere near the rate limit, ruling out the free-tier-limit theory too.
+
+**Actual cause**: `openai/gpt-oss-20b` is a reasoning model — it spends tokens on internal reasoning before writing the final answer, and those reasoning tokens count against `max_tokens`. `polishOneLine` was budgeted at 100 tokens and the daily brief's priority sentence at 200 — both almost certainly small enough that the model burned the whole budget "thinking" and never got to output the actual answer, producing an empty response (`callGroq` throws "Groq returned an empty response" when content is empty, matching the truncated log line exactly).
+
+Confirmed by checking every `maxTokens` value across the codebase: `/api/analyze` (3200), `/api/company/build` (1600), `/api/customer-toolkit` (1200), `/api/company/ask` (900), `/api/recompute` (900) are all comfortably large and have been working correctly in every prior test this session — **only** the two smallest budgets (100, 200) were failing. That pattern is the actual evidence, not a guess.
+
+Fixed by raising both: `polishOneLine` 100 → 400, daily brief's priority sentence 200 → 500. Left everything else alone since nothing else showed this symptom.
+
+**Lesson for any future short-output prompt on this model**: budget generously even for a one-sentence answer — reasoning overhead on `openai/gpt-oss-20b` (or whichever model the fallback chain lands on) can consume more tokens than the visible output itself. A tight budget on a "just one short line" task is exactly the failure mode that bit both of these.
+
+`npm run build` passes. Not independently verified — needs a real test with the same "buy 5 chiar for offic tommorow"-style obviously-broken input to confirm the polish actually corrects it now.

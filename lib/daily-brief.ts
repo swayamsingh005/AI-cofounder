@@ -60,7 +60,7 @@ export async function getOrCreateDailyBrief(supabase: SupabaseClient, companyId:
     try {
       const system = `You write one short, direct sentence recommending what a founder should prioritize today, based ONLY on the facts given below — do not invent tasks, metrics, or events not present in the context. If the facts given don't clearly point to one priority, say so plainly rather than guessing. Use the correct local currency for the company's geography if you mention any money (₹ for India, other local symbols for other countries, $ only for global/unspecified/US markets). One or two sentences maximum, plain text, no markdown.`;
       const user = `${formatCompanyContext(ctx)}\n\nToday's flagged items (computed from real data, not guesses):\n${attentionItems.length ? attentionItems.map(i => `- [${i.severity}] ${i.text}`).join("\n") : "None — nothing overdue, blocked, or untouched."}\n\nWrite the one-sentence (or two) recommended priority for today.`;
-      recommendedPriority = (await groqComplete(system, user, { maxTokens: 200, temperature: 0.4 })).trim();
+      recommendedPriority = (await groqComplete(system, user, { maxTokens: 500, temperature: 0.4 })).trim();
       generatedBy = "ai";
     } catch (error) {
       console.error("[lib/daily-brief] AI generation failed", { message: error instanceof Error ? error.message : "Unknown error" });

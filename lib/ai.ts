@@ -90,7 +90,7 @@ Example: "interview 5 dentist about booking flow" → "Interview 5 dentists abou
 
 Return ONLY the corrected sentence — no quotes around it, no commentary, no markdown.`;
     const user = context ? `Context: ${context}\n\nText to clean up: ${trimmed}` : `Text to clean up: ${trimmed}`;
-    const result = await groqComplete(system, user, { maxTokens: 100, temperature: 0.3 });
+    const result = await groqComplete(system, user, { maxTokens: 400, temperature: 0.3 });
     const cleaned = result.trim().replace(/^["'“](.*)["'”]$/, "$1").trim();
     return cleaned || trimmed;
   } catch (error) {
