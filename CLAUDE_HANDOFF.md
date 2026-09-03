@@ -677,3 +677,15 @@ Owner sent a real logo graphic (gold speech-bubble/bar-chart mark with a shootin
 **One honest visual trade-off worth knowing about**: the mark's two "eyes" are white dots. On the app's default dark theme they read clearly; on light backgrounds (light theme, or any light-colored surface) they'll blend in and nearly disappear since there's no outline around them in the source art. Not fixed in this pass — flagging it now rather than after the fact, since it's a real, visible thing to check once you look at it in light mode.
 
 `npm run build` passes (also freed a large amount of stale disk space in this sandbox from many previous sessions' repo clones — first build attempt failed with "No space left on device" before that cleanup, unrelated to the actual logo change).
+
+## Session log — Claude, logo swap #2
+
+Owner sent a different logo — purple-to-blue gradient "infinity made of two people + growth arrow" mark, with a full style sheet showing app-icon variants (light/dark squares, monochrome, circle badge). Flagged before touching anything: this is purple/blue, but the app's accent color is amber/gold — chosen specifically per the owner's own earlier instruction to avoid "purple AI clichés" in the V2 spec. Owner chose to swap the logo image only and leave the amber accent theme untouched everywhere else — noting this explicitly in case it comes up again; the logo and the UI accent color are now intentionally not the same hue family.
+
+Same extraction process as the first logo, with one real bug caught and fixed along the way: the first chroma-key attempt (measuring "distance from white" using only the brightest RGB channel) badly misjudged the vivid blue/purple pixels — a fully solid blue circle like `(3,90,245)` has its blue channel already near 255, so a max-channel-based "how far from white" metric scored it as nearly transparent even though it's clearly not background. Recalculated using the sum of all three channels' distance from white instead, which correctly separates true near-white background from the vivid gradient artwork. Also added a hard noise-floor threshold before the transparency ramp, since the raw linear version left visible grain/speckling in what should be a clean transparent background (likely subtle compression artifacts in the source image being picked up as faint partial transparency).
+
+Since the new files were saved under the exact same filenames as the first logo (`public/logo-mark.png`, `public/icon.png`, `app/icon.png`, `public/logo-full.png`), **this was a pure asset swap — zero code changes needed**. Every page already referencing `/logo-mark.png` and the favicon convention picks up the new artwork automatically.
+
+Verified the new mark against both dark and light backgrounds before shipping (unlike some earlier visual work this session, this one could actually be checked directly since it's a static image composite, not a live rendered page) — reads cleanly on both.
+
+`npm run build` passes.
