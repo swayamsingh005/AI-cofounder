@@ -518,3 +518,42 @@ html[data-theme='dark'] .cofounder-form input{background:#211a12;border-color:#3
 .cofounder-block li{margin-bottom:3px}
 html[data-theme='dark'] .cofounder-block{color:#c9baa3}
 html[data-theme='dark'] .cofounder-block b{color:#a9d47f}
+
+/* --- V2 Company OS Phase 2: interactive tasks, decision recording, activity timeline --- */
+.task-mark{border:1px solid var(--line);background:#fff;border-radius:50%;width:22px;height:22px;flex:none;display:grid;place-items:center;font-size:11px;cursor:pointer;color:#8a9c4e;padding:0}
+.task-mark:disabled{opacity:.5;cursor:wait}
+.task-in_progress .task-mark{color:#c9781f;border-color:#c9781f}
+.task-completed .task-mark{color:#8a9c4e;background:#8a9c4e;color:#fff;border-color:#8a9c4e}
+.task-blocked .task-mark{color:#b5533c;border-color:#b5533c}
+.task-blocked{border-color:#e0b3a3}
+
+.decision-panel-body{display:flex;flex-direction:column;gap:14px}
+.decision-panel-body>ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
+.decision-panel-body>ul>li{font-size:13px}
+.decision-panel-body>ul>li>div{display:flex;align-items:baseline;gap:6px}
+.decision-panel-body b{font-weight:600}
+.decision-panel-body em{font-style:normal;font-size:11px;color:var(--muted)}
+.decision-panel-body p{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.decision-inactive{opacity:.6}
+.decision-actions{display:flex;gap:8px;margin-top:5px}
+.decision-actions button{border:1px solid var(--line);background:transparent;border-radius:6px;font-size:11px;padding:3px 8px;cursor:pointer;color:var(--muted)}
+.decision-add{border:1px dashed var(--line);background:transparent;border-radius:9px;padding:9px;font-size:12px;color:var(--muted);cursor:pointer;width:100%;text-align:left}
+.decision-form{display:flex;flex-direction:column;gap:8px}
+.decision-form input,.decision-form textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical}
+.decision-form-actions{display:flex;gap:8px}
+.decision-form-actions button[type=submit]{border:0;background:var(--ink);color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer}
+.decision-form-actions button[type=submit]:disabled{opacity:.5;cursor:not-allowed}
+.decision-form-actions button[type=button]{border:1px solid var(--line);background:transparent;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;color:var(--muted)}
+
+.activity-panel{border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.activity-panel>span{font:10px 'DM Mono';letter-spacing:1px;color:#8a9c4e;display:block;margin-bottom:12px}
+.activity-panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;max-height:280px;overflow-y:auto}
+.activity-panel li{display:flex;gap:10px;align-items:flex-start}
+.activity-panel li b{color:#8a9c4e;flex:none;width:16px;text-align:center;font-weight:400}
+.activity-panel li p{margin:0;font-size:12px}
+.activity-panel li small{color:var(--muted);font-size:10px}
+
+html[data-theme='dark'] .task-mark{background:#211a12;border-color:#3c3020}
+html[data-theme='dark'] .decision-add,html[data-theme='dark'] .decision-form-actions button[type=button],html[data-theme='dark'] .decision-actions button{border-color:#3c3020;color:#c9baa3}
+html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-form textarea{background:#211a12;border-color:#3c3020;color:#f0e9dc}
+html[data-theme='dark'] .decision-panel-body p,html[data-theme='dark'] .decision-panel-body em,html[data-theme='dark'] .activity-panel li small{color:#c9baa3}

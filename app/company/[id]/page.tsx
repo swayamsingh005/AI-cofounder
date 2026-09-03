@@ -3,6 +3,13 @@ import { notFound } from "next/navigation";
 import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 import { loadCompanyContext } from "../../../lib/company-context";
 import AskCofounder from "../../../components/ask-cofounder";
+import TaskItem from "../../../components/task-item";
+import DecisionPanel from "../../../components/decision-panel";
+
+const ACTIVITY_ICON: Record<string, string> = {
+  company_created: "✦", goal_created: "◎", mission_created: "▶", task_completed: "✓",
+  decision_recorded: "◆", decision_updated: "◆",
+};
 
 export default async function CompanyWorkspace({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -66,11 +73,7 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
                       <h3>{milestone.title}</h3>
                       <ul>
                         {(tasksByMilestone.get(milestone.id) ?? []).map(task => (
-                          <li key={task.id} className={`task task-${task.status}`}>
-                            <b>{task.status === "completed" ? "✓" : "○"}</b>
-                            <span>{task.title}</span>
-                            <em>{task.priority}</em>
-                          </li>
+                          <TaskItem key={task.id} id={task.id} title={task.title} priority={task.priority} initialStatus={task.status} />
                         ))}
                       </ul>
                     </div>
@@ -89,11 +92,21 @@ export default async function CompanyWorkspace({ params }: { params: Promise<{ i
             </div>
 
             <div className="decisions-panel">
-              <span>RECENT DECISIONS</span>
-              {ctx.recentDecisions.length ? (
-                <ul>{ctx.recentDecisions.map(d => <li key={d.id}>{d.title}{d.status !== "active" ? ` (${d.status})` : ""}</li>)}</ul>
+              <span>DECISIONS</span>
+              <DecisionPanel companyId={ctx.company.id} initialDecisions={ctx.recentDecisions.map(d => ({ id: d.id, title: d.title, reasoning: d.reasoning, status: d.status }))} />
+            </div>
+
+            <div className="activity-panel">
+              <span>RECENT ACTIVITY</span>
+              {ctx.recentActivity.length ? (
+                <ul>{ctx.recentActivity.map((event, index) => (
+                  <li key={index}>
+                    <b>{ACTIVITY_ICON[event.kind] ?? "•"}</b>
+                    <div><p>{event.title}</p><small>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</small></div>
+                  </li>
+                ))}</ul>
               ) : (
-                <p className="company-empty-inline">No decisions recorded yet.</p>
+                <p className="company-empty-inline">Nothing yet — activity shows up here as you work.</p>
               )}
             </div>
           </aside>

@@ -474,3 +474,17 @@ Owner tested the Ask Co-Founder chat (confirming it works and answers with real,
    - CSS: new `.cofounder-answer-body`/`.cofounder-block` rules render the heading as a small caption above its content, matching the report page's existing type/color language.
 
 `npm run build` passes. Parser tested standalone with node against two real cases (structured 4-part answer, plain short answer) before committing — both parse correctly.
+
+## Session log — Claude, V2 Phase 2 — task completion, decision recording, activity timeline
+
+Phase 2 per the agreed plan, scoped to exactly the three things the owner asked for: task completion, decision recording, activity timeline.
+
+- **`PATCH /api/company/tasks`** — updates a task's status. Cycles `todo → in_progress → completed → todo` on click (see below). Scoped with an explicit `.eq("user_id", userId)` filter on top of RLS — never trusts a client-supplied `taskId` alone. Logs a `task_completed` activity event only when the new status is `completed` (not on every intermediate state change, to keep the timeline meaningful rather than noisy).
+- **`POST /api/company/decisions`** — records a new decision (title + optional reasoning). Verifies `companyId` actually belongs to the requesting user before writing (same never-trust-client-ids principle as `/api/company/build`). **`PATCH /api/company/decisions`** — flips a decision's status to `reconsidered` or `reversed`. Both log activity events.
+- **`components/task-item.tsx`** — client component, replaces the static task `<li>` from Phase 1. Click the status circle to cycle through states; optimistic update with revert-on-failure; calls `router.refresh()` on success so the mission's progress bar and "X / Y tasks completed" count (computed server-side from task status) stay in sync without a manual page reload.
+- **`components/decision-panel.tsx`** — replaces the static read-only decisions list. Inline "+ Record a decision" form, and each active decision gets "Reconsider"/"Reverse" buttons (optimistic, fire-and-forget — a failed status flip just silently won't persist rather than blocking the UI, acceptable for how low-stakes this action is).
+- **Activity timeline** — new panel on the dashboard rendering `ctx.recentActivity`, which `loadCompanyContext` was already fetching in Phase 1 (it just wasn't rendered anywhere yet) — no new data-fetching needed, only the UI. Shows kind-specific icons, title, and a formatted timestamp.
+
+**Explicitly still deferred** (Phase 3, per the original phasing — not done in this pass): "Save as Decision" / "Create Task" / "Remember This" actions surfaced directly from Ask Co-Founder chat responses (spec section 23 — right now decisions/tasks are created through their own forms, not pulled out of a conversation), the command bar, the full visual redesign, the daily founder brief, and a multi-company switcher in the nav.
+
+`npm run build` passes, zero TypeScript errors, CSS brace-balanced (1176/1176). **Not verified end to end in this sandbox** — same limitation as every prior session, no live network/browser access here. Needs a real test: complete a task and confirm the mission progress bar updates, record a decision and confirm it shows up immediately, mark one reconsidered and confirm the label updates.
