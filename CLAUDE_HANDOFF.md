@@ -731,3 +731,13 @@ Second step of the redesign sequence (design system → **landing page** → rep
 **Scoped down, flagged rather than silently decided**: this pass is dark-mode only. The reference mockups only showed a dark version, and the old landing page's light-mode styling doesn't apply cleanly to the new structure (entirely new class names) — light-mode parity for this specific page is a gap until someone asks for it specifically. The nav's "Product ▾" and "Resources ▾" dropdown menus from the reference weren't built (no content exists yet for what would go inside them) — simplified to flat links pointing at real, working destinations.
 
 `npm run build` passes, CSS brace-balanced (2051/2051). **Not visually verified** — same caveat as every visual change this session, and this one is a bigger swing than most since it's a wholesale structural rewrite, not a restyle of existing markup.
+
+## Session log — Claude, removed the light/dark theme toggle entirely
+
+Owner said the toggle is no longer useful — matches the direction the whole redesign has been heading (design system v2 and the new landing page are dark-only, and the reference mockups only ever showed a dark version).
+
+Removed `<ThemeToggle />` and its import from all four places it appeared (`app/page.tsx`, `app/new/page.tsx`, `app/workspace/page.tsx`, `app/pricing/page.tsx`), then deleted `components/theme-toggle.tsx` itself since nothing referenced it anymore. Confirmed via grep before deleting.
+
+**What this actually means going forward**: the app was always `data-theme="dark"` by default on the root `<html>` element (set in `app/layout.tsx`) — the toggle was the only thing that could ever switch it to light. With the toggle gone, there's no code path left that sets `data-theme` to anything else, so the app is now permanently dark for everyone, including anyone who'd previously toggled to light mode and had that saved in their browser's localStorage (that preference is simply never read anymore). The light-mode CSS rules scattered throughout `globals.css` are now dead code — not deleted (would be a large, risky removal to do blind), just unreachable. Worth a cleanup pass eventually if the file's size ever becomes a real problem, but not urgent.
+
+`npm run build` passes.

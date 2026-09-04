@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import ThemeToggle from "../components/theme-toggle";
 import AiOrb from "../components/ai-orb";
 
 const FEATURES = [
@@ -24,7 +23,6 @@ export default function Home() {
           <a href="#features">How it works</a>
           <a href="/pricing">Pricing</a>
           <a href="/reports">My reports</a>
-          <ThemeToggle />
           <a className="log-in" href="/auth">Log in</a>
           <button className="cta-primary" onClick={() => router.push("/new")}>Start building for free <span>→</span></button>
         </div>
