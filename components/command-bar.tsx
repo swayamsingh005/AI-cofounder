@@ -30,8 +30,10 @@ export default function CommandBar() {
         close();
       }
     }
+    function onOpenRequest() { setOpen(true); }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("open-command-bar", onOpenRequest);
+    return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("open-command-bar", onOpenRequest); };
   }, [open, close]);
 
   useEffect(() => {

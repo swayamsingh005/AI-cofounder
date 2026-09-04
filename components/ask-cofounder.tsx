@@ -103,11 +103,9 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
         {exchanges.length === 0 && !working && (
           <div className="cofounder-quick-prompts">
             <p className="cofounder-empty">Ask what to work on today, what's blocking you, or challenge a decision — the Co-Founder answers from this company's actual context, not generic advice.</p>
-            <div className="quick-prompt-row">
-              <button type="button" onClick={() => setQuestion("What should I work on today?")}>Ask a question</button>
-              <button type="button" onClick={() => setQuestion("Analyze our current mission progress and what's blocking us.")}>Analyze something</button>
-              <button type="button" onClick={() => setQuestion("Help me brainstorm ideas for ")}>Brainstorm ideas</button>
-            </div>
+            <button type="button" className="quick-prompt-primary" onClick={() => setQuestion("What should I work on today?")}>Ask a question</button>
+            <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Analyze our current mission progress and what's blocking us.")}>Analyze something</button>
+            <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Help me brainstorm ideas for ")}>Brainstorm ideas</button>
           </div>
         )}
         {exchanges.map((exchange, index) => (

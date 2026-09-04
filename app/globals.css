@@ -814,8 +814,17 @@ html[data-theme='dark'] .next-action p,html[data-theme='dark'] .attention-list l
 html[data-theme='dark'] .task-expand,html[data-theme='dark'] .task-collapse{border-color:#3c3020;color:#c9baa3}
 
 /* --- V2 Phase B: 3-region command-center shell (sidebar + main + AI panel) --- */
-.company-shell-3col{display:grid;grid-template-columns:220px 1fr 380px;min-height:100vh;background:var(--paper)}
-.company-sidebar{border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.company-app-frame{display:flex;flex-direction:column;min-height:100vh}
+.company-topbar{flex:none;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--line)}
+.topbar-company-switch{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:inherit}
+.topbar-company-switch b{font-size:14px}
+.topbar-company-switch small{font-size:11px;color:var(--muted)}
+.topbar-quick-action{border:1px solid var(--line);background:transparent;border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;color:var(--ink)}
+.company-shell-3col{display:grid;grid-template-columns:220px 1fr 380px;flex:1;min-height:0;background:var(--paper)}
+.company-sidebar{border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:22px;height:100%;overflow-y:auto}
+.sidebar-section{display:flex;flex-direction:column;gap:2px}
+.sidebar-section>span{font:10px 'DM Mono';letter-spacing:1px;color:var(--muted);padding:0 10px;margin-bottom:4px}
+.mission-mini-number{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#8b5cf622;color:#a78bfa;font:700 11px 'DM Mono';margin-bottom:10px}
 .sidebar-brand{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;text-decoration:none;color:var(--ink);padding:0 8px}
 .sidebar-company{padding:0 4px}
 .sidebar-company-switch{display:block;text-decoration:none;color:inherit;padding:9px 8px;border-radius:8px}
@@ -829,8 +838,8 @@ html[data-theme='dark'] .task-expand,html[data-theme='dark'] .task-collapse{bord
 .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px}
 .sidebar-link-muted{font-size:12px}
 
-.company-main-region{padding:36px 40px;overflow-y:auto;min-width:0;min-height:0;height:100vh}
-.company-ai-region{border-left:1px solid var(--line);padding:20px;position:sticky;top:0;height:100vh}
+.company-main-region{padding:36px 40px;overflow-y:auto;min-width:0;min-height:0;height:100%}
+.company-ai-region{border-left:1px solid var(--line);padding:20px;height:100%;overflow-y:auto}
 .cofounder-panel-persistent{height:100%;display:flex;flex-direction:column;border:0;padding:0;min-height:0}
 .cofounder-panel-persistent .cofounder-box{flex:1;display:flex;flex-direction:column;min-height:0}
 .cofounder-panel-persistent .cofounder-thread{flex:1;max-height:none;overflow-y:auto;min-height:0}
@@ -1812,3 +1821,14 @@ html[data-theme='dark'] .stat-card b,html[data-theme='dark'] .mission-mini-card 
 .company-shell-3col .priority-high{color:#fbbf24!important}
 .company-shell-3col .priority-medium{color:#60a5fa!important}
 .company-shell-3col .priority-low{color:#4ade80!important}
+/* --- Dashboard v2 follow-up: top bar, sidebar AI Intelligence section, mission numbering,
+   restyled quick-prompt buttons — closing the gap the owner flagged against the reference. */
+.cofounder-quick-prompts{display:flex;flex-direction:column;gap:8px}
+.quick-prompt-primary{border:0;background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:#fff;border-radius:9px;padding:11px;font:600 13px 'Manrope';cursor:pointer}
+.quick-prompt-secondary{border:1px solid var(--line);background:transparent;border-radius:9px;padding:10px;font-size:13px;cursor:pointer;color:var(--ink)}
+
+html[data-theme='dark'] .company-topbar{border-color:#26272b}
+html[data-theme='dark'] .topbar-company-switch b{color:#e8e8f5}
+html[data-theme='dark'] .topbar-company-switch small,html[data-theme='dark'] .sidebar-section>span{color:#97989d}
+html[data-theme='dark'] .topbar-quick-action{border-color:#3c3020;color:#e8e8f5}
+html[data-theme='dark'] .quick-prompt-secondary{border-color:#3c3020;color:#e8e8f5}

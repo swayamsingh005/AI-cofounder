@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient, hasSupabaseConfig } from "../../../lib/supabase/server";
 import CompanySidebar from "../../../components/company-sidebar";
+import CompanyTopBar from "../../../components/company-topbar";
 import AskCofounder from "../../../components/ask-cofounder";
 import AiOrb from "../../../components/ai-orb";
 import LocalTime from "../../../components/local-time";
@@ -30,26 +31,29 @@ export default async function CompanyLayout({ children, params }: { children: Re
   const tip = TIPS[new Date().getDate() % TIPS.length];
 
   return (
-    <div className="company-shell-3col">
-      <CompanySidebar companyId={company.id} companyName={company.name} stage={company.stage} />
-      <main className="company-main-region">{children}</main>
-      <aside className="company-ai-region">
-        <div className="cofounder-panel cofounder-panel-persistent">
-          <div className="cofounder-panel-header">
-            <AiOrb size={56} />
-            <span>AI CO-FOUNDER</span>
-            <small className="cofounder-scope">I&rsquo;m here to help you build, decide and grow {company.name}.</small>
-          </div>
-          <AskCofounder companyId={company.id} />
-          {!!conversations?.length && (
-            <div className="recent-conversations">
-              <span>RECENT CONVERSATIONS</span>
-              <ul>{conversations.map(c => <li key={c.id}><b>{c.title || "Untitled conversation"}</b><small><LocalTime iso={c.updated_at} /></small></li>)}</ul>
+    <div className="company-app-frame">
+      <CompanyTopBar companyName={company.name} stage={company.stage} />
+      <div className="company-shell-3col">
+        <CompanySidebar companyId={company.id} companyName={company.name} stage={company.stage} />
+        <main className="company-main-region">{children}</main>
+        <aside className="company-ai-region">
+          <div className="cofounder-panel cofounder-panel-persistent">
+            <div className="cofounder-panel-header">
+              <AiOrb size={56} />
+              <span>AI CO-FOUNDER</span>
+              <small className="cofounder-scope">I&rsquo;m here to help you build, decide and grow {company.name}.</small>
             </div>
-          )}
-          <div className="cofounder-tip"><span>CO-FOUNDER TIP OF THE DAY</span><p>&ldquo;{tip}&rdquo;</p></div>
-        </div>
-      </aside>
+            <AskCofounder companyId={company.id} />
+            {!!conversations?.length && (
+              <div className="recent-conversations">
+                <span>RECENT CONVERSATIONS</span>
+                <ul>{conversations.map(c => <li key={c.id}><b>{c.title || "Untitled conversation"}</b><small><LocalTime iso={c.updated_at} /></small></li>)}</ul>
+              </div>
+            )}
+            <div className="cofounder-tip"><span>CO-FOUNDER TIP OF THE DAY</span><p>&ldquo;{tip}&rdquo;</p></div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

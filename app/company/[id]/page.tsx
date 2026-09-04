@@ -62,8 +62,8 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
       </div>
 
       {brief && (
-        <div className="daily-brief">
-          <div className="next-action">
+        <div className="daily-brief" id="daily-brief">
+          <div className="next-action" id="next-action">
             <span>NEXT BEST ACTION</span>
             <h2>{brief.nextBestAction.title}</h2>
             <p>{brief.nextBestAction.reason}</p>
@@ -100,10 +100,11 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
       <div className="section-row-header"><h3>Active Missions</h3><Link href={`/company/${id}/mission`}>View all missions →</Link></div>
       {missions?.length ? (
         <div className="mission-card-grid">
-          {missions.map(mission => {
+          {missions.map((mission, index) => {
             const counts = taskCountByMission.get(mission.id) ?? { total: 0, done: 0 };
             return (
               <Link href={`/company/${id}/mission`} key={mission.id} className="mission-mini-card">
+                <span className="mission-mini-number">{index + 1}</span>
                 <b>{mission.objective}</b>
                 <div className="progress-track"><i style={{ width: `${mission.progress}%` }} /></div>
                 <small>{mission.progress}% · {counts.done}/{counts.total} tasks</small>
