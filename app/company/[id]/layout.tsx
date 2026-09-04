@@ -30,9 +30,16 @@ export default async function CompanyLayout({ children, params }: { children: Re
   const { data: conversations } = await supabase.from("conversations").select("id,title,updated_at").eq("company_id", id).order("updated_at", { ascending: false }).limit(3);
   const tip = TIPS[new Date().getDate() % TIPS.length];
 
+  // Real account data only — a name if Google sign-in captured one, otherwise the email's first
+  // letter. Never a fabricated placeholder.
+  const rawMetadata = claims?.claims?.user_metadata as Record<string, unknown> | undefined;
+  const fullName = typeof rawMetadata?.full_name === "string" ? rawMetadata.full_name : typeof rawMetadata?.name === "string" ? rawMetadata.name : null;
+  const email = typeof claims?.claims?.email === "string" ? claims.claims.email : null;
+  const initials = fullName ? fullName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() : email ? email[0].toUpperCase() : "?";
+
   return (
     <div className="company-app-frame">
-      <CompanyTopBar companyName={company.name} stage={company.stage} />
+      <CompanyTopBar companyName={company.name} stage={company.stage} initials={initials} />
       <div className="company-shell-3col">
         <CompanySidebar companyId={company.id} companyName={company.name} stage={company.stage} />
         <main className="company-main-region">{children}</main>

@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 
-export default function CompanyTopBar({ companyName, stage }: { companyName: string; stage: string }) {
+export default function CompanyTopBar({ companyName, stage, initials }: { companyName: string; stage: string; initials: string }) {
   return (
     <header className="company-topbar">
       <Link href="/companies" className="topbar-company-switch">
         <b>{companyName}</b><small>{stage}</small>
       </Link>
-      <button type="button" className="topbar-quick-action" onClick={() => window.dispatchEvent(new Event("open-command-bar"))}>
-        + Quick action <kbd>⌘K</kbd>
-      </button>
+      <div className="topbar-right">
+        <button type="button" className="topbar-quick-action" onClick={() => window.dispatchEvent(new Event("open-command-bar"))}>
+          + Quick action <kbd>⌘K</kbd>
+        </button>
+        <Link href="/settings" className="topbar-avatar" title="Account settings">{initials}</Link>
+      </div>
     </header>
   );
 }

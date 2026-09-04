@@ -825,3 +825,15 @@ Owner reported the "⌘K" floating trigger overlapping the new "+ Quick action" 
 **Answered honestly, then acted on it**: this app has no custom user-profile system. Email/password sign-up only ever captures an email. "Continue with Google" is different — Supabase's OAuth flow automatically pulls the signed-in user's name, email, and profile photo from their Google account into the session's metadata, entirely on Supabase's side, no code needed to request it. That data existed already but was completely unused anywhere in the app — which is exactly why the dashboard greeting was generic ("Good morning") instead of personalized like the reference ("Good morning, Swayam"). Fixed: the dashboard now reads `user_metadata.full_name` (falling back to `name`) from the auth claims and uses the first name in the greeting — **falls back to no name at all if it's not available** (e.g. email/password accounts), rather than inventing one.
 
 `npm run build` passes.
+
+## Session log — Claude, real AI panel layout bug + user-initials avatar
+
+Owner compared a live screenshot against the reference again and reported "Recent conversations"/"Co-founder tip of the day" missing from the AI panel, and asked about the missing profile avatar next to the top bar's Quick Action button.
+
+**Real bug found in the AI panel, not just "not built yet"**: `.cofounder-panel-persistent .cofounder-box{flex:1}` — this was written when the chat box was the *only* content in the panel, so `flex:1` correctly meant "fill all available space." Once Recent Conversations and Tip of the Day were added as real siblings after it, that same `flex:1` still greedily claimed all available vertical space regardless of how little the (often nearly-empty, for a fresh conversation) chat thread actually needed — pushing the sections after it far below the visible fold. They weren't actually missing from the code (verified both are genuinely there — Tip of the Day unconditionally, Recent Conversations correctly conditional on real conversation history existing), they were just shoved out of view by a flex rule that made sense before but not after adding real content after it. Fixed: removed `flex:1` from the chat box, gave the thread itself a concrete `max-height:280px` instead of trying to fill all remaining space.
+
+**Confirmed not a bug, just scroll position**: "Active Missions" section is genuinely in the code, unconditionally rendered right after the Primary Goal card — the screenshot in question was simply cut off before scrolling that far, not evidence of it being missing.
+
+**Real user-initials avatar added** next to the top bar's Quick Action button — derived from the *same* real account data already wired up for the personalized greeting (Google-captured name, or first letter of email as a fallback), not a fabricated "SS"-style placeholder. Links to `/settings`. The notification bell from the reference is still intentionally not built — no real notification system exists to back it honestly, and that hasn't changed.
+
+`npm run build` passes, CSS brace-balanced (2302/2302).
