@@ -1664,3 +1664,17 @@ html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-f
 
 @media print{.report-sidebar,.confidence-pill{display:none!important}.report-v2-grid{display:block}.report-main-v2{max-width:100%;padding:0}}
 @media(max-width:1000px){.report-v2-grid{grid-template-columns:1fr}.report-sidebar{position:relative;height:auto}.two-col,.validation-weeks{grid-template-columns:1fr}.verdict-card{grid-template-columns:1fr}.evidence-legend{border-left:0;border-top:1px solid #2e2c52;padding-left:0;padding-top:16px}}
+
+/* --- Report v2 fix: text/background not reliably winning the cascade against a generic
+   html[data-theme='dark'] p{color:...} rule with tied specificity from the earlier design-system
+   sweep. Reinforcing with !important rather than hand-tracing specificity across 2000+ lines of
+   accumulated CSS across many sessions — too easy to be wrong, this is decisive instead. */
+.report-v2,.report-v2 body{background:#0c0c1a!important;color:#e8e8f5!important}
+.report-v2 .verdict-card{background:#14122a!important;border-color:#2e2c52!important}
+.report-v2 .verdict-columns>div>p,.report-v2 .report-subtitle,.report-v2 .icp-line,.report-v2 .pricing-note,
+.report-v2 .evidence-card ul,.report-v2 .assumption-list span,.report-v2 .week-card ul,.report-v2 .mvp-col ul,
+.report-v2 .final-verdict>p{color:#e8e8f5!important}
+.report-v2 h1,.report-v2 h2,.report-v2 h3{color:#f5f5fa!important}
+.report-v2 .evidence-card,.report-v2 .assumption-list li,.report-v2 .mvp-blueprint .mvp-col,
+.report-v2 .week-card,.report-v2 .report-details,.report-v2 .sidebar-build-cta{background:#14122a!important;border-color:#2e2c52!important}
+.report-v2 .report-details dd{color:#e8e8f5!important}
