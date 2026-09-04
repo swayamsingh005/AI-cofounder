@@ -9,7 +9,7 @@ export default function CompanyTopBar({ companyName, stage }: { companyName: str
         <b>{companyName}</b><small>{stage}</small>
       </Link>
       <button type="button" className="topbar-quick-action" onClick={() => window.dispatchEvent(new Event("open-command-bar"))}>
-        + Quick action
+        + Quick action <kbd>⌘K</kbd>
       </button>
     </header>
   );

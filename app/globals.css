@@ -1832,3 +1832,7 @@ html[data-theme='dark'] .topbar-company-switch b{color:#e8e8f5}
 html[data-theme='dark'] .topbar-company-switch small,html[data-theme='dark'] .sidebar-section>span{color:#97989d}
 html[data-theme='dark'] .topbar-quick-action{border-color:#3c3020;color:#e8e8f5}
 html[data-theme='dark'] .quick-prompt-secondary{border-color:#3c3020;color:#e8e8f5}
+
+/* --- Fix: floating command trigger overlapped the new topbar Quick Action button on company
+   pages. Hidden there (topbar button does the same job), keyboard hint moved into the button. --- */
+.topbar-quick-action kbd{font:9px 'DM Mono';opacity:.6;margin-left:4px;border:0;background:none}

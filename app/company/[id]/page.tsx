@@ -17,6 +17,10 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) notFound();
+  // Only real data: Google sign-in captures a name automatically via Supabase's OAuth metadata;
+  // email/password sign-up never has one. Falls back to no name at all rather than inventing one.
+  const rawMetadata = claims.claims.user_metadata as Record<string, unknown> | undefined;
+  const displayName = typeof rawMetadata?.full_name === "string" ? rawMetadata.full_name.split(" ")[0] : typeof rawMetadata?.name === "string" ? rawMetadata.name.split(" ")[0] : null;
 
   const ctx = await loadCompanyContext(supabase, id);
   if (!ctx) notFound();
@@ -50,7 +54,7 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
     <section className="overview-page">
       <div className="company-header">
         <div className="eyebrow"><span></span> {ctx.company.stage.toUpperCase()}</div>
-        <h1>Good morning 👋</h1>
+        <h1>Good morning{displayName ? `, ${displayName}` : ""} 👋</h1>
         <p className="company-tagline">Let&rsquo;s build {ctx.company.name} today.</p>
       </div>
 

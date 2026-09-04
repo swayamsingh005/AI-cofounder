@@ -815,3 +815,13 @@ Owner directly compared a live screenshot against the reference and correctly id
 **Layout structure change**: the 3-column shell (sidebar/main/AI panel) is now nested inside a new `.company-app-frame` flex column, with the top bar as a sibling above it — reused the same `min-height:0` flex-scroll-fix pattern established after the earlier page-scroll bug, since this is exactly the same kind of nested-flex-container situation that caused that bug the first time.
 
 `npm run build` passes, CSS brace-balanced (2299/2299). Not visually verified.
+
+## Session log — Claude, fix command-bar overlap + personalize greeting with real user data
+
+Owner reported the "⌘K" floating trigger overlapping the new "+ Quick action" button in the top bar (both ended up in the same top-right area on company pages), and asked whether the app stores any user info like a name.
+
+**Overlap fix**: the floating `⌘K` trigger now only renders when there's *no* company-page topbar already providing the same action (checked via the same `companyId` extracted from the URL that the command bar already uses to decide which actions to show) — one working "open the command bar" entry point per page, not two competing ones. Moved the keyboard-shortcut hint (`⌘K`) directly into the topbar's Quick Action button so the shortcut stays discoverable even without the floating badge.
+
+**Answered honestly, then acted on it**: this app has no custom user-profile system. Email/password sign-up only ever captures an email. "Continue with Google" is different — Supabase's OAuth flow automatically pulls the signed-in user's name, email, and profile photo from their Google account into the session's metadata, entirely on Supabase's side, no code needed to request it. That data existed already but was completely unused anywhere in the app — which is exactly why the dashboard greeting was generic ("Good morning") instead of personalized like the reference ("Good morning, Swayam"). Fixed: the dashboard now reads `user_metadata.full_name` (falling back to `name`) from the auth claims and uses the first name in the greeting — **falls back to no name at all if it's not available** (e.g. email/password accounts), rather than inventing one.
+
+`npm run build` passes.

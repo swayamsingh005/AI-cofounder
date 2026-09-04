@@ -89,7 +89,7 @@ export default function CommandBar() {
     close();
   }
 
-  if (!open) return (
+  if (!open) return companyId ? null : (
     <button className="command-trigger" onClick={() => setOpen(true)} aria-label="Open command bar">
       <span>⌘</span>K
     </button>
