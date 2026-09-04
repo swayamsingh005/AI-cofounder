@@ -741,3 +741,24 @@ Removed `<ThemeToggle />` and its import from all four places it appeared (`app/
 **What this actually means going forward**: the app was always `data-theme="dark"` by default on the root `<html>` element (set in `app/layout.tsx`) — the toggle was the only thing that could ever switch it to light. With the toggle gone, there's no code path left that sets `data-theme` to anything else, so the app is now permanently dark for everyone, including anyone who'd previously toggled to light mode and had that saved in their browser's localStorage (that preference is simply never read anymore). The light-mode CSS rules scattered throughout `globals.css` are now dead code — not deleted (would be a large, risky removal to do blind), just unreachable. Worth a cleanup pass eventually if the file's size ever becomes a real problem, but not urgent.
 
 `npm run build` passes.
+
+## Session log — Claude, Report page redesign (step 3 of 4) — the biggest lift, with real trade-offs
+
+Third step of the redesign sequence. Full rewrite of `app/report/[id]/page.tsx` — sidebar navigation (numbered sections, report details, build-CTA), a verdict score ring, tag pills, and 10 numbered sections matching the reference's structure.
+
+**Flagged up front and holding to it: did not fabricate data the report generation doesn't produce.** The reference shows a TAM-dollar-figure + CAGR-percent bar chart, a named competitor comparison table with dot ratings, and a risk map scatter chart plotting impact vs. likelihood coordinates. None of that data exists in the current AI report schema (`market`, `competitors`, `risks` are just bullet-point arrays, no structured numbers/coordinates/named-competitor-ratings). Built the structural/visual language of those sections (numbered heading, evidence badges, card layout) using the *real* bullet data instead of inventing plausible-looking numbers to fill a chart — that would be exactly the kind of fabrication this whole project has been built to avoid. If real structured data for these (an actual TAM estimate, actual risk severity/likelihood scoring, an actual named-competitor feature comparison) becomes something the AI should generate, that's a schema change to `/api/analyze`, not a styling task — flagging as a real gap, not deciding unilaterally to add it.
+
+**A real feature removal, not silently done**: dropped the per-section AI-agent attribution badges (Mira/Asha/Theo/Owen/Rhea/Nova labels on each block) that were explicitly requested and built in an earlier session. The reference design doesn't show this anywhere. Chose to match the reference rather than keep old content the owner is actively trying to move away from — but this is a deliberate trade-off worth knowing about, not an oversight, since it directly reverses an earlier explicit request.
+
+**What was preserved, not rebuilt from scratch**: the print/PDF cover page and page-number elements (needed for the "Save PDF" feature shown in the reference — initially dropped these by accident during the rewrite, caught it before shipping and added them back), the fallback banner, the evidence-informed-update banner, the founder-evidence + recompute-verdict section, and the Build This Company CTA (restyled to fit the new sidebar, but functionally identical).
+
+**Mapped reference sections onto existing real data**:
+- 03 Market Analysis: `market[]` bullets, no TAM/CAGR chart (see above)
+- 04 Competition: `competitors[]` + `gap[]` as a two-column comparison instead of a fabricated ratings table
+- 06 Assumptions: `assumptions[]`, each tagged "UNVALIDATED" (the only honest status available — there's no mechanism yet to track an assumption moving to "partial" or "likely" validated based on evidence collected, unlike the reference's 3-state badge)
+- 08 MVP Blueprint: `mvp[]` → "Build Now", `avoid[]` → "Not Now" — this one mapped cleanly, no gap
+- 09 Validation Plan: `plan7[]` as "This Week" and `plan30[]` as "Next 30 Days" (2 buckets, not the reference's literal 4-week breakdown, since the underlying data isn't naturally week-by-week granular)
+
+**Evidence badge labels changed**: `verified → FACT`, `estimate → AI ESTIMATE` stayed the same conceptually, `assumption → ASSUMPTION` unchanged — matching the reference's terminology more closely (previously just "VERIFIED"). The reference has a 4th category, "RECOMMENDATION", used specifically for actionable content rather than analytical claims — didn't implement this as a real 4th confidence *level* in the data model (would require another schema change); the existing 3-tier confidence system covers what's actually tracked.
+
+`npm run build` passes, CSS brace-balanced (2163/2163). **Not visually verified** — the highest-risk change of the whole redesign sequence, given the sheer number of new component types (verdict ring, evidence cards, assumption list, MVP two-column, validation-week cards) built in one pass with zero ability to see any of it rendered.
