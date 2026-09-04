@@ -837,3 +837,13 @@ Owner compared a live screenshot against the reference again and reported "Recen
 **Real user-initials avatar added** next to the top bar's Quick Action button — derived from the *same* real account data already wired up for the personalized greeting (Google-captured name, or first letter of email as a fallback), not a fabricated "SS"-style placeholder. Links to `/settings`. The notification bell from the reference is still intentionally not built — no real notification system exists to back it honestly, and that hasn't changed.
 
 `npm run build` passes, CSS brace-balanced (2302/2302).
+
+## Session log — Claude, urgent regression fix — "Open my decision brief" button gone entirely
+
+Owner reported the "Open my decision brief" button missing after all 6 agents showed Complete — a genuine blocker, fixed before anything else.
+
+**Root cause: my own earlier fix, incompletely applied.** When fixing the "6th agent stuck on Working" bug, I changed the animation's cap from a hardcoded `5` to `agents.length` (6) — correct for making all 6 agents actually reach "Complete". But the workspace page has a *separate* condition, `{active === 5 && (...)}`, that decides when to reveal the result section (the button, or an error/sign-in notice) — I didn't update this second reference to the same magic number. Once `active` started correctly reaching 6 instead of stopping at 5, that check simply never fired again — the whole result section (button, error message, everything) silently stopped appearing for anyone, regardless of whether the real report generation succeeded or failed.
+
+Fixed: `active === agents.length` instead of `active === 5` — same underlying lesson as the first fix, applied completely this time. **Worth a general note**: any hardcoded number tied to a list's length is a latent bug waiting for exactly this — the first occurrence gets fixed, a second (or third) reference to the same magic number elsewhere in the file doesn't, and the bug just moves rather than disappearing. Grepped this file specifically for any other bare numeric literals tied to agent count — none found, this was the only one.
+
+`npm run build` passes. This was shipped immediately given it was blocking real use, ahead of the in-progress dashboard restructuring work.
