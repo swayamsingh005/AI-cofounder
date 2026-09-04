@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "", label: "Overview" },
-  { href: "/mission", label: "Mission" },
+  { href: "", label: "Dashboard" },
+  { href: "/mission", label: "Missions" },
   { href: "/tasks", label: "Tasks" },
   { href: "/decisions", label: "Decisions" },
-  { href: "/memory", label: "Memory" },
+  { href: "/memory", label: "Company Memory" },
 ];
 
 export default function CompanySidebar({ companyId, companyName, stage }: { companyId: string; companyName: string; stage: string }) {

@@ -100,7 +100,16 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
   return (
     <div className="cofounder-box">
       <div className="cofounder-thread">
-        {exchanges.length === 0 && !working && <p className="cofounder-empty">Ask what to work on today, what's blocking you, or challenge a decision — the Co-Founder answers from this company's actual context, not generic advice.</p>}
+        {exchanges.length === 0 && !working && (
+          <div className="cofounder-quick-prompts">
+            <p className="cofounder-empty">Ask what to work on today, what's blocking you, or challenge a decision — the Co-Founder answers from this company's actual context, not generic advice.</p>
+            <div className="quick-prompt-row">
+              <button type="button" onClick={() => setQuestion("What should I work on today?")}>Ask a question</button>
+              <button type="button" onClick={() => setQuestion("Analyze our current mission progress and what's blocking us.")}>Analyze something</button>
+              <button type="button" onClick={() => setQuestion("Help me brainstorm ideas for ")}>Brainstorm ideas</button>
+            </div>
+          </div>
+        )}
         {exchanges.map((exchange, index) => (
           <div className="cofounder-exchange" key={index}>
             <p className="cofounder-question">{exchange.question}</p>
