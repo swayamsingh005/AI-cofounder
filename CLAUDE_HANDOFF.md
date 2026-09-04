@@ -774,3 +774,11 @@ Owner sent real screenshots of both issues, letting me trace exact root causes i
 **Worth flagging as a maintenance concern, not just a one-off bug**: this is the second time this session a same-specificity tie between an old broad sweep rule and new specific styling caused a real visible bug (`min-height:auto` flexbox/grid scroll issues were the first pattern; this specificity-tie issue is a second, distinct pattern). `globals.css` has grown very large through many rounds of "append an override, never edit existing rules" — a safety-first strategy that's worked well for avoiding regressions all session, but it's now accumulated enough layered complexity that new additions can no longer be confidently reasoned about via manual specificity math alone. If this keeps happening, the file may be due for a real consolidation pass (not urgent today, but worth knowing).
 
 `npm run build` passes, CSS brace-balanced (2170/2170).
+
+## Session log — Claude, follow-up — exhaustive text-color fix, not another cherry-picked one
+
+Owner correctly pointed out the previous fix only covered a subset — `.evidence-card>b` (the "Market"/"Customer Pain" labels) specifically was still near-invisible, camouflaged against the dark background, along with a few other elements. The previous patch had been built by spot-checking what looked wrong in one screenshot rather than systematically covering every text rule in the page — exactly the kind of gap that produces "I fixed some of it" instead of actually fixing it.
+
+Fixed properly this time: **programmatically extracted every single rule with a `color` declaration from the original report-v2 CSS block** (48 rules, not a hand-picked subset), and generated a matching `.report-v2 <selector>{color:...!important}` override for every one of them. Nothing was chosen by eye this time — the script walked the actual CSS that was written, so nothing could be missed the way `.evidence-card>b` was missed the first time.
+
+`npm run build` passes, CSS brace-balanced (2218/2218).

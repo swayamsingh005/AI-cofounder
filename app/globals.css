@@ -1678,3 +1678,56 @@ html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-f
 .report-v2 .evidence-card,.report-v2 .assumption-list li,.report-v2 .mvp-blueprint .mvp-col,
 .report-v2 .week-card,.report-v2 .report-details,.report-v2 .sidebar-build-cta{background:#14122a!important;border-color:#2e2c52!important}
 .report-v2 .report-details dd{color:#e8e8f5!important}
+
+/* --- Report v2 fix #2: exhaustive coverage. The previous patch only covered a subset it
+   happened to spot-check; missed .evidence-card>b (the 'Market'/'Customer Pain' labels) and
+   others, which is exactly the risk of cherry-picking instead of going through every rule
+   systematically. Generated from the actual original CSS block this time, not by eye. */
+.report-v2 .report-sidebar .brand{color:#f2f2fb!important}
+.report-v2 .sidebar-tagline{color:#77768e!important}
+.report-v2 .report-nav>span{color:#77768e!important}
+.report-v2 .report-nav>a{color:#b3b2c4!important}
+.report-v2 .report-nav>a:hover{color:#f2f2fb!important}
+.report-v2 .report-details>span{color:#77768e!important}
+.report-v2 .report-details dt{color:#77768e!important}
+.report-v2 .report-details dd{color:#e8e8f5!important}
+.report-v2 .sidebar-build-cta b{color:#f2f2fb!important}
+.report-v2 .sidebar-build-cta small{color:#a9a8bd!important}
+.report-v2 .report-eyebrow{color:#a78bfa!important}
+.report-v2 .confidence-pill.confidence-high{color:#4ade80!important}
+.report-v2 .confidence-pill.confidence-mixed{color:#fbbf24!important}
+.report-v2 .confidence-pill.confidence-ai{color:#a9a8bd!important}
+.report-v2 .report-header-v2 h1{color:#f5f5fa!important}
+.report-v2 .report-subtitle{color:#a9a8bd!important}
+.report-v2 .tag-row span{color:#c4b8f0!important}
+.report-v2 .verdict-ring-label.verdict-build{color:#4ade80!important}
+.report-v2 .verdict-ring-label.verdict-avoid{color:#f87171!important}
+.report-v2 .verdict-ring-label.verdict-test-first{color:#fbbf24!important}
+.report-v2 .verdict-columns>div>span{color:#77768e!important}
+.report-v2 .verdict-columns>div>p{color:#e8e8f5!important}
+.report-v2 .evidence-legend>b{color:#77768e!important}
+.report-v2 .evidence-legend p{color:#e8e8f5!important}
+.report-v2 .evidence-legend small{color:#77768e!important}
+.report-v2 .section-heading>span{color:#a78bfa!important}
+.report-v2 .section-heading h2{color:#f5f5fa!important}
+.report-v2 .section-heading small{color:#77768e!important}
+.report-v2 .evidence-card>b{color:#a78bfa!important}
+.report-v2 .evidence-card ul{color:#c9c8dc!important}
+.report-v2 .icp-line,.report-v2 .pricing-note{color:#a9a8bd!important}
+.report-v2 .data-tag-fact{color:#4ade80!important}
+.report-v2 .data-tag-estimate{color:#60a5fa!important}
+.report-v2 .data-tag-assume{color:#fbbf24!important}
+.report-v2 .assumption-list b{color:#a78bfa!important}
+.report-v2 .assumption-list span{color:#e8e8f5!important}
+.report-v2 .status-pill.unvalidated{color:#f87171!important}
+.report-v2 .mvp-col.build-now>b{color:#4ade80!important}
+.report-v2 .mvp-col.not-now>b{color:#77768e!important}
+.report-v2 .mvp-col ul{color:#c9c8dc!important}
+.report-v2 .week-card>span{color:#a78bfa!important}
+.report-v2 .week-card ul{color:#c9c8dc!important}
+.report-v2 .final-verdict>span{color:#a78bfa!important}
+.report-v2 .final-verdict h2{color:#f5f5fa!important}
+.report-v2 .final-verdict>p{color:#c9c8dc!important}
+.report-v2 .source-appendix-v2>span{color:#77768e!important}
+.report-v2 .source-appendix-v2 ol{color:#8a89a3!important}
+.report-v2 .source-appendix-v2 a{color:#a78bfa!important}
