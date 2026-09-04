@@ -716,3 +716,18 @@ Fixed with explicit, bolder values instead of another automated pass:
 - Form inputs, the command bar, and command trigger also got the same panel treatment for consistency.
 
 npm run build passes, CSS brace-balanced (1983/1983). Not visually verified — same caveat as always.
+
+## Session log — Claude, Landing Page redesign (step 2 of 4)
+
+Second step of the redesign sequence (design system → **landing page** → report → dashboard). Full rewrite of `app/page.tsx` — this wasn't a restyle, the reference is a fundamentally different hero concept than what existed (a conventional modern-SaaS dashboard-preview hero, vs. the old "3D character room" with floating founder avatars and an idea-console form built directly into the hero).
+
+**What changed structurally:**
+- Removed the old hero entirely (`FounderCharacter`, `character-stage`, `holo-panel`, `idea-cockpit` inline form) and the "Meet your AI co-founders" 6-agent grid + "What happens next" proof section below it — **neither appears in the reference**, which is just: nav → hero → trust logos → 4-feature grid → closing tagline. Prioritized matching what was actually shown over preserving old content out of attachment. Checked for orphaned references before removing (the old hero linked to `#team`, nothing else in the app pointed at that anchor, safe to remove).
+- The hero no longer has an inline idea-input textarea. "Start building for free" now routes straight to `/new` (the existing multi-field intake form), which already collects the idea and everything else — didn't see a reason to duplicate that entry point in the hero when the reference itself only shows a CTA button, not a form.
+- New **`components/ai-orb.tsx`** — a reusable, pure-CSS glowing gradient sphere with eye-dots and an orbit ring, matching the illustrated AI avatar that appears consistently across all three reference mockups (landing/report/dashboard). Built as a shared component now specifically because report and dashboard redesigns (steps 3-4) will need the same element — no reason to rebuild it three times.
+- New "live dashboard preview" panel in the hero — a **simplified**, not pixel-exact, mockup of what a real dashboard looks like (company pill, greeting, 4 stat tiles, a Next Best Action card, the AI orb in a floating card). Didn't attempt to replicate every micro-detail of the reference's preview panel (exact tooltip positions, the floating GitHub/Slack/chart icon badges) — flagging this as a deliberate scope reduction, not an oversight.
+- Integration "trusted by" row uses **plain text names** (bubble, Webflow, Stripe, Supabase, Next.js, Calendly, Vercel), not reproductions of their actual logo artwork — deliberate, to avoid reproducing trademarked brand marks; plain text company names carry the same meaning without that concern.
+
+**Scoped down, flagged rather than silently decided**: this pass is dark-mode only. The reference mockups only showed a dark version, and the old landing page's light-mode styling doesn't apply cleanly to the new structure (entirely new class names) — light-mode parity for this specific page is a gap until someone asks for it specifically. The nav's "Product ▾" and "Resources ▾" dropdown menus from the reference weren't built (no content exists yet for what would go inside them) — simplified to flat links pointing at real, working destinations.
+
+`npm run build` passes, CSS brace-balanced (2051/2051). **Not visually verified** — same caveat as every visual change this session, and this one is a bigger swing than most since it's a wholesale structural rewrite, not a restyle of existing markup.
