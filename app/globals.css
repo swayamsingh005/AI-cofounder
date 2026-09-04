@@ -1443,3 +1443,27 @@ html[data-theme='dark'] .task-modal{background:#141317;border-color:#26242d}
 html[data-theme='dark'] .task-modal p,html[data-theme='dark'] .task-modal-priority{color:#97959f}
 html[data-theme='dark'] .task-modal-actions button{border-color:#26242d;color:#e8e8ea}
 html[data-theme='dark'] .cofounder-actions button{border-color:#2b2933;color:#b4b2ba}
+/* --- Design System v2 fix: the automated sweep's background tint was too subtle to actually read
+   as navy vs. black on a real screen — explicit, bolder values here instead, matching the
+   reference mockups' clearly-indigo (not near-black) page background and visibly-lighter card
+   panels for real depth/hierarchy. Appended last, wins over the automated sweep above. */
+html[data-theme='dark'] body,html[data-theme='dark'] .hero,html[data-theme='dark'] .app-shell,html[data-theme='dark'] .auth-page{
+  background:radial-gradient(circle at 82% 6%,#4c1d9540,transparent 32%),radial-gradient(circle at 6% 88%,#1e3a8a3d,transparent 36%),#0c0c1a
+}
+html[data-theme='dark'] .agent-section:before{background:radial-gradient(circle at 12% 90%,#4c1d9530,transparent 26%),radial-gradient(circle at 90% 8%,#1e3a8a30,transparent 26%)}
+.report-shell{background:radial-gradient(circle at 82% 8%,#4c1d9540,transparent 30%),radial-gradient(circle at 8% 30%,#1e3a8a35,transparent 34%),#0c0c1a;color:#e8e8f5}
+
+html[data-theme='dark'] .idea-box,html[data-theme='dark'] .agent-card,html[data-theme='dark'] .proof-card,html[data-theme='dark'] .workspace-side,
+html[data-theme='dark'] .run-list,html[data-theme='dark'] .saved-report,html[data-theme='dark'] .empty-report,html[data-theme='dark'] .settings-card,
+html[data-theme='dark'] .plan,html[data-theme='dark'] .source-card,html[data-theme='dark'] .block,html[data-theme='dark'] .agent-chip,
+html[data-theme='dark'] .side-card,html[data-theme='dark'] .scorecard,html[data-theme='dark'] .decision-frame,html[data-theme='dark'] .verdict-row,
+html[data-theme='dark'] .company-goal,html[data-theme='dark'] .company-mission,html[data-theme='dark'] .cofounder-panel,html[data-theme='dark'] .decisions-panel,
+html[data-theme='dark'] .activity-panel,html[data-theme='dark'] .task,html[data-theme='dark'] .company-empty,html[data-theme='dark'] .company-card,
+html[data-theme='dark'] .daily-brief,html[data-theme='dark'] .auth-card,html[data-theme='dark'] .v2-card,html[data-theme='dark'] .task-modal,
+html[data-theme='dark'] .command-bar,html[data-theme='dark'] .memory-group li{
+  background:#161629!important;border-color:#2e2c52!important
+}
+html[data-theme='dark'] .company-shell-3col{background:#0c0c1a}
+html[data-theme='dark'] .company-sidebar,html[data-theme='dark'] .company-ai-region{border-color:#2e2c52}
+html[data-theme='dark'] .command-trigger,html[data-theme='dark'] .cofounder-form input,html[data-theme='dark'] .memory-search-input,
+html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-form textarea{background:#191933;border-color:#2e2c52}

@@ -705,3 +705,14 @@ Owner sent three polished reference mockups (landing page, report page, dashboar
 524 rules matched and got a purple/navy override — most of the file, since Phase 3c's earlier redesign touched nearly everything to reach neutral graphite, and now nearly all of that also qualifies for the new tint.
 
 `npm run build` passes, CSS brace-balanced (1976/1976). **Not visually verified** — same limitation as every prior visual change this session, no browser/screenshot access here. This is step 1 of 4 (landing page, report page, dashboard redesigns follow) — expect the owner to send screenshots and need real correction rounds, especially since this pass only handled color; the reference mockups also show meaningfully different layout/component patterns (stat cards, verdict circles, badge legends, an illustrated AI avatar orb) that haven't been touched yet.
+
+## Session log — Claude, follow-up — background still read as black, not navy
+
+Owner tested the design system change and correctly said the background still looked black, not navy like the reference. Real issue: the automated sweep's neutral-background rule used a very low saturation target (~10%) at very low lightness (~5%) — mathematically not black, but at that combination of values the hue is nearly imperceptible to a human eye on a real screen, so it read as plain black in practice.
+
+Fixed with explicit, bolder values instead of another automated pass:
+- Page background (body/hero/app-shell/auth-page/report-shell): `#0c0c1a` — clearly indigo, not neutral gray — plus **reintroduced the radial-gradient purple/blue glow blobs** that Phase 3c had explicitly flattened away. That removal made sense under the old "avoid glowing blobs" terminal direction; it doesn't fit the new reference aesthetic, which clearly embraces soft background glow (visible in the landing page reference specifically).
+- Card/panel backgrounds (every major card class in the app — 20+ selectors) bumped to `#161629` with `#2e2c52` borders, distinctly lighter and more saturated than the page background, so cards actually read as elevated surfaces against the page instead of blending into near-uniform darkness.
+- Form inputs, the command bar, and command trigger also got the same panel treatment for consistency.
+
+npm run build passes, CSS brace-balanced (1983/1983). Not visually verified — same caveat as always.
