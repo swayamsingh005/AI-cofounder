@@ -54,12 +54,12 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
     <section className="overview-page">
       <div className="company-header">
         <div className="eyebrow"><span></span> {ctx.company.stage.toUpperCase()}</div>
-        <h1>Good morning{displayName ? `, ${displayName}` : ""} 👋</h1>
+        <h1>Welcome back{displayName ? `, ${displayName}` : ""} 👋</h1>
         <p className="company-tagline">Let&rsquo;s build {ctx.company.name} today.</p>
       </div>
 
       <div className="stat-card-row">
-        <div className="stat-card"><small>Primary Goal Progress</small><b>{ctx.primaryGoal?.progress ?? 0}%</b><em>{ctx.primaryGoal ? "On track" : "No goal yet"}</em></div>
+        <div className="stat-card"><small>Linked tasks completed</small><b>{ctx.primaryGoal?.progress ?? 0}%</b><em>{ctx.primaryGoal ? "Task progress, not outcome validation" : "No goal yet"}</em></div>
         <div className="stat-card"><small>Active Missions</small><b>{missions?.length ?? 0}</b><em>{missions?.length ? `${missions.length} in progress` : "None yet"}</em></div>
         <div className="stat-card"><small>Tasks to do</small><b>{tasksToDoCount ?? 0}</b><em className={highPriorityCount ? "stat-warn" : ""}>{highPriorityCount ?? 0} high priority</em></div>
         <div className="stat-card"><small>Open Decisions</small><b>{decisionsOpenCount ?? 0}</b><em>{decisionsOpenCount ? "Active" : "None pending"}</em></div>
@@ -93,9 +93,9 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
         <div className="company-goal">
           <span>PRIMARY GOAL</span>
           <h2>{ctx.primaryGoal.title}</h2>
-          {ctx.primaryGoal.target && <p>{ctx.primaryGoal.target}</p>}
+          {ctx.primaryGoal.target && <p>Target: {ctx.primaryGoal.target}</p>}
           <div className="progress-track"><i style={{ width: `${ctx.primaryGoal.progress}%` }} /></div>
-          <small>{ctx.primaryGoal.progress}% complete</small>
+          <small>{ctx.primaryGoal.progress}% of linked tasks complete · Confirm the goal outcome separately.</small>
         </div>
       ) : (
         <div className="company-empty"><p>No goal set yet.</p><small>Ask your Co-Founder to set one based on this company&rsquo;s context.</small></div>

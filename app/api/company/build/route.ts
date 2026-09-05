@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   const userId = claims?.claims?.sub;
   if (!userId) return NextResponse.json({ error: "Sign in to build a company from this report." }, { status: 401 });
 
-  const { data: reportRow, error: reportError } = await supabase.from("reports").select("id,title,idea,report").eq("id", reportId).maybeSingle();
+  const { data: reportRow, error: reportError } = await supabase.from("reports").select("id,title,idea,verdict,report").eq("id", reportId).maybeSingle();
   if (reportError || !reportRow) return NextResponse.json({ error: "Report not found." }, { status: 404 });
 
   const content = (reportRow.report ?? {}) as ReportContent;
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     warning = "AI planning is not configured on this deployment yet; a starter plan was used instead.";
   } else {
     try {
-      const system = `You turn a validated startup idea into an initial execution plan for a founder. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"companyName": string, "goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}.
+      const system = `You turn a startup report into a validation-stage execution plan. A report is NOT proof of customer demand. Preserve its verdict and recommended first experiment. TEST FIRST means test the key assumptions before substantial implementation. AVOID means investigate the disqualifying risk or test a revised hypothesis, not launch the original idea. BUILD still requires customer evidence. Only prioritize a small technical feasibility experiment ahead of customer research when its rationale is explicit. Each task description must state the expected evidence or deliverable and a completion criterion. Do not label implementation critical solely because it is technically necessary later. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"companyName": string, "goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}.
 
 "companyName" is a short, brandable company name (1-3 words) — like a real startup would use, e.g. "Nova" or "LedgerAI" — not a restatement of the idea description. Do not just copy the input title.
 
@@ -117,7 +117,8 @@ Any price, cost, or monetary figure anywhere in your response (goalTarget, task 
 
 Do not invent facts not implied by the company context given.`;
       const user = `Idea title: ${ideaTitle}\nWhat it does: ${profile.solution ?? profile.description ?? ""}\nProblem: ${profile.problem ?? "unknown"}\nTarget customer: ${profile.target_customer ?? "unknown"}\nGeography: ${profile.target_geography ?? "unspecified"}\nBusiness model: ${profile.business_model ?? "unknown"}\nFounder constraints: ${profile.constraints ?? "none stated"}\nKey assumptions: ${profile.assumptions.join("; ") || "none stated"}\nKey risks: ${profile.risks.join("; ") || "none stated"}\n\nReturn the JSON object now.`;
-      const raw = await groqComplete(system, user, { json: true, maxTokens: 1600, temperature: 0.4 });
+      const reportGuidance = `Report verdict: ${reportRow.verdict ?? "TEST FIRST"}\nRecommended first action: ${content.nextMove?.headline ?? "Collect customer evidence"}\n`;
+      const raw = await groqComplete(system, reportGuidance + user, { json: true, maxTokens: 1600, temperature: 0.4 });
       plan = normalizePlan(JSON.parse(raw), ideaTitle);
     } catch (error) {
       console.error("[api/company/build] AI planning failed", { message: error instanceof Error ? error.message : "Unknown error" });

@@ -59,9 +59,8 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   const verdictLine = report.verdict === "BUILD" ? "A strong opportunity, with a clear reason to pursue the next validation step." : report.verdict === "AVOID" ? "The current risks outweigh the likely opportunity." : "Promising direction, but earn the right to build through customer evidence.";
   const plan = content.plan7?.length ? content.plan7 : ["Write one target-customer hypothesis", "Book five customer conversations", "Create a simple offer page", "Ask for one paid pilot"];
   const evidence = content.evidence ?? {};
-  const hasVerified = Object.values(evidence).some(value => value === "verified");
   const sources = content.sources ?? [];
-  const researchStatus = content.generatedBy === "fallback" ? "AI Directional" : hasVerified ? "High Confidence" : "Mixed Confidence";
+  const researchStatus = content.generatedBy === "fallback" ? "Directional analysis" : sources.some(source => /^https?:\/\//i.test(source.url)) ? "References included" : "Sources not supplied";
   const nextMove = content.nextMove?.headline ? { headline: content.nextMove.headline, detail: content.nextMove.detail || "Ask for money, not just a conversation — a deposit, pilot fee, or signed intent." } : { headline: content.firstCustomers?.[0] || "Get one specific customer to commit money.", detail: "Ask for a paid pilot, deposit, or signed intent — not just a conversation." };
   const tags = [intake.geography, intake.businessModel, intake.customer].filter(Boolean) as string[];
 
@@ -114,7 +113,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
           <div className="verdict-columns">
             <div><span>BIGGEST RISK</span><p>{content.risks?.[0] ?? "Not enough evidence yet to name one clearly."}</p></div>
             <div><span>FIRST BEST MOVE</span><p>{nextMove.headline}</p></div>
-            <div><span>VERDICT SUMMARY</span><p>{verdictLine}</p></div>
+            <div><span>VERDICT SUMMARY</span><p>{verdictLine}</p><small>The score is an AI assessment, not a probability of business success. References do not independently validate customer demand.</small></div>
           </div>
           <div className="evidence-legend">
             <b>EVIDENCE KEY</b>

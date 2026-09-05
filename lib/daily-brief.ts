@@ -38,7 +38,7 @@ async function computeAttentionItems(supabase: SupabaseClient, companyId: string
 function reasonFor(item: AttentionItem): string {
   if (item.text.includes("overdue")) return "This is the most time-sensitive item outstanding right now.";
   if (item.text.includes("blocked")) return "Progress on this is stuck until it's resolved.";
-  if (item.text.includes("critical")) return "It's marked critical and likely gates other work in the mission.";
+  if (item.text.includes("critical")) return "This task is marked critical. Confirm its dependencies and relevance to your current stage before starting.";
   return "This needs a decision before the mission can move forward.";
 }
 
@@ -52,27 +52,14 @@ async function fallbackNextAction(supabase: SupabaseClient, activeMissionId: str
   return { title: next.title, reason: "Nothing urgent is flagged today — moving this forward keeps the mission on track.", taskId: next.id };
 }
 
-/** Returns today's cached brief if one exists, otherwise computes and caches a new one. Purely
- * deterministic (see computeAttentionItems) — safe and cheap to call on every page load, no AI
- * cost regardless of caching, but still cached per calendar day so the "today's brief" framing
- * stays stable across visits rather than recomputing (and potentially reordering) on every load. */
+/** Recompute from current rows so completed or reprioritized tasks cannot remain the
+ * headline action for the rest of the day. This deterministic computation uses no AI. */
 export async function getOrCreateDailyBrief(supabase: SupabaseClient, companyId: string, userId: string): Promise<DailyBrief | null> {
   const briefDate = todayDateString();
-  const { data: cached } = await supabase.from("daily_briefs").select("recommended_priority,attention_items,next_best_action").eq("company_id", companyId).eq("brief_date", briefDate).maybeSingle();
 
   const ctx = await loadCompanyContext(supabase, companyId);
   if (!ctx) return null;
 
-  if (cached?.next_best_action) {
-    return {
-      companyName: ctx.company.name,
-      primaryGoalTitle: ctx.primaryGoal?.title ?? null,
-      primaryGoalProgress: ctx.primaryGoal?.progress ?? null,
-      attentionItems: Array.isArray(cached.attention_items) ? cached.attention_items : [],
-      nextBestAction: cached.next_best_action as NextBestAction,
-      generatedBy: "template",
-    };
-  }
 
   let attentionItems = await computeAttentionItems(supabase, companyId, ctx.activeMission?.id ?? null);
   let nextBestAction: NextBestAction;
@@ -90,7 +77,7 @@ export async function getOrCreateDailyBrief(supabase: SupabaseClient, companyId:
     nextBestAction = { title: "No goal or mission is set yet.", reason: "Ask your Co-Founder to turn your current objective into one.", taskId: null };
   }
 
-  await supabase.from("daily_briefs").insert({ company_id: companyId, user_id: userId, brief_date: briefDate, recommended_priority: nextBestAction.title, attention_items: attentionItems, next_best_action: nextBestAction, generated_by: "template" });
+  await supabase.from("daily_briefs").upsert({ company_id: companyId, user_id: userId, brief_date: briefDate, recommended_priority: nextBestAction.title, attention_items: attentionItems, next_best_action: nextBestAction, generated_by: "template" }, { onConflict: "company_id,brief_date" });
 
   return { companyName: ctx.company.name, primaryGoalTitle: ctx.primaryGoal?.title ?? null, primaryGoalProgress: ctx.primaryGoal?.progress ?? null, attentionItems, nextBestAction, generatedBy: "template" };
 }
