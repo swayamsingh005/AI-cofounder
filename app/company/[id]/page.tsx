@@ -90,7 +90,7 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
       )}
 
       {ctx.primaryGoal ? (
-        <div className="company-goal">
+        <div className="company-goal" id="primary-goal">
           <span>PRIMARY GOAL</span>
           <h2>{ctx.primaryGoal.title}</h2>
           {ctx.primaryGoal.target && <p>Target: {ctx.primaryGoal.target}</p>}
@@ -138,7 +138,7 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
           <Link href={`/company/${id}/decisions`} className="overview-view-all">View all decisions →</Link>
         </div>
 
-        <div className="activity-panel">
+        <div className="activity-panel" id="activity">
           <span>RECENT ACTIVITY</span>
           {ctx.recentActivity.length ? (
             <ul>{ctx.recentActivity.slice(0, 5).map((event, index) => (

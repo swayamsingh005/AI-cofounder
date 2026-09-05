@@ -5,6 +5,7 @@ import CompanyTopBar from "../../../components/company-topbar";
 import AskCofounder from "../../../components/ask-cofounder";
 import AiOrb from "../../../components/ai-orb";
 import LocalTime from "../../../components/local-time";
+import "./dashboard.css";
 
 const TIPS = [
   "Focus on solving one painful problem exceptionally well. Everything else is noise.",
@@ -38,16 +39,16 @@ export default async function CompanyLayout({ children, params }: { children: Re
   const initials = fullName ? fullName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() : email ? email[0].toUpperCase() : "?";
 
   return (
-    <div className="company-app-frame">
+    <div className="company-app-frame dashboard-refresh">
       <CompanyTopBar companyName={company.name} stage={company.stage} initials={initials} />
       <div className="company-shell-3col">
         <CompanySidebar companyId={company.id} companyName={company.name} stage={company.stage} />
         <main className="company-main-region">{children}</main>
-        <aside className="company-ai-region">
+        <aside className="company-ai-region" id="company-assistant">
           <div className="cofounder-panel cofounder-panel-persistent">
             <div className="cofounder-panel-header">
-              <AiOrb size={56} />
-              <span>AI CO-FOUNDER</span>
+              <span>✦ AI Co-Founder</span>
+              <AiOrb size={140} />
               <small className="cofounder-scope">I&rsquo;m here to help you build, decide and grow {company.name}.</small>
             </div>
             <AskCofounder companyId={company.id} />
