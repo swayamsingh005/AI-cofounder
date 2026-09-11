@@ -19,7 +19,7 @@ export async function refreshIntelligence(db: SupabaseClient, companyId: string,
     else checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('dedupe_key',`task:${task.id}`).in('status',['new','reviewed','investigating']));
   }
 }
-export async function syncGitHub(db: SupabaseClient, companyId: string, userId: string) {
+export async function syncGitHub(db: SupabaseClient, companyId: string, userId: string, accessToken?: string) {
   const connection = checked(await db.from('connections').select('*').eq('company_id',companyId).eq('provider','github').single());
   if (!connection || connection.status === 'disconnected') throw new Error('Connect a public repository first.');
   const cutoff = new Date(Date.now()-5*60*1000).toISOString();
@@ -28,7 +28,7 @@ export async function syncGitHub(db: SupabaseClient, companyId: string, userId: 
   const log = checked(await db.from('connector_sync_logs').insert({company_id:companyId,user_id:userId,connection_id:connection.id,status:'running'}).select('id').single());
   if(!log) throw new Error('Could not start the sync log. Retry after the lock expires.');
   try {
-    const snapshot = await githubConnector.sync(String(connection.metadata.repository ?? ''));
+    const snapshot = await githubConnector.sync(String(connection.metadata.repository ?? ''),accessToken);
     if (snapshot.events.length) checked(await db.from('company_events').upsert(snapshot.events.map(e=>({...e,company_id:companyId,user_id:userId,source:'github'})),{onConflict:'company_id,source,external_id',ignoreDuplicates:true}));
     for (const event of snapshot.events) {
       const key=`github-issue:${event.payload.repository}:${event.payload.number}`;

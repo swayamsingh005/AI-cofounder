@@ -1,6 +1,7 @@
 import { createClient, hasSupabaseConfig } from '../../../../lib/supabase/server';
 import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../../lib/intelligence/engine';
 import { repositoryName } from '../../../../lib/connectors/base';
+import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 
 export const maxDuration = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,8 +28,28 @@ export async function POST(request: Request) {
       const repository=repositoryName(body.repository);
       checked(await db.rpc('configure_public_github',{p_company:companyId,p_repository:repository}));
       await syncGitHub(db,companyId,userId);
-    } else if(op==='sync') await syncGitHub(db,companyId,userId);
-    else if(op==='disconnect') checked(await db.from('connections').update({status:'disconnected',updated_at:new Date().toISOString()}).eq('company_id',companyId).eq('provider','github'));
+    } else if(op==='select_github_repository') {
+      if(typeof body.repository!=='string') throw new Error('Choose a repository.');
+      const repository=repositoryName(body.repository);
+      const connection=checked(await db.from('connections').select('id,connection_type,metadata').eq('company_id',companyId).eq('provider','github').single());
+      if(!connection) throw new Error('Connect your GitHub account first.');
+      if(connection.connection_type!=='oauth') throw new Error('Connect your GitHub account first.');
+      const token=await readGitHubToken(connection.id,userId);
+      if(!token) throw new Error('Reconnect GitHub to continue.');
+      checked(await db.from('connections').update({status:'error',display_name:repository,metadata:{...(connection.metadata??{}),repository},updated_at:new Date().toISOString()}).eq('id',connection.id));
+      await syncGitHub(db,companyId,userId,token);
+    } else if(op==='sync') {
+      const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').single());
+      if(!connection) throw new Error('Connect GitHub first.');
+      const token=connection.connection_type==='oauth'?await readGitHubToken(connection.id,userId):undefined;
+      if(connection.connection_type==='oauth'&&!token) throw new Error('Reconnect GitHub to continue.');
+      await syncGitHub(db,companyId,userId,token??undefined);
+    } else if(op==='disconnect') {
+      const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').single());
+      if(!connection) throw new Error('GitHub is not connected.');
+      if(connection.connection_type==='oauth') await deleteGitHubToken(connection.id,userId);
+      checked(await db.from('connections').update({status:'disconnected',connection_type:'public_read',metadata:{},updated_at:new Date().toISOString()}).eq('id',connection.id));
+    }
     else if(op==='investigate' && recordId) return Response.json({result:await investigate(db,companyId,userId,recordId)});
     else if(op==='dismiss' && recordId) checked(await db.from('company_insights').update({status:'dismissed',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('id',recordId).select('id').single());
     else if(op==='propose') {
@@ -65,7 +86,7 @@ export async function POST(request: Request) {
       if(!['unvalidated','testing','supported','rejected'].includes(String(body.status))) throw new Error('Invalid assumption status.');
       checked(await db.from('memories').update({assumption_status:body.status}).eq('company_id',companyId).eq('id',recordId).eq('kind','assumption').select('id').single());
     } else if(op!=='refresh') throw new Error('Unknown operation.');
-    if(['refresh','sync','connect','approve'].includes(String(op))) {
+    if(['refresh','sync','connect','select_github_repository','approve'].includes(String(op))) {
       await refreshIntelligence(db,companyId,userId);
       checked(await db.rpc('run_insight_automation',{p_company:companyId}));
     }

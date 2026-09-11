@@ -25,6 +25,13 @@ async function main() {
  const snapshot=await githubConnector.sync('octocat/Hello-World');
  assert.equal(snapshot.events.length,1);assert.equal(snapshot.metadata.open_issues,7);
  const repeat=await githubConnector.sync('octocat/Hello-World');assert.equal(snapshot.events[0].external_id,repeat.events[0].external_id);
+ let authenticated=false;
+ global.fetch=async(url,opts)=>{
+  assert.equal(opts.headers.Authorization,'Bearer test-token');authenticated=true;
+  return {ok:true,json:async()=>url.includes('/search/')?{total_count:1}:url.includes('/issues?')?[]:{private:true}};
+ };
+ const privateSnapshot=await githubConnector.sync('octocat/private-repo','test-token');
+ assert.equal(privateSnapshot.metadata.private,true);assert.equal(authenticated,true);
  global.fetch=original;
  if(process.argv.includes('--live')) {
    const live=await githubConnector.sync('octocat/Hello-World');
