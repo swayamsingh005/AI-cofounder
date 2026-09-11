@@ -9,6 +9,12 @@ const NAV = [
   { href: "/tasks", label: "Tasks" },
   { href: "/decisions", label: "Decisions" },
   { href: "/memory", label: "Company Memory" },
+  { href: "/insights", label: "Insights" },
+  { href: "/investigations", label: "Investigations" },
+  { href: "/automations", label: "Automations" },
+  { href: "/connections", label: "Connections" },
+  { href: "/approvals", label: "Approvals" },
+  { href: "/executions", label: "Execution History" },
 ];
 
 export default function CompanySidebar({ companyId }: { companyId: string; companyName: string; stage: string }) {
@@ -23,7 +29,7 @@ export default function CompanySidebar({ companyId }: { companyId: string; compa
         {NAV.map(item => {
           const href = `${base}${item.href}`;
           const active = item.href === "" ? pathname === base : pathname?.startsWith(href);
-          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{({ Dashboard: "⌂", Missions: "◇", Tasks: "☑", Decisions: "⊞", "Company Memory": "▤" } as Record<string, string>)[item.label]}</span>{item.label}</Link>;
+          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{({ Dashboard: "⌂", Missions: "◇", Tasks: "☑", Decisions: "⊞", "Company Memory": "▤", Insights: "ϟ", Investigations: "⌕", Automations: "⚙", Connections: "⌘", Approvals: "☷", "Execution History": "↺" } as Record<string, string>)[item.label]}</span>{item.label}</Link>;
         })}
       </div>
 

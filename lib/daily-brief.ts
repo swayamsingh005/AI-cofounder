@@ -62,6 +62,14 @@ export async function getOrCreateDailyBrief(supabase: SupabaseClient, companyId:
 
 
   let attentionItems = await computeAttentionItems(supabase, companyId, ctx.activeMission?.id ?? null);
+  const [insights, approvals, executions] = await Promise.all([
+    supabase.from('company_insights').select('id,title,severity').eq('company_id',companyId).in('status',['new','investigating']).eq('severity','high').limit(2),
+    supabase.from('ai_actions').select('id,title').eq('company_id',companyId).eq('status','awaiting_approval').limit(2),
+    supabase.from('ai_actions').select('id', {count:'exact',head:true}).eq('company_id',companyId).eq('status','completed').gte('executed_at',new Date(Date.now()-86400000).toISOString()),
+  ]);
+  for(const insight of insights.data??[]) attentionItems.unshift({severity:'high',text:`Review insight: ${insight.title}`,taskId:null});
+  for(const action of approvals.data??[]) attentionItems.push({severity:'medium',text:`Approval waiting: ${action.title}`,taskId:null});
+  if(executions.count) attentionItems.push({severity:'info',text:`${executions.count} internal actions completed in the last 24 hours. Review Execution History for actual results.`,taskId:null});
   let nextBestAction: NextBestAction;
 
   if (attentionItems.length > 0) {

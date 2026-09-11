@@ -29,7 +29,7 @@ export type CompanyContext = {
   activeMission: { id: string; objective: string; whyItMatters: string | null; successCriteria: string | null; progress: number; status: string } | null;
   tasks: { id: string; title: string; status: string; priority: string }[];
   recentDecisions: { id: string; title: string; reasoning: string | null; status: string }[];
-  recentMemories: { id: string; kind: string; title: string; content: string }[];
+  recentMemories: { id: string; kind: string; title: string; content: string; assumption_status?: string }[];
   recentActivity: { kind: string; title: string; createdAt: string }[];
 };
 
@@ -43,7 +43,7 @@ export async function loadCompanyContext(supabase: SupabaseClient, companyId: st
     supabase.from("goals").select("id,title,description,target,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle(),
     supabase.from("missions").select("id,objective,why_it_matters,success_criteria,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle(),
     supabase.from("decisions").select("id,title,reasoning,status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(5),
-    supabase.from("memories").select("id,kind,title,content").eq("company_id", companyId).order("created_at", { ascending: false }).limit(12),
+    supabase.from("memories").select("id,kind,title,content,assumption_status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(12),
     supabase.from("activity_events").select("kind,title,created_at").eq("company_id", companyId).order("created_at", { ascending: false }).limit(8),
   ]);
   if (!companyRes.data) return null;
@@ -96,9 +96,9 @@ export function formatCompanyContext(ctx: CompanyContext): string {
     if (ctx.activeMission.whyItMatters) lines.push(`Why it matters: ${ctx.activeMission.whyItMatters}`);
     if (ctx.activeMission.successCriteria) lines.push(`Success criteria: ${ctx.activeMission.successCriteria}`);
   }
-  if (ctx.tasks.length) lines.push(`\nCURRENT TASKS:\n${ctx.tasks.map(t => `- [${t.status}/${t.priority}] ${t.title}`).join("\n")}`);
+  if (ctx.tasks.length) lines.push(`\nCURRENT TASKS:\n${ctx.tasks.map(t => `- [${t.id}] [${t.status}/${t.priority}] ${t.title}`).join("\n")}`);
   if (ctx.recentDecisions.length) lines.push(`\nRECENT DECISIONS:\n${ctx.recentDecisions.map(d => `- ${d.title}${d.status !== "active" ? ` (${d.status})` : ""}${d.reasoning ? ` — ${d.reasoning}` : ""}`).join("\n")}`);
-  if (ctx.recentMemories.length) lines.push(`\nCOMPANY MEMORY:\n${ctx.recentMemories.map(m => `- [${m.kind}] ${m.title}: ${m.content}`).join("\n")}`);
+  if (ctx.recentMemories.length) lines.push(`\nCOMPANY MEMORY:\n${ctx.recentMemories.map(m => `- [${m.id}] [${m.kind}${m.kind==='assumption'?`/${m.assumption_status??'unvalidated'}`:''}] ${m.title}: ${m.content}`).join("\n")}`);
   if (ctx.recentActivity.length) lines.push(`\nRECENT ACTIVITY: ${ctx.recentActivity.map(a => a.title).join("; ")}`);
   return lines.join("\n");
 }

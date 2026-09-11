@@ -30,6 +30,7 @@ function stripJsonFence(text: string) {
 async function callGroq(model: string, apiKey: string, system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number }): Promise<string> {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(40000),
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,

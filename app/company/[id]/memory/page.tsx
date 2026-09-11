@@ -13,12 +13,12 @@ export default async function MemoryPage({ params }: { params: Promise<{ id: str
   const { data: company } = await supabase.from("companies").select("id").eq("id", id).eq("user_id", userId).maybeSingle();
   if (!company) notFound();
 
-  const { data: memories } = await supabase.from("memories").select("id,kind,title,content").eq("company_id", id).order("created_at", { ascending: false });
+  const { data: memories } = await supabase.from("memories").select("id,kind,title,content,assumption_status").eq("company_id", id).order("created_at", { ascending: false });
 
   return (
     <section className="page-section">
       <div className="page-header"><span>MEMORY</span><h1>Company memory</h1></div>
-      <MemorySearch memories={memories ?? []} />
+      <MemorySearch companyId={id} memories={memories ?? []} />
     </section>
   );
 }

@@ -1,0 +1,15 @@
+import Link from 'next/link';
+import V3Dashboard from '../../../components/v3-dashboard';
+import V3Module from '../../../components/v3-module';
+import V3Status from '../../../components/v3-status';
+import AiOrb from '../../../components/ai-orb';
+import {demoIntelligence} from '../../../lib/intelligence/demo';
+import '../../company/[id]/dashboard.css';
+import '../../company/[id]/v3.css';
+export const metadata={title:'AI Co-Founder V3 · Presentation demo'};
+export default async function DemoV3({searchParams}:{searchParams:Promise<{section?:string}>}) {
+ const {section}=await searchParams;
+ const allowed=['connections','insights','investigations','approvals','automations','executions','events'];
+ const current=section&&allowed.includes(section)?section:'';
+ return <div className="company-app-frame dashboard-refresh v3-frame"><header className="company-topbar"><Link className="topbar-company-switch" href="/demo/v3"><b>TallyGenie</b><small>Presentation demo</small></Link><div className="topbar-right"><Link className="v3-button" href="/companies">Open my companies →</Link><span className="topbar-avatar">SS</span></div></header><div className="company-shell-3col"><nav className="company-sidebar"><Link href="/demo/v3" className="sidebar-brand">✦ AI Co-Founder</Link><div className="sidebar-nav">{[['','Dashboard'],['insights','Insights'],['investigations','Investigations'],['approvals','Approvals'],['automations','Automations'],['connections','Connections'],['executions','Execution History'],['events','Company Events']].map(([s,label])=><Link className={`sidebar-link ${current===s?'active':''}`} key={s} href={s?`/demo/v3?section=${s}`:'/demo/v3'}><span>◇</span>{label}</Link>)}</div><div className="sidebar-bottom"><div className="sidebar-help"><b>Safe presentation mode</b><p>All data is simulated. Your real company is unchanged.</p></div></div></nav><main className="company-main-region">{current?<V3Module companyId="demo" section={current} data={demoIntelligence} demo/>:<V3Dashboard companyId="demo" name="TallyGenie" displayName="Swayam" data={demoIntelligence} demo goal={{title:'Acquire 5 CA firms in 90 days',progress:42}} brief={null} missions={[{id:'m1',objective:'Onboard 2 CA firms for pilot',progress:60},{id:'m2',objective:'Build Tally API connector',progress:80},{id:'m3',objective:'Launch targeted marketing outreach',progress:30}]} tasks={['Fix onboarding conversion issue','Deploy Tally API connector (test env)','Interview 3 CA firms','Review GST compliance module','Update investor deck'].map((title,i)=>({id:`t${i}`,title,status:'todo',priority:i<2?'high':i<4?'medium':'low'}))}/>}</main><aside className="company-ai-region"><div className="cofounder-panel"><div className="cofounder-panel-header"><span>AI Co-Founder</span><AiOrb size={64}/><small className="cofounder-scope">Build. Decide. Grow.</small></div><V3Status companyId="demo" data={demoIntelligence} demo/><div className="cofounder-tip"><span>CO-FOUNDER TIP</span><p>Focus on solving one painful problem exceptionally well. Everything else is noise.</p></div></div></aside></div></div>;
+}

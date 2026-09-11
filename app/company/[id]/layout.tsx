@@ -6,6 +6,9 @@ import AskCofounder from "../../../components/ask-cofounder";
 import AiOrb from "../../../components/ai-orb";
 import LocalTime from "../../../components/local-time";
 import "./dashboard.css";
+import "./v3.css";
+import { loadIntelligence } from "../../../lib/intelligence/data";
+import V3Status from "../../../components/v3-status";
 
 const TIPS = [
   "Focus on solving one painful problem exceptionally well. Everything else is noise.",
@@ -30,6 +33,7 @@ export default async function CompanyLayout({ children, params }: { children: Re
 
   const { data: conversations } = await supabase.from("conversations").select("id,title,updated_at").eq("company_id", id).order("updated_at", { ascending: false }).limit(3);
   const tip = TIPS[new Date().getDate() % TIPS.length];
+  const intelligence = await loadIntelligence(supabase, id);
 
   // Real account data only — a name if Google sign-in captured one, otherwise the email's first
   // letter. Never a fabricated placeholder.
@@ -39,7 +43,7 @@ export default async function CompanyLayout({ children, params }: { children: Re
   const initials = fullName ? fullName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() : email ? email[0].toUpperCase() : "?";
 
   return (
-    <div className="company-app-frame dashboard-refresh">
+    <div className="company-app-frame dashboard-refresh v3-frame">
       <CompanyTopBar companyName={company.name} stage={company.stage} initials={initials} />
       <div className="company-shell-3col">
         <CompanySidebar companyId={company.id} companyName={company.name} stage={company.stage} />
@@ -48,9 +52,10 @@ export default async function CompanyLayout({ children, params }: { children: Re
           <div className="cofounder-panel cofounder-panel-persistent">
             <div className="cofounder-panel-header">
               <span>✦ AI Co-Founder</span>
-              <AiOrb size={140} />
+              <AiOrb size={64} />
               <small className="cofounder-scope">I&rsquo;m here to help you build, decide and grow {company.name}.</small>
             </div>
+            <V3Status companyId={id} data={intelligence} />
             <AskCofounder companyId={company.id} />
             {!!conversations?.length && (
               <div className="recent-conversations">

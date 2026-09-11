@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 
-const VALID_KINDS = ["fact", "assumption", "decision", "learning", "customer_insight", "risk", "strategy", "experiment", "event"] as const;
+const VALID_KINDS = ["fact", "assumption", "decision", "learning", "customer_insight", "customer_signal", "execution_result", "risk", "strategy", "experiment", "event"] as const;
 
 export async function POST(request: Request) {
   if (!hasSupabaseConfig()) return NextResponse.json({ error: "Supabase is not configured." }, { status: 400 });
