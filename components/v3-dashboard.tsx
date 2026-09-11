@@ -33,6 +33,6 @@ export default function V3Dashboard({companyId,name,displayName,data,missions,ta
       <article className="v3-card" id="daily-brief"><div className="v3-card-heading"><h2>Daily Brief & Next Best Action</h2><V3Button companyId={companyId} op="refresh" demo={demo}>Refresh</V3Button></div><div id="next-action"><h3>{brief?.nextBestAction.title??'Start with one measurable objective'}</h3><p>{brief?.nextBestAction.reason??'Connect a tool or choose a mission to give your company a clear next step.'}</p>{brief?.nextBestAction.taskId&&!demo&&<StartTaskButton taskId={brief.nextBestAction.taskId}/>}</div><Link href={href('approvals')}>Prepare an internal action →</Link></article>
       <article className="v3-card" id="primary-goal"><div className="v3-card-heading"><h2>Moving towards your vision</h2><Link href={demo?'/demo/v3?section=approvals':href('overview')}>Workspace overview →</Link></div><h3>{goal?.title??'No primary goal yet'}</h3><Bar value={goal?.progress??0}/><p>{goal?.progress??0}% of linked tasks complete · Validate business outcomes separately.</p></article>
     </div>
-    <footer className="v3-footer">AI Co-Founder <span>From idea to impact. Together.</span><span>v3 · Connected intelligence</span></footer>
+    <footer className="v3-footer">AI Co-Founder <span>From idea to impact. Together.</span></footer>
   </section>;
 }
