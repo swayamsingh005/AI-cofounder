@@ -35,14 +35,15 @@ export type AgentOutput = {
 };
 export function parseOutput(value: unknown, agent: AgentId, evidence: Set<string>, maxActions = 2): AgentOutput {
   const v = object(value); keys(v, ['summary', 'findings', 'drafts', 'unknowns', 'actions']);
-  if (!Array.isArray(v.findings) || v.findings.length > 6 || !Array.isArray(v.actions) || v.actions.length > maxActions) throw new Error('Output exceeds the action or finding limit.');
+  if (!Array.isArray(v.findings) || !Array.isArray(v.actions)) throw new Error('Invalid output list.');
+  const findings = v.findings.slice(0, 6), actions = v.actions.slice(0, maxActions);
   const strings = (items: unknown) => {
-    if (!Array.isArray(items) || items.length > 6) throw new Error('Invalid output list.');
-    return items.map(x => text(x, 2000));
+    if (!Array.isArray(items)) throw new Error('Invalid output list.');
+    return items.slice(0, 6).map(x => text(x, 2000));
   };
   return {
     summary: text(v.summary, 2500),
-    findings: v.findings.map(item => {
+    findings: findings.map(item => {
       const f = object(item); keys(f, ['content', 'evidenceIds', 'kind']);
       if (f.kind !== 'observation' && f.kind !== 'hypothesis') throw new Error('Invalid finding category.');
       if (!Array.isArray(f.evidenceIds) || f.evidenceIds.length > 8 || f.evidenceIds.some(id => typeof id !== 'string' || !evidence.has(id))) throw new Error('Unknown evidence reference.');
@@ -50,7 +51,7 @@ export function parseOutput(value: unknown, agent: AgentId, evidence: Set<string
       return { content: text(f.content, 1500), kind: f.kind, evidenceIds: f.evidenceIds as string[] };
     }),
     drafts: strings(v.drafts), unknowns: strings(v.unknowns),
-    actions: v.actions.map(item => {
+    actions: actions.map(item => {
       const a = object(item); keys(a, ['actionType', 'parameters', 'reason']);
       if (a.actionType !== 'create_task') throw new Error('Unsupported action request.');
       actionPolicy(agent, a.actionType);

@@ -33,5 +33,28 @@ Proposed tasks require approval and have not been executed. Never return agent I
   for (const [key, limit] of [['findings', 6], ['drafts', 6], ['unknowns', 6], ['actions', maxActions]] as const) {
     if (Array.isArray(candidate[key])) candidate[key] = candidate[key].slice(0, limit);
   }
+  const bounded = (value: unknown, max: number) => typeof value === 'string' ? redact(value).slice(0, max) : value;
+  candidate.summary = bounded(candidate.summary, 2500);
+  if (Array.isArray(candidate.drafts)) candidate.drafts = candidate.drafts.map(value => bounded(value, 2000));
+  if (Array.isArray(candidate.unknowns)) candidate.unknowns = candidate.unknowns.map(value => bounded(value, 2000));
+  if (Array.isArray(candidate.findings)) candidate.findings = candidate.findings.map(value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const finding = {...value} as Record<string, unknown>;
+    finding.content = bounded(finding.content, 1500);
+    if (Array.isArray(finding.evidenceIds)) finding.evidenceIds = finding.evidenceIds.slice(0, 8);
+    return finding;
+  });
+  if (Array.isArray(candidate.actions)) candidate.actions = candidate.actions.map(value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const action = {...value} as Record<string, unknown>;
+    action.reason = bounded(action.reason, 500);
+    if (action.parameters && typeof action.parameters === 'object' && !Array.isArray(action.parameters)) {
+      const parameters = {...action.parameters} as Record<string, unknown>;
+      parameters.title = bounded(parameters.title, 200);
+      parameters.description = bounded(parameters.description, 2000);
+      action.parameters = parameters;
+    }
+    return action;
+  });
   return parseOutput(candidate, agent, new Set(input.evidence.map(e => e.id)), maxActions);
 }

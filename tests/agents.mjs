@@ -45,7 +45,7 @@ test('malformed outputs, impersonation, permission downgrades and invented evide
   for (const change of [{agentId:'coding'},{riskLevel:'low'},{approvalRequirement:'AUTO'}]) assert.throws(()=>parseOutput({...output,...change},'research',new Set(['m1'])));
   assert.throws(()=>parseOutput({...output,findings:[{...output.findings[0],evidenceIds:['other-company-id']}]},'research',new Set(['m1'])));
   assert.throws(()=>parseOutput({...output,actions:[{actionType:'create_task',parameters:{title:'x',description:'x',url:'https://evil.test'},reason:'x'}]},'research',new Set(['m1'])));
-  assert.throws(()=>parseOutput({...output,actions:Array(3).fill(output.actions[0])},'research',new Set(['m1'])));
+  assert.equal(parseOutput({...output,actions:Array(3).fill(output.actions[0])},'research',new Set(['m1'])).actions.length,2);
   assert.throws(()=>parsePlan({steps:[{agentId:'research',objective:'x',actionType:'analyze_context',dependsOn:[0]}]}));
 });
 test('missing evidence and model failures never return fake success', async () => {
@@ -58,11 +58,15 @@ test('missing evidence and model failures never return fake success', async () =
   assert.equal(redact('ghp_'+'a'.repeat(25)),'[credential removed]');
 });
 test('model list overflow is safely bounded before strict validation', async () => {
-  const crowded={...output,findings:Array(7).fill(output.findings[0]),drafts:Array(7).fill('Draft'),unknowns:Array(7).fill('Unknown'),actions:Array(3).fill(output.actions[0])};
+  const crowded={...output,summary:'S'.repeat(3000),findings:[{...output.findings[0],content:'F'.repeat(1700)},...Array(6).fill(output.findings[0])],drafts:['D'.repeat(2200),...Array(6).fill('Draft')],unknowns:['U'.repeat(2200),...Array(6).fill('Unknown')],actions:Array(3).fill({...output.actions[0],reason:'R'.repeat(700)})};
   const result=await executeAnalysis('research','analyze_context',{goal:'Research positioning',context:'Company profile',evidence:[{id:'m1',category:'memory',content:'Recorded concern'}],dependencies:[]},async()=>JSON.stringify(crowded),2);
+  assert.equal(result.summary.length,2500);
   assert.equal(result.findings.length,6);
+  assert.equal(result.findings[0].content.length,1500);
   assert.equal(result.drafts.length,6);
+  assert.equal(result.drafts[0].length,2000);
   assert.equal(result.unknowns.length,6);
   assert.equal(result.actions.length,2);
+  assert.equal(result.actions[0].reason.length,500);
 });
 
