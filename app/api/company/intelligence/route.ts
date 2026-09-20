@@ -3,7 +3,8 @@ import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
-import { createGitHubFilePullRequest, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
+import { createGitHubFilePullRequest, draftGitHubIssueChange, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
+import { groqComplete } from '../../../../lib/ai';
 
 export const maxDuration = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +55,17 @@ export async function POST(request: Request) {
       if(!connection) throw new Error('GitHub is not connected.');
       if(connection.connection_type==='oauth') await deleteGitHubToken(connection.id,userId);
       checked(await db.from('connections').update({status:'disconnected',connection_type:'public_read',metadata:{},updated_at:new Date().toISOString()}).eq('id',connection.id));
+    }
+    else if(op==='draft_github_change') {
+      const issueNumber=Number(body.issueNumber), key=typeof body.key==='string'&&UUID.test(body.key)?body.key:crypto.randomUUID();
+      const connection=checked(await db.from('connections').select('id,connection_type,metadata').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+      if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
+      const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a change.');
+      const repository=repositoryName(String(connection.metadata?.repository??''));
+      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>groqComplete(system,user,{json:true,maxTokens:8000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
+      const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
+      const input=validateGitHubFileChange({repository,branch,path:draft.path,content:draft.content,title:draft.title,body:draft.body});
+      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:input}));
     }
     else if(op==='investigate' && recordId) return Response.json({result:await investigate(db,companyId,userId,recordId)});
     else if(op==='dismiss' && recordId) checked(await db.from('company_insights').update({status:'dismissed',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('id',recordId).select('id').single());

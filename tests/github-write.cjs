@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,createGitHubFilePullRequest}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,createGitHubFilePullRequest,draftGitHubIssueChange}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
@@ -12,9 +12,15 @@ const replies=[
 ];
 const calls=[];
 global.fetch=async(url,init)=>{calls.push([url,init]);const [status,body]=replies.shift();return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})};
-createGitHubFilePullRequest('secret-token',valid).then(result=>{
+createGitHubFilePullRequest('secret-token',valid).then(async result=>{
   assert.equal(result.pull_request_number,2); assert.equal(result.merged,false); assert.equal(result.deployed,false);
   assert.equal(calls.some(([,init])=>String(init.headers.Authorization).includes('secret-token')),true);
   assert.equal(calls.some(([url])=>String(url).endsWith('/pulls')),true);
+  replies.push([200,{default_branch:'main'}],[200,{number:1,title:'Replace README',body:'Add product setup instructions.'}],[200,{tree:[{type:'blob',path:'README.md',size:20}]}],[200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
+  const draft=await draftGitHubIssueChange('secret-token','owner/repo',1,async(system,user)=>{
+    assert.match(system,/bounded coding agent/); assert.match(user,/Replace README/);
+    return JSON.stringify({path:'README.md',content:'# Product\n\nSetup instructions.',title:'Replace starter README',body:'Closes #1'});
+  });
+  assert.equal(draft.path,'README.md'); assert.match(draft.content,/Setup instructions/);
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});
