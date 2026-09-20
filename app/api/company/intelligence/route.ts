@@ -3,6 +3,7 @@ import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
+import { createGitHubFilePullRequest, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
 
 export const maxDuration = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     else if(op==='dismiss' && recordId) checked(await db.from('company_insights').update({status:'dismissed',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('id',recordId).select('id').single());
     else if(op==='propose') {
       const type = String(body.actionType ?? 'create_task');
-      if(!['create_task','create_mission','record_decision','update_memory','update_task'].includes(type)) throw new Error('This action is not supported. No external action was performed.');
+      if(!['create_task','create_mission','record_decision','update_memory','update_task','github.create_pull_request'].includes(type)) throw new Error('This action is not supported. No external action was performed.');
       let title=String(body.title ?? '').trim().slice(0,200), description=String(body.description ?? '').slice(0,3000), key=String(body.key ?? '');
       let investigationId: string | null=null;
       if(recordId) {
@@ -69,16 +70,44 @@ export async function POST(request: Request) {
         key=table==='company_insights' ? `insight-task:${recordId}` : `investigation-task:${recordId}`;
       }
       if(!title || !key || key.length>150) throw new Error('A title and request key are required.');
-      let taskId=null;
+      let taskId:string|null=null;
+      let provider='internal', riskLevel='low', inputPayload:Record<string,unknown>=taskId?{status:body.status}:{};
+      if(type==='github.create_pull_request') {
+        if(typeof body.path!=='string' || typeof body.content!=='string') throw new Error('A file path and complete file content are required.');
+        const connection=checked(await db.from('connections').select('id,connection_type,metadata').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+        if(!connection) throw new Error('Connect GitHub first.');
+        if(connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
+        const repository=repositoryName(String(connection.metadata?.repository??''));
+        const branch=`ai-cofounder/${key.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)}`;
+        inputPayload=validateGitHubFileChange({repository,branch,path:body.path,content:body.content,title,body:description});
+        provider='github'; riskLevel='medium';
+      }
       if(type==='update_task') {
         if(typeof body.taskId!=='string' || !UUID.test(body.taskId) || !['todo','in_progress','blocked','completed'].includes(String(body.status))) throw new Error('Invalid task update.');
-        const task=checked(await db.from('tasks').select('id').eq('company_id',companyId).eq('id',body.taskId).single()); if(!task) throw new Error('Task not found.'); taskId=task.id;
+        const task=checked(await db.from('tasks').select('id').eq('company_id',companyId).eq('id',body.taskId).single()); if(!task) throw new Error('Task not found.'); taskId=task.id; inputPayload={status:body.status};
       }
-      checked(await db.from('ai_actions').upsert({company_id:companyId,user_id:userId,investigation_id:investigationId,task_id:taskId,idempotency_key:key,provider:'internal',action_type:type,title,description,risk_level:'low',status:'awaiting_approval',requires_approval:true,input_payload:taskId?{status:body.status}:{}},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true}));
+      checked(await db.from('ai_actions').upsert({company_id:companyId,user_id:userId,investigation_id:investigationId,task_id:taskId,idempotency_key:key,provider,action_type:type,title,description,risk_level:riskLevel,status:'awaiting_approval',requires_approval:true,input_payload:inputPayload},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true}));
     } else if(op==='approve' && recordId) {
-      checked(await db.from('ai_actions').select('id').eq('company_id',companyId).eq('id',recordId).single());
-      const result=checked(await db.rpc('execute_internal_action',{p_action:recordId,p_approve:true}));
-      if(result?.error) throw new Error(result.error);
+      const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).single());
+      if(action.provider==='github' && action.action_type==='github.create_pull_request') {
+        if(action.status==='completed') return Response.json({ok:true,result:action.output_payload});
+        if(action.status!=='awaiting_approval') throw new Error('Action is not awaiting approval.');
+        const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+        if(!connection) throw new Error('Connect GitHub first.');
+        if(connection.connection_type!=='oauth') throw new Error('Reconnect GitHub before approving this action.');
+        const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before approving this action.');
+        checked(await db.from('ai_actions').update({status:'executing',approved_by:userId,approved_at:new Date().toISOString()}).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
+        try {
+          const result=await createGitHubFilePullRequest(token,action.input_payload as Parameters<typeof createGitHubFilePullRequest>[1]);
+          checked(await db.from('ai_actions').update({status:'completed',executed_at:new Date().toISOString(),output_payload:result,error_message:null}).eq('id',recordId).select('id').single());
+        } catch(error) {
+          checked(await db.from('ai_actions').update({status:'failed',executed_at:new Date().toISOString(),error_message:error instanceof Error?error.message:'GitHub action failed.'}).eq('id',recordId).select('id').single());
+          throw error;
+        }
+      } else {
+        const result=checked(await db.rpc('execute_internal_action',{p_action:recordId,p_approve:true}));
+        if(result?.error) throw new Error(result.error);
+      }
     } else if(op==='reject' && recordId) checked(await db.from('ai_actions').update({status:'cancelled'}).eq('company_id',companyId).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
     else if(op==='modify' && recordId) {
       if(typeof body.title!=='string' || !body.title.trim()) throw new Error('A title is required.');

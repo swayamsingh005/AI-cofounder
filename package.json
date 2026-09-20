@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:v3": "tsc lib/connectors/base.ts lib/connectors/github.ts lib/intelligence/data.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck && node tests/v3-connectors.cjs ./.v3-test-build",
+    "test:v3": "tsc lib/connectors/base.ts lib/connectors/github.ts lib/connectors/github-write.ts lib/intelligence/data.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck && node tests/v3-connectors.cjs ./.v3-test-build && node tests/github-write.cjs",
     "typecheck": "tsc --noEmit",
     "test:agents": "tsc lib/agents/registry.ts lib/agents/schema.ts lib/agents/planner.ts lib/agents/execution.ts lib/connectors/registry.ts lib/intelligence/pulse.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck --strict && node --test tests/agents.mjs tests/pulse.mjs && node tests/agents-db.mjs"
   },

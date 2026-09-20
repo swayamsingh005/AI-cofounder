@@ -14,7 +14,7 @@ export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
     instructions: 'Prioritize recorded issues and development tasks. Explain impact, evidence, and implementation steps. You cannot inspect source code, edit code, merge or deploy.',
     capabilities: ['Technical planning', 'Saved GitHub issue analysis', 'Propose development tasks'],
     connectors: ['internal', 'github', 'vercel', 'supabase', 'vscode', 'drive'],
-    actions: ['analyze_context', 'analyze_github_issues', 'create_task'],
+    actions: ['analyze_context', 'analyze_github_issues', 'create_task', 'github.create_pull_request'],
   },
   research: {
     id: 'research', name: 'Research Agent', version: 1, status: 'available',
@@ -40,6 +40,7 @@ export const ACTIONS: Readonly<Record<string, { connector: string; permission: P
   analyze_context: { connector: 'internal', permission: 'AUTO', executable: true },
   analyze_github_issues: { connector: 'github', permission: 'AUTO', executable: true },
   create_task: { connector: 'internal', permission: 'APPROVAL_REQUIRED', executable: true },
+  'github.create_pull_request': { connector: 'github', permission: 'APPROVAL_REQUIRED', executable: true },
   'gmail.send_email': { connector: 'gmail', permission: 'APPROVAL_REQUIRED', executable: false },
   'instagram.publish': { connector: 'instagram', permission: 'APPROVAL_REQUIRED', executable: false },
   'vercel.production_deploy': { connector: 'vercel', permission: 'APPROVAL_REQUIRED', executable: false },

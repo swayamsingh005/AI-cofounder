@@ -20,7 +20,7 @@ export async function GET(request:Request) {
     const userResponse=await fetch('https://api.github.com/user',{headers:{Accept:'application/vnd.github+json',Authorization:`Bearer ${tokenBody.access_token}`,'User-Agent':'AI-Co-Founder'},cache:'no-store',signal:AbortSignal.timeout(12000)});
     const githubUser=await userResponse.json() as {login?:string;id?:number};
     if(!userResponse.ok || !githubUser.login) throw new Error('profile_failed');
-    const {data:connection,error}=await db.from('connections').upsert({company_id:companyId,user_id:userId,provider:'github',display_name:githubUser.login,status:'connected',connection_type:'oauth',permissions:['read'],metadata:{account:githubUser.login,github_user_id:githubUser.id},updated_at:new Date().toISOString()},{onConflict:'company_id,provider'}).select('id').single();
+    const {data:connection,error}=await db.from('connections').upsert({company_id:companyId,user_id:userId,provider:'github',display_name:githubUser.login,status:'connected',connection_type:'oauth',permissions:['read','contents:write','pull_requests:write'],metadata:{account:githubUser.login,github_user_id:githubUser.id},updated_at:new Date().toISOString()},{onConflict:'company_id,provider'}).select('id').single();
     if(error || !connection) throw new Error('connection_failed');
     await saveGitHubToken(connection.id,userId,tokenBody.access_token);
     return Response.redirect(new URL(`/company/${companyId}/connections?github=connected`,request.url));
