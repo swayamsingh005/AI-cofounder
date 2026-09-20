@@ -30,9 +30,9 @@ function IntakeForm() {
   return <main className="app-shell">
     <header className="app-nav"><Link className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI Co-Founder</Link><div><Link href="/reports">My reports</Link><Link href="/settings">Settings</Link></div></header>
     <section className="new-page intake-page">
-      <div className="eyebrow"><span></span> START A CO-FOUNDER SESSION</div>
-      <h1>What are you<br />considering?</h1>
-      <p>One raw sentence produces a generic report. A few more details let the room give you a specific one — named alternatives, a customer who actually exists, and validation steps that fit your constraints. Every field except the idea is optional, but more detail earns a sharper brief.</p>
+      <div className="eyebrow"><span></span> TALK TO YOUR CEO AGENT</div>
+      <h1>What do you want<br />to build or grow?</h1>
+      <p>The CEO Agent starts by understanding the business, customer, market and your constraints. It produces the founder report and decides whether Research, Coding, Marketing, or a combination should work next. Every field except the idea is optional, but more detail produces a better decision.</p>
       <form onSubmit={submit} className="intake-form">
         <label className="intake-field wide"><span>Your idea <b>*</b></span><textarea value={idea} onChange={e => { setIdea(e.target.value); setError(""); }} placeholder="A rough idea is perfect. Try: 'a tool that helps…'" required /></label>
         <label className="intake-field"><span>Target customer</span><input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="e.g. solo dentists running their own front desk" /></label>
@@ -42,7 +42,7 @@ function IntakeForm() {
         <label className="intake-field"><span>Your constraints</span><input value={constraints} onChange={e => setConstraints(e.target.value)} placeholder="e.g. solo founder, 10 hrs/week, no code budget" /></label>
         <label className="intake-field wide"><span>What you want out of this pass</span><input value={outcome} onChange={e => setOutcome(e.target.value)} placeholder="e.g. decide whether to spend the next month on this" /></label>
         {error && <p className="idea-warning">{error}</p>}
-        <button type="submit" className="large-start">Send the room your brief <b>→</b></button>
+        <button type="submit" className="large-start">Send brief to CEO Agent <b>→</b></button>
       </form>
       <small>Tip: the more specific the customer and geography, the more specific the verdict.</small>
     </section>
