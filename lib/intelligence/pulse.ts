@@ -26,7 +26,7 @@ export type PulseInput = {
     strategy?: string | null;
   } | null;
   tasks: { status: string }[];
-  memories: { kind: string; assumption_status?: string | null }[];
+  memories: { kind: string; assumption_status?: string | null; source_agent?: string | null; evidence?: unknown }[];
   growth?: { score: number; evidence: string } | null;
   revenue?: { score: number; evidence: string } | null;
 };
@@ -47,10 +47,12 @@ export function calculateCompanyPulse(input: PulseInput): CompanyPulse {
   const testedAssumptions = input.memories.filter(memory =>
     memory.kind === 'assumption' && ['supported', 'rejected'].includes(memory.assumption_status ?? '')
   ).length;
+  const groundedResearch = input.memories.filter(memory => memory.source_agent === 'research' && memory.evidence && typeof memory.evidence === 'object').length;
   const validationPoints = bounded(
-    Math.min(50, customerSignals * 10) +
+    Math.min(40, customerSignals * 10) +
     Math.min(25, experiments * 12.5) +
-    Math.min(25, testedAssumptions * (25 / 3))
+    Math.min(20, testedAssumptions * (20 / 3)) +
+    Math.min(15, groundedResearch * 5)
   );
   const validation = input.profile || input.tasks.length || input.memories.length ? validationPoints : null;
 
@@ -67,7 +69,7 @@ export function calculateCompanyPulse(input: PulseInput): CompanyPulse {
     },
     {
       key: 'validation', label: 'Market validation', score: validation,
-      evidence: `${customerSignals} customer signals · ${experiments} experiments · ${testedAssumptions} tested assumptions`,
+      evidence: `${customerSignals} customer signals · ${experiments} experiments · ${testedAssumptions} tested assumptions · ${groundedResearch} sourced research findings`,
       nextStep: validation == null || validation < 100 ? 'Record customer evidence, experiments and supported or rejected assumptions.' : null,
     },
     {

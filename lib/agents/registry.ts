@@ -18,9 +18,9 @@ export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
   },
   research: {
     id: 'research', name: 'Research Agent', version: 1, status: 'available',
-    description: 'Synthesize company evidence into findings, unknowns and research plans.',
-    instructions: 'Analyze only supplied evidence. Separate recorded observations from hypotheses. Missing competitor data must be an unknown and a proposed validation step, never an invented competitor fact. No live web search is available in this workflow.',
-    capabilities: ['Internal evidence research', 'Competitor research planning', 'Structured findings'],
+    description: 'Research the market with traceable web sources and combine it with company evidence.',
+    instructions: 'Analyze only supplied internal evidence and trusted runtime search results. Separate source-grounded observations from hypotheses. Cite supplied evidence IDs for every observation. Missing competitor data must be an unknown and a proposed validation step, never an invented competitor fact.',
+    capabilities: ['Live source-grounded web research', 'Internal evidence synthesis', 'Traceable findings in company memory', 'Company Pulse evidence updates'],
     connectors: ['internal', 'web', 'drive', 'notion', 'gmail'],
     actions: ['analyze_context', 'create_task'],
   },

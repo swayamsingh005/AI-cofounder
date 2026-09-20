@@ -31,10 +31,10 @@ export function parsePlan(value: unknown, maxSteps = 3): Step[] {
 }
 export type AgentOutput = {
   summary: string; findings: { content: string; evidenceIds: string[]; kind: 'observation' | 'hypothesis' }[];
-  drafts: string[]; unknowns: string[]; actions: { actionType: 'create_task'; parameters: { title: string; description: string }; reason: string }[];
+  drafts: string[]; unknowns: string[]; sources: { id: string; title: string; url: string; domain: string }[]; actions: { actionType: 'create_task'; parameters: { title: string; description: string }; reason: string }[];
 };
 export function parseOutput(value: unknown, agent: AgentId, evidence: Set<string>, maxActions = 2): AgentOutput {
-  const v = object(value); keys(v, ['summary', 'findings', 'drafts', 'unknowns', 'actions']);
+  const v = object(value); keys(v, ['summary', 'findings', 'drafts', 'unknowns', 'sources', 'actions']);
   if (!Array.isArray(v.findings) || !Array.isArray(v.actions)) throw new Error('Invalid output list.');
   const findings = v.findings.slice(0, 6), actions = v.actions.slice(0, maxActions);
   const strings = (items: unknown) => {
@@ -50,7 +50,12 @@ export function parseOutput(value: unknown, agent: AgentId, evidence: Set<string
       if (f.kind === 'observation' && !f.evidenceIds.length) throw new Error('Observations require recorded evidence.');
       return { content: text(f.content, 1500), kind: f.kind, evidenceIds: f.evidenceIds as string[] };
     }),
-    drafts: strings(v.drafts), unknowns: strings(v.unknowns),
+    drafts: strings(v.drafts), unknowns: strings(v.unknowns), sources: Array.isArray(v.sources) ? v.sources.slice(0, 10).map(item => {
+      const source=object(item); keys(source,['id','title','url','domain']);
+      const id=text(source.id,80), url=text(source.url,1000);
+      if(!evidence.has(id)||!/^https:\/\//i.test(url)) throw new Error('Unknown research source.');
+      return {id,title:text(source.title,300),url,domain:text(source.domain,200)};
+    }) : [],
     actions: actions.map(item => {
       const a = object(item); keys(a, ['actionType', 'parameters', 'reason']);
       if (a.actionType !== 'create_task') throw new Error('Unsupported action request.');

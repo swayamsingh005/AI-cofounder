@@ -31,6 +31,7 @@ export default function AgentsPanel({ companyId, runs, connections, unavailable 
         {run.output.findings.map((f,i) => <p key={i}><b>{f.kind}:</b> {f.content} {f.evidenceIds.length > 0 && <small>Evidence: {f.evidenceIds.join(', ')}</small>}</p>)}
         {run.output.drafts.map((d,i) => <p key={i}>{d}</p>)}
         {run.output.unknowns.map((u,i) => <p key={i}>Unknown: {u}</p>)}
+        {!!run.output.sources?.length && <><b>Sources</b><ul>{run.output.sources.map(source=><li key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a> · {source.domain}</li>)}</ul></>}
       </details>}
       <small>{new Date(run.created_at).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC</small>
       <div className="v3-button-row"><Link href={demo ? '/demo/v3?section=approvals' : `/company/${companyId}/approvals`}>Review approvals</Link><Link href={demo ? '/demo/v3?section=executions' : `/company/${companyId}/executions`}>Execution history</Link></div>

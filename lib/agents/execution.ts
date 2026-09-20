@@ -21,6 +21,7 @@ summary: string (max 2500 characters);
 findings: at most 6 objects {content: string, kind: "observation"|"hypothesis", evidenceIds: string[]};
 drafts: at most 6 strings (max 2000 characters each);
 unknowns: at most 6 strings;
+sources: use an empty array. Source metadata is attached by the trusted research runtime, never invented by the model;
 actions: at most ${maxActions} objects {actionType: "create_task", parameters: {title: string (max 200), description: string (max 2000)}, reason: string (max 500)}.
 Only cite supplied evidence IDs. Observations require evidence; hypotheses may have no evidence.
 Proposed tasks require approval and have not been executed. Never return agent IDs, risk levels, permissions, SQL, URLs to execute, or extra fields.`;
@@ -34,6 +35,7 @@ Proposed tasks require approval and have not been executed. Never return agent I
   for (const [key, limit] of [['findings', 6], ['drafts', 6], ['unknowns', 6], ['actions', maxActions]] as const) {
     candidate[key] = Array.isArray(candidate[key]) ? candidate[key].slice(0, limit) : [];
   }
+  candidate.sources = [];
   const bounded = (value: unknown, max: number) => typeof value === 'string' ? redact(value).slice(0, max) : value;
   candidate.summary = bounded(candidate.summary, 2500);
   if (Array.isArray(candidate.drafts)) candidate.drafts = candidate.drafts.map(value => bounded(value, 2000));

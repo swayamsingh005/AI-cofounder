@@ -8,7 +8,7 @@
 // list in order and moves on when one 404s as "model not found" — a safety net against line-up churn,
 // not a substitute for setting GROQ_MODEL explicitly once you know a working id.
 
-export type Source = { title: string; url: string; domain: string };
+export type Source = { title: string; url: string; domain: string; excerpt?: string };
 
 // If GROQ_MODEL is set, that's the only model tried — trust an explicit choice. If it's not set,
 // try this short list in order, moving to the next only on a "model not found"-shaped error (not on
@@ -116,7 +116,7 @@ export async function tavilySearch(query: string, maxResults = 6): Promise<{ tex
     const data = await response.json();
     const results: Array<{ title?: string; url?: string; content?: string }> = Array.isArray(data?.results) ? data.results : [];
     const text = results.map(item => `- ${item.title ?? "Untitled"} (${item.url ?? "no url"}): ${(item.content ?? "").slice(0, 500)}`).join("\n");
-    const sources: Source[] = results.filter((item): item is { title?: string; url: string; content?: string } => typeof item.url === "string" && item.url.length > 0).map(item => ({ title: item.title ?? "Web source", url: item.url, domain: domainOf(item.url) }));
+    const sources: Source[] = results.filter((item): item is { title?: string; url: string; content?: string } => typeof item.url === "string" && item.url.length > 0).map(item => ({ title: item.title ?? "Web source", url: item.url, domain: domainOf(item.url), excerpt: (item.content ?? "").slice(0, 500) }));
     return { text, sources };
   } catch {
     return { text: "", sources: [] };

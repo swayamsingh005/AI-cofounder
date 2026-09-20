@@ -2,12 +2,12 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '../supabase/admin';
 import { loadCompanyContext, formatCompanyContext } from '../company-context';
-import { groqComplete } from '../ai';
+import { groqComplete, tavilySearch } from '../ai';
 import { limits, planGoal } from './planner';
 import { executeAnalysis, type Evidence } from './execution';
 import { type AgentOutput } from './schema';
 import { type AgentId } from './registry';
-import { syncGitHub } from '../intelligence/engine';
+import { refreshIntelligence, syncGitHub } from '../intelligence/engine';
 import { readGitHubToken } from '../connectors/credentials';
 
 export type AgentRun = {
@@ -58,10 +58,13 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
       // GitHub analysis must not inherit unrelated company tasks. They previously caused a
       // README issue analysis to propose payment and landing-page approvals.
       const githubOnly = run.action_type === 'analyze_github_issues';
-      const suppliedEvidence = (githubOnly ? githubEvidence : evidence).slice(0,24);
+      const webResearch = run.agent_id === 'research' ? await tavilySearch(`${run.objective} ${formatCompanyContext(ctx).slice(0,700)}`, 8) : { text:'', sources:[] };
+      if(run.agent_id === 'research' && !webResearch.sources.length) throw new Error('Live source-grounded research is unavailable. Configure the research provider or retry later; no findings were invented.');
+      const webEvidence:Evidence[]=webResearch.sources.map((source,index)=>({id:`web-${index+1}`,category:'web_source',content:`${source.title} (${source.domain}) ${source.url}: ${source.excerpt??''}`}));
+      const suppliedEvidence = (githubOnly ? githubEvidence : [...evidence,...webEvidence]).slice(0,24);
       const dependencies = runs.filter(r => run.depends_on.includes(r.step_index) && r.output).map(r => ({ agentId: r.agent_id, output: r.output as AgentOutput }));
       let inputCharacters = 0;
-      const output = await executeAnalysis(run.agent_id, run.action_type, {
+      let output = await executeAnalysis(run.agent_id, run.action_type, {
         goal: run.objective,
         context: githubOnly ? 'Analyze only the connected GitHub issue evidence supplied in this request.' : formatCompanyContext(ctx).slice(0,10000),
         evidence: suppliedEvidence.map(e => ({ ...e, content: e.content.slice(0,800) })), dependencies,
@@ -69,21 +72,31 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
         inputCharacters = system.length + user.length;
         return groqComplete(system, user, { json: true, maxTokens: config.maxTokens, temperature: 0.2, timeoutMs: config.timeoutMs, maxAttempts: 1 });
       }, config.maxActions);
+      if(run.agent_id==='research') output={...output,sources:webResearch.sources.map((source,index)=>({id:`web-${index+1}`,title:source.title,url:source.url,domain:source.domain}))};
       runs = await operation('finish', { runId: run.id, output, usage: { model: process.env.GROQ_MODEL ?? 'default candidate', modelCalls: 1, retries: 0, maxOutputTokens: config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
+      if(run.agent_id==='research') {
+        const grounded=output.findings.filter(f=>f.kind==='observation'&&f.evidenceIds.some(id=>id.startsWith('web-')));
+        if(grounded.length) {
+          const rows=grounded.map((finding,index)=>({company_id:companyId,user_id:userId,kind:'learning',title:`Research finding ${index+1}: ${run.objective}`.slice(0,200),content:finding.content,source:'ai',source_agent:'research',source_run_id:run.id,evidence:{evidenceIds:finding.evidenceIds,sources:output.sources.filter(source=>finding.evidenceIds.includes(source.id))}}));
+          const saved=await admin.from('memories').insert(rows); if(saved.error) throw new Error('Source-grounded research could not be saved to company memory.');
+          await refreshIntelligence(admin,companyId,userId);
+        }
+      }
     }
     return runs;
   } catch (error) {
-    const message = error instanceof Error && /No saved GitHub|Invalid|Unknown evidence|permission|limit|require/i.test(error.message)
+    const message = error instanceof Error && /No saved GitHub|source-grounded research|Invalid|Unknown evidence|permission|limit|require/i.test(error.message)
       ? error.message : 'Agent analysis failed or timed out. No external changes occurred. Review the run and start a new request to retry.';
     await operation('fail', { error: message });
     throw new Error(message);
   }
 }
 export function workflowAnswer(runs: AgentRun[]) {
+  const grounded=runs.some(r=>r.agent_id==='research'&&r.output?.sources?.length);
   return runs.map(r => {
     const output = r.output;
     return `${r.agent_id.toUpperCase()} AGENT — ${r.status.replaceAll('_', ' ')}
 ${output ? [output.summary, ...output.findings.map(f => f.kind + ': ' + f.content), ...output.drafts, ...output.unknowns.map(u => 'Unknown: ' + u)].join('\n') : r.error_message ?? r.objective}
 ${r.status === 'waiting_approval' ? 'Review proposed tasks in the existing Approvals page.' : ''}`;
-  }).join('\n\n') + '\n\nInternal analysis and drafts only. No external research, publishing, code changes or deployment occurred.';
+  }).join('\n\n') + `\n\n${grounded?'Research findings include the recorded web sources shown in the run. ':'Internal analysis and drafts only. '}No publishing, code changes or production deployment occurred.`;
 }

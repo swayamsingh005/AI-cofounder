@@ -12,7 +12,7 @@ export async function refreshIntelligence(db: SupabaseClient, companyId: string,
   const [taskResult, profileResult, memoryResult] = await Promise.all([
     db.from('tasks').select('id,title,status,due_date,source').eq('company_id',companyId),
     db.from('company_profiles').select('description,problem,solution,business_model,target_customer,strategy').eq('company_id',companyId).maybeSingle(),
-    db.from('memories').select('kind,assumption_status').eq('company_id',companyId).limit(1000),
+    db.from('memories').select('kind,assumption_status,source_agent,evidence').eq('company_id',companyId).limit(1000),
   ]);
   const tasks = checked(taskResult);
   const profile = checked(profileResult);

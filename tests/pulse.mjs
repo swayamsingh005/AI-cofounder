@@ -17,13 +17,22 @@ test('pulse uses recorded evidence and exposes coverage', () => {
     ],
   });
   assert.equal(pulse.dimensions[0].score,100);
-  assert.equal(pulse.dimensions[1].score,31);
+  assert.equal(pulse.dimensions[1].score,29);
   assert.equal(pulse.dimensions[2].score,null);
   assert.equal(pulse.dimensions[3].score,null);
   assert.equal(pulse.dimensions[4].score,50);
   assert.equal(pulse.score,60);
   assert.equal(pulse.coverage,60);
   assert.match(pulse.note,/not company value/);
+});
+
+test('source-grounded Research Agent findings contribute visible pulse evidence', () => {
+  const pulse=calculateCompanyPulse({profile:completeProfile,tasks:[],memories:[
+    {kind:'learning',source_agent:'research',evidence:{sources:[{url:'https://example.com/report'}]}},
+    {kind:'learning',source_agent:'research',evidence:{sources:[{url:'https://example.org/data'}]}},
+  ]});
+  assert.equal(pulse.dimensions.find(d=>d.key==='validation')?.score,10);
+  assert.match(pulse.dimensions.find(d=>d.key==='validation')?.evidence??'',/2 sourced research findings/);
 });
 
 test('zero validation is visible while unsupported integrations stay unavailable', () => {
