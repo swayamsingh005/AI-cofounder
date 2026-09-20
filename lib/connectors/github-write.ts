@@ -76,3 +76,18 @@ export async function createGitHubFilePullRequest(token:string,input:GitHubFileC
   const pull=existing??await request(token,`/repos/${repo}/pulls`,{method:'POST',body:JSON.stringify({title:change.title,body:change.body,head:change.branch,base})});
   return {repository:change.repository,branch:change.branch,path:change.path,pull_request_url:String(pull.html_url??''),pull_request_number:Number(pull.number??0),commit_created:true,merged:false,deployed:false};
 }
+
+export async function findGitHubPreviewDeployment(token:string,repositoryValue:string,branch:string) {
+  const repository=repositoryName(repositoryValue), repo=encodeURIComponent(repository).replace('%2F','/');
+  if(!safeBranch.test(branch)) throw new Error('Invalid AI Co-Founder branch name.');
+  const deployments=await request(token,`/repos/${repo}/deployments?ref=${encodeURIComponent(branch)}&per_page=20`);
+  if(!Array.isArray(deployments)||!deployments.length) return {status:'pending',url:'',provider:'vercel',message:'Preview deployment has not appeared yet.'};
+  for(const deployment of deployments as Record<string,unknown>[]) {
+    const id=Number(deployment.id); if(!Number.isSafeInteger(id)) continue;
+    const statuses=await request(token,`/repos/${repo}/deployments/${id}/statuses?per_page=10`);
+    if(!Array.isArray(statuses)) continue;
+    const status=(statuses as Record<string,unknown>[]).find(item=>typeof item.environment_url==='string'&&item.environment_url);
+    if(status) return {status:String(status.state??'pending'),url:String(status.environment_url),provider:'vercel',environment:String(deployment.environment??'Preview'),updated_at:String(status.updated_at??'')};
+  }
+  return {status:'pending',url:'',provider:'vercel',message:'Vercel is still preparing the preview URL.'};
+}

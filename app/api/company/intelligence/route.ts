@@ -3,7 +3,7 @@ import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
-import { createGitHubFilePullRequest, draftGitHubIssueChange, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
+import { createGitHubFilePullRequest, draftGitHubIssueChange, findGitHubPreviewDeployment, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
 import { groqComplete } from '../../../../lib/ai';
 
 export const maxDuration = 60;
@@ -66,6 +66,17 @@ export async function POST(request: Request) {
       const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
       const input=validateGitHubFileChange({repository,branch,path:draft.path,content:draft.content,title:draft.title,body:draft.body});
       checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:input}));
+    }
+    else if(op==='refresh_preview' && recordId) {
+      const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','completed').single());
+      if(!action) throw new Error('Completed GitHub action not found.');
+      const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+      if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub to read preview status.');
+      const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub to read preview status.');
+      const repository=String(action.output_payload?.repository??action.input_payload?.repository??''), branch=String(action.output_payload?.branch??action.input_payload?.branch??'');
+      const preview=await findGitHubPreviewDeployment(token,repository,branch);
+      checked(await db.from('ai_actions').update({output_payload:{...(action.output_payload??{}),preview}}).eq('id',recordId).select('id').single());
+      return Response.json({ok:true,result:preview});
     }
     else if(op==='investigate' && recordId) return Response.json({result:await investigate(db,companyId,userId,recordId)});
     else if(op==='dismiss' && recordId) checked(await db.from('company_insights').update({status:'dismissed',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('id',recordId).select('id').single());

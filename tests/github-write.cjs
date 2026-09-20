@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,createGitHubFilePullRequest,draftGitHubIssueChange}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,createGitHubFilePullRequest,draftGitHubIssueChange,findGitHubPreviewDeployment}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
@@ -22,5 +22,8 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
     return JSON.stringify({path:'README.md',content:'# Product\n\nSetup instructions.',title:'Replace starter README',body:'Closes #1'});
   });
   assert.equal(draft.path,'README.md'); assert.match(draft.content,/Setup instructions/);
+  replies.push([200,[{id:42,environment:'Preview'}]],[200,[{state:'success',environment_url:'https://launchai-preview.vercel.app',updated_at:'2026-09-20'}]]);
+  const preview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme');
+  assert.equal(preview.provider,'vercel'); assert.equal(preview.status,'success'); assert.match(preview.url,/vercel\.app/);
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});
