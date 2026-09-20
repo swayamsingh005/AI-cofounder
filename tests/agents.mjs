@@ -57,4 +57,12 @@ test('missing evidence and model failures never return fake success', async () =
   assert.equal(connectorStatus('vercel',{status:'connected'}),'Coming soon');
   assert.equal(redact('ghp_'+'a'.repeat(25)),'[credential removed]');
 });
+test('model list overflow is safely bounded before strict validation', async () => {
+  const crowded={...output,findings:Array(7).fill(output.findings[0]),drafts:Array(7).fill('Draft'),unknowns:Array(7).fill('Unknown'),actions:Array(3).fill(output.actions[0])};
+  const result=await executeAnalysis('research','analyze_context',{goal:'Research positioning',context:'Company profile',evidence:[{id:'m1',category:'memory',content:'Recorded concern'}],dependencies:[]},async()=>JSON.stringify(crowded),2);
+  assert.equal(result.findings.length,6);
+  assert.equal(result.drafts.length,6);
+  assert.equal(result.unknowns.length,6);
+  assert.equal(result.actions.length,2);
+});
 

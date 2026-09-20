@@ -27,5 +27,11 @@ Proposed tasks require approval and have not been executed. Never return agent I
   if (serialized.length > 48000) throw new Error('Company context exceeds the agent input limit. Narrow the objective.');
   const raw = await complete(prompt, serialized);
   if (raw.length > 24000) throw new Error('Agent output is too large.');
-  return parseOutput(JSON.parse(raw), agent, new Set(input.evidence.map(e => e.id)), maxActions);
+  const candidate = JSON.parse(raw) as Record<string, unknown>;
+  // Models occasionally exceed requested list counts. Keep the safety boundary deterministic
+  // without throwing away an otherwise valid result; parseOutput still validates every kept item.
+  for (const [key, limit] of [['findings', 6], ['drafts', 6], ['unknowns', 6], ['actions', maxActions]] as const) {
+    if (Array.isArray(candidate[key])) candidate[key] = candidate[key].slice(0, limit);
+  }
+  return parseOutput(candidate, agent, new Set(input.evidence.map(e => e.id)), maxActions);
 }
