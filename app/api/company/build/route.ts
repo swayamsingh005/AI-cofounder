@@ -5,6 +5,7 @@ import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server
 type ReportContent = {
   title?: string; summary?: string; problem?: string[]; businessModel?: string[]; gap?: string[];
   risks?: string[]; assumptions?: string[]; nextMove?: { headline?: string };
+  ceoPlan?: { businessType?: string; primaryObjective?: string; needsSoftware?: boolean; selectedAgents?: { agentId?: string; reason?: string; sequence?: number }[]; excludedAgents?: { agentId?: string; reason?: string }[]; rationale?: string };
   intake?: { idea?: string; customer?: string; geography?: string; businessModel?: string; constraints?: string };
 };
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
     warning = "AI planning is not configured on this deployment yet; a starter plan was used instead.";
   } else {
     try {
-      const system = `You turn a startup report into a validation-stage execution plan. A report is NOT proof of customer demand. Preserve its verdict and recommended first experiment. TEST FIRST means test the key assumptions before substantial implementation. AVOID means investigate the disqualifying risk or test a revised hypothesis, not launch the original idea. BUILD still requires customer evidence. Only prioritize a small technical feasibility experiment ahead of customer research when its rationale is explicit. Each task description must state the expected evidence or deliverable and a completion criterion. Do not label implementation critical solely because it is technically necessary later. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"companyName": string, "goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}.
+      const system = `You are the CEO Agent turning your founder report into a validation-stage execution plan. A report is NOT proof of customer demand. Preserve its verdict and recommended first experiment. TEST FIRST means test the key assumptions before substantial implementation. AVOID means investigate the disqualifying risk or test a revised hypothesis, not launch the original idea. BUILD still requires customer evidence. Only prioritize a small technical feasibility experiment ahead of customer research when its rationale is explicit. Each task description must state the expected evidence or deliverable and a completion criterion. Do not label implementation critical solely because it is technically necessary later. Respond with a single JSON object only, no markdown fences, no commentary outside the JSON, in exactly this shape: {"companyName": string, "goalTitle": string, "goalDescription": string, "goalTarget": string, "goalDeadlineDays": integer, "missionObjective": string, "missionWhyItMatters": string, "missionSuccessCriteria": string, "milestones": [{"title": string, "tasks": [{"title": string, "description": string, "priority": "low"|"medium"|"high"|"critical"}]}]}.
 
 "companyName" is a short, brandable company name (1-3 words) — like a real startup would use, e.g. "Nova" or "LedgerAI" — not a restatement of the idea description. Do not just copy the input title.
 
@@ -115,9 +116,12 @@ The goal should be one measurable, time-bound outcome (e.g. "10 paying customers
 
 Any price, cost, or monetary figure anywhere in your response (goalTarget, task descriptions, anything) must use the correct currency for the given geography — ₹ for India, other local currency symbols for other named countries, $ only if the geography is genuinely global, unspecified, or explicitly US/international. Do not default to $ for a non-US market.
 
+Follow the CEO specialist decision supplied below. Do not create coding or website tasks when needsSoftware is false or Coding is excluded. Sequence work consistently with the selected agents.
+
 Do not invent facts not implied by the company context given.`;
       const user = `Idea title: ${ideaTitle}\nWhat it does: ${profile.solution ?? profile.description ?? ""}\nProblem: ${profile.problem ?? "unknown"}\nTarget customer: ${profile.target_customer ?? "unknown"}\nGeography: ${profile.target_geography ?? "unspecified"}\nBusiness model: ${profile.business_model ?? "unknown"}\nFounder constraints: ${profile.constraints ?? "none stated"}\nKey assumptions: ${profile.assumptions.join("; ") || "none stated"}\nKey risks: ${profile.risks.join("; ") || "none stated"}\n\nReturn the JSON object now.`;
-      const reportGuidance = `Report verdict: ${reportRow.verdict ?? "TEST FIRST"}\nRecommended first action: ${content.nextMove?.headline ?? "Collect customer evidence"}\n`;
+      const reportGuidance = `CEO specialist decision: ${JSON.stringify(content.ceoPlan ?? {})}
+Report verdict: ${reportRow.verdict ?? "TEST FIRST"}\nRecommended first action: ${content.nextMove?.headline ?? "Collect customer evidence"}\n`;
       const raw = await groqComplete(system, reportGuidance + user, { json: true, maxTokens: 1600, temperature: 0.4 });
       plan = normalizePlan(JSON.parse(raw), ideaTitle);
     } catch (error) {

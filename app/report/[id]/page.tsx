@@ -9,11 +9,13 @@ import AiOrb from "../../../components/ai-orb";
 type Confidence = "verified" | "estimate" | "assumption";
 type Source = { title: string; url: string; domain: string };
 type Evidence = { market?: Confidence; customer?: Confidence; competitors?: Confidence; businessModel?: Confidence };
+type CeoPlan = { businessType?: string; primaryObjective?: string; needsSoftware?: boolean; selectedAgents?: { agentId: "research" | "coding" | "marketing"; reason: string; sequence: number }[]; excludedAgents?: { agentId: "research" | "coding" | "marketing"; reason: string }[]; rationale?: string };
 type ReportContent = {
   scorecard?: { market?: number; pain?: number; differentiation?: number; economics?: number; execution?: number };
   summary?: string; market?: string[]; customer?: string[]; problem?: string[]; competitors?: string[]; gap?: string[]; businessModel?: string[]; pricing?: string;
   risks?: string[]; mvp?: string[]; avoid?: string[]; firstCustomers?: string[]; plan7?: string[]; plan30?: string[]; assumptions?: string[];
   sources?: Source[]; evidence?: Evidence; nextMove?: { headline?: string; detail?: string }; generatedBy?: "groq" | "fallback"; warning?: string;
+  ceoPlan?: CeoPlan;
   intake?: { customer?: string; geography?: string; businessModel?: string; alternatives?: string; constraints?: string; outcome?: string };
   evidenceApplied?: boolean; evidenceRecomputedAt?: string; evidenceCount?: number; evidenceSummary?: string; evidenceReasoning?: string; repeatedSignals?: string[]; priorScore?: number; priorVerdict?: string;
 };
@@ -26,7 +28,7 @@ const confidenceLabel: Record<Confidence, string> = { verified: "FACT", estimate
 const confidenceClass: Record<Confidence, string> = { verified: "fact", estimate: "estimate", assumption: "assume" };
 
 const NAV_SECTIONS = [
-  ["summary", "Executive Summary"], ["opportunity", "01  Opportunity"], ["customer", "02  Customer"],
+  ["summary", "Executive Summary"], ["ceo-plan", "CEO Agent Plan"], ["opportunity", "01  Opportunity"], ["customer", "02  Customer"],
   ["market", "03  Market Analysis"], ["competition", "04  Competition"], ["model", "05  Business Model"],
   ["assumptions", "06  Assumptions"], ["risks", "07  Risk Review"], ["mvp", "08  MVP Blueprint"],
   ["plan", "09  Validation Plan"], ["verdict", "10  Final Verdict"],
@@ -63,6 +65,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
   const researchStatus = content.generatedBy === "fallback" ? "Directional analysis" : sources.some(source => /^https?:\/\//i.test(source.url)) ? "References included" : "Sources not supplied";
   const nextMove = content.nextMove?.headline ? { headline: content.nextMove.headline, detail: content.nextMove.detail || "Ask for money, not just a conversation — a deposit, pilot fee, or signed intent." } : { headline: content.firstCustomers?.[0] || "Get one specific customer to commit money.", detail: "Ask for a paid pilot, deposit, or signed intent — not just a conversation." };
   const tags = [intake.geography, intake.businessModel, intake.customer].filter(Boolean) as string[];
+  const ceoPlan = content.ceoPlan;
 
   return <main className="app-shell report-shell report-v2">
     <div className="report-v2-grid">
@@ -122,6 +125,11 @@ export default async function Report({ params }: { params: Promise<{ id: string 
             <p><i className="assume"></i> ASSUMPTION <small>Needs validation</small></p>
           </div>
         </section>
+
+        {ceoPlan && <section className="decision-frame" id="ceo-plan">
+          <div><span>CEO AGENT DECISION</span><h2>{ceoPlan.primaryObjective || "Choose the right work for this company."}</h2><p>{ceoPlan.rationale}</p><p><b>Business type:</b> {ceoPlan.businessType} · <b>Software required:</b> {ceoPlan.needsSoftware ? "Yes" : "No"}</p></div>
+          <div><h3>Specialists assigned</h3><ol>{(ceoPlan.selectedAgents ?? []).map(agent => <li key={agent.agentId}><b>{agent.sequence}</b><p><strong>{agent.agentId[0].toUpperCase() + agent.agentId.slice(1)} Agent</strong><br />{agent.reason}</p></li>)}</ol>{!!ceoPlan.excludedAgents?.length && <><h3>Deferred for now</h3><ul>{ceoPlan.excludedAgents.map(agent => <li key={agent.agentId}><p><strong>{agent.agentId[0].toUpperCase() + agent.agentId.slice(1)} Agent:</strong> {agent.reason}</p></li>)}</ul></>}</div>
+        </section>}
 
         <ReportSection anchor="opportunity" number="01" title="The Opportunity" subtitle="Why this could be a real business">
           <div className="two-col">

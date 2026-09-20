@@ -5,6 +5,7 @@ import { planGoal } from '../.v3-test-build/agents/planner.js';
 import { parseOutput, parsePlan } from '../.v3-test-build/agents/schema.js';
 import { executeAnalysis, redact } from '../.v3-test-build/agents/execution.js';
 import { connectorStatus } from '../.v3-test-build/connectors/registry.js';
+import { fallbackCeoPlan, normalizeCeoPlan } from '../.v3-test-build/agents/ceo.js';
 
 const output = { summary: 'Analyze the recorded onboarding signal before changing positioning.', findings: [{ content: 'Onboarding was recorded as difficult.', kind: 'observation', evidenceIds: ['m1'] }], drafts: ['Try a shorter onboarding message.'], unknowns: ['Competitor conversion is not recorded.'], actions: [{ actionType: 'create_task', parameters: { title: 'Validate onboarding', description: 'Interview three customers.' }, reason: 'Test the recorded concern.' }] };
 test('exactly three agents and backend policies reject forbidden actions', () => {
@@ -38,8 +39,19 @@ test('four requested workflows route and pass structured dependencies', async ()
     }
     assert.equal(finished.length,expected.length);
   }
-  assert.deepEqual(planGoal('Launch our new feature.').map(s=>s.agentId), ['research','coding','marketing']);
-  assert.throws(()=>planGoal('Launch our new feature.',2),/limit/);
+  assert.deepEqual(planGoal('Launch our new physical fitness bottle.').map(s=>s.agentId), ['research','marketing']);
+  assert.deepEqual(planGoal('Launch our new SaaS feature.').map(s=>s.agentId), ['coding','marketing']);
+});
+test('CEO selects specialists from the business need and never invents a software requirement', () => {
+  const physical = fallbackCeoPlan('Launch a reusable fitness bottle for college students');
+  assert.equal(physical.needsSoftware, false);
+  assert.deepEqual(physical.selectedAgents.map(item=>item.agentId), ['research','marketing']);
+  assert.equal(physical.excludedAgents.some(item=>item.agentId === 'coding'), true);
+  const software = fallbackCeoPlan('Build a SaaS dashboard for local clinics');
+  assert.equal(software.needsSoftware, true);
+  assert.deepEqual(software.selectedAgents.map(item=>item.agentId), ['coding']);
+  const guarded = normalizeCeoPlan({ needsSoftware:false, selectedAgents:[{agentId:'coding',reason:'Build a website'}] }, 'Sell handmade candles');
+  assert.equal(guarded.selectedAgents.some(item=>item.agentId === 'coding'), false);
 });
 test('malformed outputs, impersonation, permission downgrades and invented evidence fail', () => {
   for (const change of [{agentId:'coding'},{riskLevel:'low'},{approvalRequirement:'AUTO'}]) assert.throws(()=>parseOutput({...output,...change},'research',new Set(['m1'])));

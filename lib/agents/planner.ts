@@ -1,13 +1,14 @@
 import { parsePlan, text, type Step } from './schema';
+import { fallbackCeoPlan } from './ceo';
 
 // Deliberately bounded routing: no recursive planning and no model call just to choose a tool.
 export function planGoal(goal: string, maxSteps = 3): Step[] {
   const objective = text(goal, 500);
-  const featureLaunch = /launch.*(?:feature|product)|(?:feature|product).*launch/i.test(goal);
-  const research = featureLaunch || /research|competitor|market\b|customer|audience|positioning/i.test(goal);
-  const coding = featureLaunch || /github|code|coding|technical|bug|issues|landing page|software|readiness|deploy/i.test(goal);
-  const marketing = /marketing|campaign|launch|content|copy|messaging|creative|social/i.test(goal);
-  if (!research && !coding && !marketing) throw new Error('Describe a research, coding-plan or marketing objective, or use Ask for general advice.');
+  const decision = fallbackCeoPlan(goal, objective);
+  const selected = new Set(decision.selectedAgents.map(item => item.agentId));
+  const research = selected.has('research');
+  const coding = selected.has('coding');
+  const marketing = selected.has('marketing');
   const steps: Step[] = [];
   if (research) steps.push({ agentId: 'research', objective, actionType: 'analyze_context', dependsOn: [] });
   if (coding) steps.push({ agentId: 'coding', objective, actionType: /github|issues/i.test(goal) ? 'analyze_github_issues' : 'analyze_context', dependsOn: steps.map((_, i) => i) });

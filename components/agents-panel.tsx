@@ -7,10 +7,11 @@ import AgentStatusRefresh from './agent-status-refresh';
 
 export default function AgentsPanel({ companyId, runs, connections, unavailable = false, demo = false }: { companyId: string; runs: AgentRun[]; connections: V3Record[]; unavailable?: boolean; demo?: boolean }) {
   return <section className="v3-module">
-    <div className="v3-page-heading"><div><span className="v3-eyebrow">COMPANY EXECUTION</span><h1>Agents</h1><p>Research, technical plans and campaign drafts using your company context.</p></div></div>
+    <div className="v3-page-heading"><div><span className="v3-eyebrow">COMPANY EXECUTION</span><h1>Agent team</h1><p>The CEO Agent coordinates specialist work using your company context.</p></div></div>
     {unavailable && <p role="alert" className="v3-error">Agent history is unavailable. The agent migration and server configuration may need setup.</p>}
-    <p className="v3-notice">{demo ? 'Presentation only. No agents are running and no company records will change.' : 'Choose Run agents in your existing Co-Founder conversation. Each request creates a bounded mission. Follow-up tasks require approval.'}</p>
+    <p className="v3-notice">{demo ? 'Presentation only. No agents are running and no company records will change.' : 'Talk to the CEO Agent in the right panel, then choose Assign specialists. The CEO decides which agents are needed. Follow-up tasks require approval.'}</p>
     {!demo && <AgentStatusRefresh companyId={companyId}/>}
+    <article className="v3-card v3-agent-card"><h2>CEO Agent</h2><span className="v3-badge">Active coordinator</span><p>Owns founder intake and reports, chooses the right specialists, orders their work and explains the decision.</p><ul><li>Founder conversation and business report</li><li>Need-based specialist selection</li><li>Mission coordination and approval handoff</li></ul><p><b>Works with</b></p><ul><li>Company context — available</li><li>Coding, Research and Marketing Agents</li></ul></article>
     <div className="v3-provider-grid">{Object.values(AGENTS).map(agent => {
       const recent = runs.filter(r => r.agent_id === agent.id);
       const current = recent.find(r => ['queued', 'running', 'waiting_approval'].includes(r.status));

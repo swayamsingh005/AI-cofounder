@@ -110,8 +110,8 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
       <div className="cofounder-thread">
         {exchanges.length === 0 && !working && (
           <div className="cofounder-quick-prompts">
-            <p className="cofounder-empty">Ask what to work on today, what is blocking you, or challenge a decision — the Co-Founder answers from the actual company context, not generic advice.</p>
-            <button type="button" className="quick-prompt-primary" onClick={() => setQuestion("What should I work on today?")}>Ask a question</button>
+            <p className="cofounder-empty">Tell the CEO Agent what you need. It answers from your company context and decides whether Coding, Research or Marketing should handle the work.</p>
+            <button type="button" className="quick-prompt-primary" onClick={() => setQuestion("What should I work on today?")}>Ask CEO Agent</button>
             <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Analyze our current mission progress and what's blocking us.")}>Analyze something</button>
             <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Help me brainstorm ideas for ")}>Brainstorm ideas</button>
           </div>
@@ -133,11 +133,11 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
         {working && <p className="cofounder-thinking">Thinking…</p>}
       </div>
       {error && <p className="cofounder-error">{error}</p>}
-      <label className="cofounder-mode">Conversation mode <select aria-label="Conversation mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Ask for advice</option><option value="agents">Run agents</option></select></label>
-      {mode === 'agents' && <p className="cofounder-empty">Creates a mission, analysis and drafts. Proposed follow-up tasks go to Approvals. Try “Research our competitors and prepare a launch strategy.”</p>}
+      <label className="cofounder-mode">CEO mode <select aria-label="CEO mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Discuss with CEO</option><option value="agents">Assign specialists</option></select></label>
+      {mode === 'agents' && <p className="cofounder-empty">The CEO selects only the specialists needed, creates a bounded mission and sends consequential follow-up work to Approvals.</p>}
       <form onSubmit={ask} className="cofounder-form">
         <input aria-label="Company question or objective" maxLength={mode === 'agents' ? 500 : 2000} value={question} onChange={e => setQuestion(e.target.value)} placeholder="What should I work on today?" disabled={working} />
-        <button type="submit" disabled={working || !question.trim()}>{mode === 'agents' ? 'Run agents' : 'Ask'}</button>
+        <button type="submit" disabled={working || !question.trim()}>{mode === 'agents' ? 'Ask CEO to assign' : 'Ask CEO'}</button>
       </form>
     </div>
   );
