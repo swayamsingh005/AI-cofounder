@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   if(!userId) return Response.json({error:'Sign in first.'},{status:401});
   const {data:company}=await db.from('companies').select('id').eq('id',companyId).eq('user_id',userId).maybeSingle();
   if(!company) return Response.json({error:'Company not found.'},{status:404});
+  console.info('[company/intelligence] operation started', { companyId, op });
   try {
     const recordId = typeof body.id==='string' && UUID.test(body.id) ? body.id : '';
     if (op === 'agent_status') {
@@ -93,8 +94,10 @@ export async function POST(request: Request) {
       await refreshIntelligence(db,companyId,userId);
       checked(await db.rpc('run_insight_automation',{p_company:companyId}));
     }
+    console.info('[company/intelligence] operation completed', { companyId, op });
     return Response.json({ok:true});
   } catch(error) {
+    console.error('[company/intelligence] operation failed', { companyId, op, message:error instanceof Error ? error.message : 'Unknown error' });
     return Response.json({error:error instanceof Error ? error.message : 'Operation failed. Please retry.'},{status:400});
   }
 }

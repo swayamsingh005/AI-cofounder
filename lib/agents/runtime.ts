@@ -7,6 +7,8 @@ import { limits, planGoal } from './planner';
 import { executeAnalysis, type Evidence } from './execution';
 import { type AgentOutput } from './schema';
 import { type AgentId } from './registry';
+import { syncGitHub } from '../intelligence/engine';
+import { readGitHubToken } from '../connectors/credentials';
 
 export type AgentRun = {
   id: string; request_key: string; agent_id: AgentId; objective: string;
@@ -33,6 +35,14 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
   try {
     const ctx = await loadCompanyContext(db, companyId);
     if (!ctx) throw new Error('Company context is unavailable.');
+    const needsGitHub = runs.some(run => run.action_type === 'analyze_github_issues');
+    if (needsGitHub) {
+      const connectionResult = await db.from('connections').select('id,connection_type,status').eq('company_id', companyId).eq('provider', 'github').maybeSingle();
+      if (connectionResult.error || !connectionResult.data || connectionResult.data.status === 'disconnected') throw new Error('Connect GitHub before running the Coding Agent.');
+      const token = connectionResult.data.connection_type === 'oauth' ? await readGitHubToken(connectionResult.data.id, userId) : undefined;
+      if (connectionResult.data.connection_type === 'oauth' && !token) throw new Error('Reconnect GitHub before running the Coding Agent.');
+      await syncGitHub(db, companyId, userId, token ?? undefined);
+    }
     const evidence: Evidence[] = [
       ...ctx.recentMemories.map(m => ({ id: m.id, category: 'memory', content: m.title + ': ' + m.content })),
       ...ctx.tasks.map(t => ({ id: t.id, category: 'task', content: t.title + ': ' + t.status })),
