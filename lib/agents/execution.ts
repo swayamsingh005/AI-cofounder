@@ -31,7 +31,7 @@ Proposed tasks require approval and have not been executed. Never return agent I
   // Models occasionally exceed requested list counts. Keep the safety boundary deterministic
   // without throwing away an otherwise valid result; parseOutput still validates every kept item.
   for (const [key, limit] of [['findings', 6], ['drafts', 6], ['unknowns', 6], ['actions', maxActions]] as const) {
-    if (Array.isArray(candidate[key])) candidate[key] = candidate[key].slice(0, limit);
+    candidate[key] = Array.isArray(candidate[key]) ? candidate[key].slice(0, limit) : [];
   }
   const bounded = (value: unknown, max: number) => typeof value === 'string' ? redact(value).slice(0, max) : value;
   candidate.summary = bounded(candidate.summary, 2500);

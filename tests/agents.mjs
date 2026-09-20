@@ -69,4 +69,12 @@ test('model list overflow is safely bounded before strict validation', async () 
   assert.equal(result.actions.length,2);
   assert.equal(result.actions[0].reason.length,500);
 });
+test('omitted model lists default to empty without weakening field validation', async () => {
+  const result=await executeAnalysis('research','analyze_context',{goal:'Research positioning',context:'Company profile',evidence:[],dependencies:[]},async()=>JSON.stringify({summary:'No recorded evidence is available yet.'}),2);
+  assert.deepEqual(result.findings,[]);
+  assert.deepEqual(result.drafts,[]);
+  assert.deepEqual(result.unknowns,[]);
+  assert.deepEqual(result.actions,[]);
+  await assert.rejects(executeAnalysis('research','analyze_context',{goal:'Research positioning',context:'Company profile',evidence:[],dependencies:[]},async()=>JSON.stringify({summary:'Valid',actions:[{actionType:'finance.transfer'}]}),2));
+});
 

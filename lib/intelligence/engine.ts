@@ -10,7 +10,7 @@ export function checked<T>(result: { data: T; error: { message: string } | null 
 }
 export async function refreshIntelligence(db: SupabaseClient, companyId: string, userId: string) {
   const [taskResult, profileResult, memoryResult] = await Promise.all([
-    db.from('tasks').select('id,title,status,due_date').eq('company_id',companyId),
+    db.from('tasks').select('id,title,status,due_date,source').eq('company_id',companyId),
     db.from('company_profiles').select('description,problem,solution,business_model,target_customer,strategy').eq('company_id',companyId).maybeSingle(),
     db.from('memories').select('kind,assumption_status').eq('company_id',companyId).limit(1000),
   ]);
@@ -27,7 +27,7 @@ export async function refreshIntelligence(db: SupabaseClient, companyId: string,
   checked(await db.from('company_pulse_snapshots').insert({ company_id:companyId,user_id:userId,...pulseSnapshot(pulse) }));
   const today = new Date().toISOString().slice(0,10);
   for (const task of tasks ?? []) {
-    const flagged = task.status === 'blocked' || (task.due_date && task.due_date < today && task.status !== 'completed');
+    const flagged = task.source !== 'ai' && (task.status === 'blocked' || (task.due_date && task.due_date < today && task.status !== 'completed'));
     if (flagged) checked(await db.from('company_insights').upsert({ company_id:companyId,user_id:userId,dedupe_key:`task:${task.id}`,type:'execution',title:`${task.status === 'blocked' ? 'Blocked' : 'Overdue'}: ${task.title}`,description:'Recorded task state needs your attention. The underlying cause has not been established.',severity:'high',confidence:1,evidence:[{ task_id:task.id,status:task.status,due_date:task.due_date }],recommended_action:`Review the blocker and agree a next step for: ${task.title}` },{onConflict:'company_id,dedupe_key',ignoreDuplicates:true}));
     else checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('dedupe_key',`task:${task.id}`).in('status',['new','reviewed','investigating']));
   }
