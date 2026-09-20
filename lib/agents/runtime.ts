@@ -55,11 +55,15 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
       const claimed = await operation('claim', { runId: run.id });
       if (!claimed) return runs;
       const start = Date.now();
-      const suppliedEvidence = (run.agent_id === 'coding' ? [...githubEvidence, ...evidence] : evidence).slice(0,24);
+      // GitHub analysis must not inherit unrelated company tasks. They previously caused a
+      // README issue analysis to propose payment and landing-page approvals.
+      const githubOnly = run.action_type === 'analyze_github_issues';
+      const suppliedEvidence = (githubOnly ? githubEvidence : evidence).slice(0,24);
       const dependencies = runs.filter(r => run.depends_on.includes(r.step_index) && r.output).map(r => ({ agentId: r.agent_id, output: r.output as AgentOutput }));
       let inputCharacters = 0;
       const output = await executeAnalysis(run.agent_id, run.action_type, {
-        goal: run.objective, context: formatCompanyContext(ctx).slice(0,10000),
+        goal: run.objective,
+        context: githubOnly ? 'Analyze only the connected GitHub issue evidence supplied in this request.' : formatCompanyContext(ctx).slice(0,10000),
         evidence: suppliedEvidence.map(e => ({ ...e, content: e.content.slice(0,800) })), dependencies,
       }, (system, user) => {
         inputCharacters = system.length + user.length;

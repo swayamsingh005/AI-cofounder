@@ -77,4 +77,11 @@ test('omitted model lists default to empty without weakening field validation', 
   assert.deepEqual(result.actions,[]);
   await assert.rejects(executeAnalysis('research','analyze_context',{goal:'Research positioning',context:'Company profile',evidence:[],dependencies:[]},async()=>JSON.stringify({summary:'Valid',actions:[{actionType:'finance.transfer'}]}),2));
 });
+test('GitHub analysis explicitly excludes unrelated company priorities', async () => {
+  let captured='';
+  const githubOutput={...output,findings:[{content:'The starter README needs replacement.',kind:'observation',evidenceIds:['g1']}],actions:[{actionType:'create_task',parameters:{title:'Update README',description:'Replace the starter README with project setup instructions.'},reason:'Matches the recorded GitHub issue.'}]};
+  await executeAnalysis('coding','analyze_github_issues',{goal:'Analyze the highest-priority issue',context:'Payment plan',evidence:[{id:'g1',category:'github',content:'Issue #1: Replace starter README'}],dependencies:[]},async(system)=>{captured=system;return JSON.stringify(githubOutput)});
+  assert.match(captured,/GitHub-issue-only analysis/);
+  assert.match(captured,/Do not propose tasks from company plans/);
+});
 
