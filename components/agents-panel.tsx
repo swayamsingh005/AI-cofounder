@@ -14,7 +14,7 @@ export default function AgentsPanel({ companyId, runs, connections, unavailable 
     <div className="v3-provider-grid">{Object.values(AGENTS).map(agent => {
       const recent = runs.filter(r => r.agent_id === agent.id);
       const current = recent.find(r => ['queued', 'running', 'waiting_approval'].includes(r.status));
-      return <article className="v3-card" key={agent.id}>
+      return <article className="v3-card v3-agent-card" key={agent.id}>
         <h2>{agent.name}</h2><span className="v3-badge">{unavailable ? 'Unavailable' : current?.status.replaceAll('_', ' ') ?? 'Idle'}</span>
         <p>{agent.description}</p>
         {current && <p><b>Current objective:</b> {current.objective}</p>}
@@ -23,7 +23,7 @@ export default function AgentsPanel({ companyId, runs, connections, unavailable 
         {recent[0] && <p>Recent activity: {recent[0].output?.summary ?? recent[0].error_message ?? recent[0].objective}</p>}
       </article>;
     })}</div>
-    <h2>Recent runs</h2>{runs.length ? runs.map(run => <article className="v3-card" key={run.id}>
+    <h2>Recent runs</h2>{runs.length ? runs.map(run => <article className="v3-card v3-agent-card" key={run.id}>
       <h3>{AGENTS[run.agent_id].name}: {run.objective}</h3><span className="v3-badge">{run.status.replaceAll('_', ' ')}</span>
       <p>{run.output?.summary ?? run.error_message ?? 'Waiting for its turn in the bounded workflow.'}</p>
       {run.output && <details><summary>Findings, drafts and unknowns</summary>

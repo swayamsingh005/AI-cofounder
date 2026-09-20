@@ -133,7 +133,7 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
         {working && <p className="cofounder-thinking">Thinking…</p>}
       </div>
       {error && <p className="cofounder-error">{error}</p>}
-      <label>Conversation mode <select aria-label="Conversation mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Ask for advice</option><option value="agents">Run agents</option></select></label>
+      <label className="cofounder-mode">Conversation mode <select aria-label="Conversation mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Ask for advice</option><option value="agents">Run agents</option></select></label>
       {mode === 'agents' && <p className="cofounder-empty">Creates a mission, analysis and drafts. Proposed follow-up tasks go to Approvals. Try “Research our competitors and prepare a launch strategy.”</p>}
       <form onSubmit={ask} className="cofounder-form">
         <input aria-label="Company question or objective" maxLength={mode === 'agents' ? 500 : 2000} value={question} onChange={e => setQuestion(e.target.value)} placeholder="What should I work on today?" disabled={working} />
