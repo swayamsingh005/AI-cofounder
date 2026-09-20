@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,findGitHubPreviewDeployment,findGitHubValidationChecks}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,draftGitHubObjectiveChange,findGitHubPreviewDeployment,findGitHubValidationChecks}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
@@ -37,5 +37,11 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
   replies.push([200,{object:{sha:'d'.repeat(40)}}],[200,{check_runs:[{name:'build',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/1'},{name:'test',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/2'}]}]);
   const validation=await findGitHubValidationChecks('secret-token','owner/repo','ai-cofounder/update-readme');
   assert.equal(validation.status,'passed'); assert.match(validation.summary,/All 2/);
+  replies.push([200,{default_branch:'main'}],[200,{tree:[{type:'blob',path:'src/app.ts',size:30}]}],[200,{encoding:'base64',content:Buffer.from('export const app = true;').toString('base64')}]);
+  const objectiveDraft=await draftGitHubObjectiveChange('secret-token','owner/repo','Add a protected dashboard',async(system,user)=>{
+    assert.match(system,/controlled AI software builder/); assert.match(user,/protected dashboard/);
+    return JSON.stringify({files:[{path:'src/app.ts',content:'export const dashboard = true;'},{path:'src/app.test.ts',content:'// dashboard access test'}],title:'Add protected dashboard',body:'Adds the focused dashboard slice and a test.'});
+  });
+  assert.equal(objectiveDraft.files.length,2); assert.equal(objectiveDraft.files[1].path,'src/app.test.ts');
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});
