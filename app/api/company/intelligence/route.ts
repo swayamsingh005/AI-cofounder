@@ -3,7 +3,7 @@ import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
-import { createGitHubFilePullRequest, draftGitHubIssueChange, findGitHubPreviewDeployment, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
+import { createGitHubFilePullRequest, draftGitHubIssueChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
 import { groqComplete } from '../../../../lib/ai';
 
 export const maxDuration = 60;
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       const repository=repositoryName(String(connection.metadata?.repository??''));
       const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>groqComplete(system,user,{json:true,maxTokens:3000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
       const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
-      const input=validateGitHubFileChange({repository,branch,path:draft.path,content:draft.content,title:draft.title,body:draft.body});
+      const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
       checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:input}));
     }
     else if(op==='refresh_preview' && recordId) {
@@ -74,9 +74,9 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub to read preview status.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub to read preview status.');
       const repository=String(action.output_payload?.repository??action.input_payload?.repository??''), branch=String(action.output_payload?.branch??action.input_payload?.branch??'');
-      const preview=await findGitHubPreviewDeployment(token,repository,branch,Number(action.output_payload?.pull_request_number??0));
-      checked(await db.from('ai_actions').update({output_payload:{...(action.output_payload??{}),preview}}).eq('id',recordId).select('id').single());
-      return Response.json({ok:true,result:preview});
+      const [preview,validation]=await Promise.all([findGitHubPreviewDeployment(token,repository,branch,Number(action.output_payload?.pull_request_number??0)),findGitHubValidationChecks(token,repository,branch)]);
+      checked(await db.from('ai_actions').update({output_payload:{...(action.output_payload??{}),preview,validation}}).eq('id',recordId).select('id').single());
+      return Response.json({ok:true,result:{preview,validation}});
     }
     else if(op==='investigate' && recordId) return Response.json({result:await investigate(db,companyId,userId,recordId)});
     else if(op==='dismiss' && recordId) checked(await db.from('company_insights').update({status:'dismissed',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('id',recordId).select('id').single());

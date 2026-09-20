@@ -1,14 +1,20 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,createGitHubFilePullRequest,draftGitHubIssueChange,findGitHubPreviewDeployment}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,findGitHubPreviewDeployment,findGitHubValidationChecks}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
-assert.throws(()=>validateGitHubFileChange({...valid,path:'../secret'}),/Invalid repository file path/);
+assert.throws(()=>validateGitHubFileChange({...valid,path:'../secret'}),/Invalid or protected repository file path/);
+assert.throws(()=>validateGitHubFileChange({...valid,path:'.github/workflows/deploy.yml'}),/protected/);
+assert.throws(()=>validateGitHubFileChange({...valid,path:'.env.local'}),/protected/);
 assert.throws(()=>validateGitHubFileChange({...valid,branch:'main'}),/Invalid AI Co-Founder branch/);
+const workspace={repository:'owner/repo',branch:'ai-cofounder/build-feature',files:[{path:'src/feature.ts',content:'export const ready = true;'},{path:'src/feature.test.ts',content:'// meaningful repository test'}],title:'Build feature',body:'Closes #2'};
+assert.equal(validateGitHubWorkspaceChange(workspace).files.length,2);
+assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:Array(6).fill(workspace.files[0])}),/1 to 5 files/);
+assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:[workspace.files[0],workspace.files[0]]}),/duplicate/);
 
 const replies=[
-  [200,{default_branch:'main'}],[200,{object:{sha:'a'.repeat(40)}}],[201,{}],[404,{message:'Not Found'}],
-  [201,{content:{sha:'b'.repeat(40)}}],[200,[]],[201,{html_url:'https://github.com/owner/repo/pull/2',number:2}],
+  [200,{default_branch:'main'}],[200,{object:{sha:'a'.repeat(40)}}],[201,{}],
+  [201,{sha:'b'.repeat(40)}],[201,{sha:'c'.repeat(40)}],[201,{sha:'d'.repeat(40)}],[200,{}],[200,[]],[201,{html_url:'https://github.com/owner/repo/pull/2',number:2}],
 ];
 const calls=[];
 global.fetch=async(url,init)=>{calls.push([url,init]);const [status,body]=replies.shift();return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})};
@@ -19,14 +25,17 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
   replies.push([200,{default_branch:'main'}],[200,{number:1,title:'Replace README',body:'Add product setup instructions.'}],[200,{tree:[{type:'blob',path:'README.md',size:20}]}],[200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
   const draft=await draftGitHubIssueChange('secret-token','owner/repo',1,async(system,user)=>{
     assert.match(system,/bounded coding agent/); assert.match(user,/Replace README/);
-    return JSON.stringify({path:'README.md',content:'# Product\n\nSetup instructions.',title:'Replace starter README',body:'Closes #1'});
+    return JSON.stringify({files:[{path:'README.md',content:'# Product\n\nSetup instructions.'}],title:'Replace starter README',body:'Closes #1'});
   });
-  assert.equal(draft.path,'README.md'); assert.match(draft.content,/Setup instructions/);
+  assert.equal(draft.files[0].path,'README.md'); assert.match(draft.files[0].content,/Setup instructions/);
   replies.push([200,[{id:42,environment:'Preview'}]],[200,[{state:'success',environment_url:'https://launchai-preview.vercel.app',updated_at:'2026-09-20'}]]);
   const preview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme');
   assert.equal(preview.provider,'vercel'); assert.equal(preview.status,'success'); assert.match(preview.url,/vercel\.app/);
   replies.push([200,[]],[200,{object:{sha:'c'.repeat(40)}}],[200,{statuses:[{context:'Vercel',state:'success',target_url:'https://vercel.com/team/project/deployment'}]}],[200,[{body:'| Actions |\n| [Preview](https://owner-project.vercel.app) |'}]]);
   const statusPreview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme',3);
   assert.equal(statusPreview.status,'success'); assert.equal(statusPreview.url,'https://owner-project.vercel.app');
+  replies.push([200,{object:{sha:'d'.repeat(40)}}],[200,{check_runs:[{name:'build',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/1'},{name:'test',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/2'}]}]);
+  const validation=await findGitHubValidationChecks('secret-token','owner/repo','ai-cofounder/update-readme');
+  assert.equal(validation.status,'passed'); assert.match(validation.summary,/All 2/);
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});
