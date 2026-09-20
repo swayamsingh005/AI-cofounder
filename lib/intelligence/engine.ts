@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { githubConnector } from '../connectors/github';
-import { executionScore } from './data';
+import { calculateCompanyPulse, pulseSnapshot } from './pulse';
 import { groqComplete } from '../ai';
 import { loadCompanyContext, formatCompanyContext } from '../company-context';
 
@@ -9,9 +9,22 @@ export function checked<T>(result: { data: T; error: { message: string } | null 
   return result.data;
 }
 export async function refreshIntelligence(db: SupabaseClient, companyId: string, userId: string) {
-  const tasks = checked(await db.from('tasks').select('id,title,status,due_date').eq('company_id',companyId));
-  const score = executionScore(tasks ?? []);
-  checked(await db.from('company_pulse_snapshots').insert({ company_id:companyId,user_id:userId,execution_score:score,reasoning:{ execution:'Completed tasks / all company tasks × 100. This measures task completion, not company health.', sample_size:tasks?.length ?? 0, unavailable:'Product, validation, growth and revenue need verified outcome data. Overall score withheld.' } }));
+  const [taskResult, profileResult, memoryResult] = await Promise.all([
+    db.from('tasks').select('id,title,status,due_date').eq('company_id',companyId),
+    db.from('company_profiles').select('description,problem,solution,business_model,target_customer,strategy').eq('company_id',companyId).maybeSingle(),
+    db.from('memories').select('kind,assumption_status').eq('company_id',companyId).limit(1000),
+  ]);
+  const tasks = checked(taskResult);
+  const profile = checked(profileResult);
+  const memories = checked(memoryResult);
+  const pulse = calculateCompanyPulse({
+    profile: profile ? {
+      description: profile.description, problem: profile.problem, solution: profile.solution,
+      businessModel: profile.business_model, targetCustomer: profile.target_customer, strategy: profile.strategy,
+    } : null,
+    tasks: tasks ?? [], memories: memories ?? [],
+  });
+  checked(await db.from('company_pulse_snapshots').insert({ company_id:companyId,user_id:userId,...pulseSnapshot(pulse) }));
   const today = new Date().toISOString().slice(0,10);
   for (const task of tasks ?? []) {
     const flagged = task.status === 'blocked' || (task.due_date && task.due_date < today && task.status !== 'completed');

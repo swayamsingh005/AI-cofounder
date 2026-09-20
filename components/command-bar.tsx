@@ -101,6 +101,7 @@ export default function CommandBar() {
         {mode === "list" && (
           <div className="command-list">
             {companyId && <button onClick={() => setMode("ask")}>Ask Co-Founder…</button>}
+            {companyId && <button onClick={() => go(`/company/${companyId}/agents`)}>View agents and runs…</button>}
             {companyId && <button onClick={() => setMode("task")}>Create task…</button>}
             {companyId && <button onClick={() => setMode("decision")}>Record decision…</button>}
             <button onClick={() => go("/companies")}>Go to my companies</button>

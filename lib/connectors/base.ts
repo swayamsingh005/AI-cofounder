@@ -1,8 +1,8 @@
+import { CONNECTORS } from './registry';
 export const PROVIDERS = [
-  { id: 'github', name: 'GitHub', icon: '⌘', available: true, description: 'Issues and repository activity · read only' },
+  ...CONNECTORS.filter(c => c.id === 'github' || c.id === 'notion').map(c => ({ id: c.id, name: c.name, icon: '⌘', available: c.available, description: c.available ? 'Saved issues · read only' : 'Planned integration · not executable' })),
   { id: 'posthog', name: 'PostHog', icon: '◩', available: false, description: 'Analytics integration needs setup' },
   { id: 'stripe', name: 'Stripe', icon: 'S', available: false, description: 'Billing integration needs setup' },
-  { id: 'notion', name: 'Notion', icon: 'N', available: false, description: 'Document integration needs setup' },
 ] as const;
 export type ConnectorEvent = { external_id: string; event_type: string; title: string; description: string; severity: string; payload: Record<string, unknown>; occurred_at: string };
 export interface Connector {

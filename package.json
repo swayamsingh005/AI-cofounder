@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test:v3": "tsc lib/connectors/base.ts lib/connectors/github.ts lib/intelligence/data.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck && node tests/v3-connectors.cjs ./.v3-test-build"
+    "lint": "eslint .",
+    "test:v3": "tsc lib/connectors/base.ts lib/connectors/github.ts lib/intelligence/data.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck && node tests/v3-connectors.cjs ./.v3-test-build",
+    "typecheck": "tsc --noEmit",
+    "test:agents": "tsc lib/agents/registry.ts lib/agents/schema.ts lib/agents/planner.ts lib/agents/execution.ts lib/connectors/registry.ts lib/intelligence/pulse.ts --outDir .v3-test-build --module commonjs --target es2022 --esModuleInterop --skipLibCheck --strict && node --test tests/agents.mjs tests/pulse.mjs && node tests/agents-db.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -17,9 +19,12 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@types/node": "^22",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.2",
     "typescript": "^5"
   }
 }

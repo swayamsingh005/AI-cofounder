@@ -3,6 +3,10 @@ import { groqComplete } from "../../../../lib/ai";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 import { loadCompanyContext, formatCompanyContext } from "../../../../lib/company-context";
 import { loadIntelligence } from "../../../../lib/intelligence/data";
+import { runWorkflow, workflowAnswer } from "../../../../lib/agents/runtime";
+import { UUID } from "../../../../lib/agents/schema";
+
+export const maxDuration = 60;
 
 const SYSTEM_PROMPT = `You are the AI Co-Founder for this specific company — not a generic chatbot. You have the company's real context below: its profile, current goal, active mission, tasks, past decisions, and company memory. Answer from that context, not from general startup advice that would apply to any company.
 
@@ -25,14 +29,34 @@ FORMATTING — this matters, output is rendered as plain text, not markdown:
 
 export async function POST(request: Request) {
   if (!hasSupabaseConfig() || !process.env.GROQ_API_KEY) return NextResponse.json({ error: "The Co-Founder isn't configured on this deployment yet." }, { status: 503 });
-  const { companyId, question } = await request.json().catch(() => ({}));
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: 'Cross-origin request rejected.' }, { status: 403 });
+  const raw = await request.text();
+  if (raw.length > 8000) return NextResponse.json({ error: 'Request is too large.' }, { status: 413 });
+  let body: Record<string, unknown>;
+  try { body = JSON.parse(raw); if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error(); }
+  catch { return NextResponse.json({ error: 'Invalid request.' }, { status: 400 }); }
+  const { companyId, question, mode, requestKey } = body;
   if (typeof companyId !== "string" || !companyId) return NextResponse.json({ error: "A company id is required." }, { status: 400 });
-  if (typeof question !== "string" || !question.trim()) return NextResponse.json({ error: "Ask something first." }, { status: 400 });
+  if (typeof question !== "string" || !question.trim() || question.length > 2000) return NextResponse.json({ error: "Enter a question of up to 2,000 characters." }, { status: 400 });
+  if (mode !== undefined && mode !== 'ask' && mode !== 'agents') return NextResponse.json({ error: 'Invalid mode.' }, { status: 400 });
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  const { data: owned } = await supabase.from('companies').select('id').eq('id', companyId).eq('user_id', userId).maybeSingle();
+  if (!owned) return NextResponse.json({ error: 'Company not found.' }, { status: 404 });
+  if (mode === 'agents') {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({ error: 'Agent execution needs server-side database configuration. Existing advice mode remains available.' }, { status: 503 });
+    if (typeof requestKey !== 'string' || !UUID.test(requestKey) || question.length > 500) return NextResponse.json({ error: 'Agent requests require a request key and an objective of up to 500 characters.' }, { status: 400 });
+    try {
+      const runs = await runWorkflow(supabase, companyId, userId, question, requestKey);
+      return NextResponse.json({ answer: workflowAnswer(runs), runs, missionId: runs[0]?.mission_id });
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Agent workflow failed.' }, { status: 400 });
+    }
+  }
 
   const ctx = await loadCompanyContext(supabase, companyId);
   if (!ctx) return NextResponse.json({ error: "Company not found." }, { status: 404 });

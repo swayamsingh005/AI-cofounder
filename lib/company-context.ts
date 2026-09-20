@@ -46,11 +46,15 @@ export async function loadCompanyContext(supabase: SupabaseClient, companyId: st
     supabase.from("memories").select("id,kind,title,content,assumption_status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(12),
     supabase.from("activity_events").select("kind,title,created_at").eq("company_id", companyId).order("created_at", { ascending: false }).limit(8),
   ]);
+  if ([companyRes, profileRes, goalRes, missionRes, decisionsRes, memoriesRes, activityRes].some(result => result.error)) {
+    throw new Error('Company context could not be loaded completely.');
+  }
   if (!companyRes.data) return null;
 
   let tasks: CompanyContext["tasks"] = [];
   if (missionRes.data) {
-    const { data } = await supabase.from("tasks").select("id,title,status,priority").eq("mission_id", missionRes.data.id).order("created_at", { ascending: true }).limit(20);
+    const { data, error } = await supabase.from("tasks").select("id,title,status,priority").eq("company_id", companyId).eq("mission_id", missionRes.data.id).order("created_at", { ascending: true }).limit(20);
+    if (error) throw new Error('Company tasks could not be loaded.');
     tasks = data ?? [];
   }
 

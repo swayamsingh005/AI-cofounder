@@ -2,6 +2,7 @@ import { createClient, hasSupabaseConfig } from '../../../../lib/supabase/server
 import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../../lib/intelligence/engine';
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
+import { createAdminClient } from '../../../../lib/supabase/admin';
 
 export const maxDuration = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +24,9 @@ export async function POST(request: Request) {
   if(!company) return Response.json({error:'Company not found.'},{status:404});
   try {
     const recordId = typeof body.id==='string' && UUID.test(body.id) ? body.id : '';
-    if(op==='connect') {
+    if (op === 'agent_status') {
+      checked(await createAdminClient().rpc('agent_workflow', { p_company: companyId, p_user: userId, p_key: crypto.randomUUID(), p_op: 'recover', p_data: {} }));
+    } else if(op==='connect') {
       if(typeof body.repository!=='string') throw new Error('Enter owner/repository.');
       const repository=repositoryName(body.repository);
       checked(await db.rpc('configure_public_github',{p_company:companyId,p_repository:repository}));

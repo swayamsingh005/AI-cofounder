@@ -6,6 +6,8 @@ node_modules/
 .vercel/
 .env.local
 *.log
+work/
+supabase/.temp/
 
 .vercel
 .env*

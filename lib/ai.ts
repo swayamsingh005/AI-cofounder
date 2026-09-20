@@ -27,10 +27,10 @@ function stripJsonFence(text: string) {
   return fenced ? fenced[1] : trimmed;
 }
 
-async function callGroq(model: string, apiKey: string, system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number }): Promise<string> {
+async function callGroq(model: string, apiKey: string, system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number; timeoutMs?: number; maxAttempts?: number }): Promise<string> {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    signal: AbortSignal.timeout(40000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 40000),
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
@@ -52,12 +52,12 @@ async function callGroq(model: string, apiKey: string, system: string, user: str
 
 /** Chat completion against Groq. Set json:true to request strict JSON-object output (best-effort — Groq
  * enforces valid JSON syntax in this mode, not an exact schema, so callers must still validate shape). */
-export async function groqComplete(system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number } = {}): Promise<string> {
+export async function groqComplete(system: string, user: string, opts: { json?: boolean; maxTokens?: number; temperature?: number; timeoutMs?: number; maxAttempts?: number } = {}): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
   const candidates = process.env.GROQ_MODEL ? [process.env.GROQ_MODEL] : CANDIDATE_MODELS;
   let lastError: Error = new Error("No Groq model candidates configured");
-  for (const model of candidates) {
+  for (const model of candidates.slice(0, opts.maxAttempts ?? candidates.length)) {
     try {
       return await callGroq(model, apiKey, system, user, opts);
     } catch (error) {
@@ -70,7 +70,7 @@ export async function groqComplete(system: string, user: string, opts: { json?: 
   throw lastError;
 }
 
-export async function groqJson<T = unknown>(system: string, user: string, opts: { maxTokens?: number; temperature?: number } = {}): Promise<T> {
+export async function groqJson<T = unknown>(system: string, user: string, opts: { maxTokens?: number; temperature?: number; timeoutMs?: number; maxAttempts?: number } = {}): Promise<T> {
   const raw = await groqComplete(system, user, { ...opts, json: true });
   return JSON.parse(stripJsonFence(raw)) as T;
 }

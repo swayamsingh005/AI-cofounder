@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Exchange = { question: string; answer: string; actionStatus?: string };
 type Block = { heading: string | null; paragraphs: string[]; bullets: string[] };
@@ -51,6 +52,9 @@ const ACTION_LABEL: Record<Action, string> = { decision: "Save as Decision", tas
 const ACTION_SUCCESS: Record<Action, string> = { decision: "Saved as a decision.", task: "Task created.", memory: "Remembered." };
 
 export default function AskCofounder({ companyId }: { companyId: string }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<'ask' | 'agents'>('ask');
+  const retry = useRef<{ question: string; key: string } | null>(null);
   const [question, setQuestion] = useState("");
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [working, setWorking] = useState(false);
@@ -63,12 +67,16 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
     if (!q || working) return;
     setWorking(true); setError(""); setQuestion("");
     try {
-      const response = await fetch("/api/company/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyId, question: q }) });
+      if (!retry.current || retry.current.question !== q) retry.current = { question: q, key: crypto.randomUUID() };
+      const response = await fetch("/api/company/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyId, question: q, mode, requestKey: retry.current.key }) });
       const data = await response.json();
-      if (!response.ok) { setError(data.error || "Could not reach the Co-Founder."); setWorking(false); return; }
+      if (!response.ok) { setError(data.error || "Could not reach the Co-Founder."); retry.current = null; setQuestion(q); setWorking(false); return; }
       setExchanges(prev => [...prev, { question: q, answer: data.answer }]);
+      if (mode === 'agents') router.refresh();
+      retry.current = null;
     } catch {
       setError("Could not reach the server.");
+      setQuestion(q);
     }
     setWorking(false);
   }
@@ -102,7 +110,7 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
       <div className="cofounder-thread">
         {exchanges.length === 0 && !working && (
           <div className="cofounder-quick-prompts">
-            <p className="cofounder-empty">Ask what to work on today, what's blocking you, or challenge a decision — the Co-Founder answers from this company's actual context, not generic advice.</p>
+            <p className="cofounder-empty">Ask what to work on today, what is blocking you, or challenge a decision — the Co-Founder answers from the actual company context, not generic advice.</p>
             <button type="button" className="quick-prompt-primary" onClick={() => setQuestion("What should I work on today?")}>Ask a question</button>
             <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Analyze our current mission progress and what's blocking us.")}>Analyze something</button>
             <button type="button" className="quick-prompt-secondary" onClick={() => setQuestion("Help me brainstorm ideas for ")}>Brainstorm ideas</button>
@@ -125,9 +133,11 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
         {working && <p className="cofounder-thinking">Thinking…</p>}
       </div>
       {error && <p className="cofounder-error">{error}</p>}
+      <label>Conversation mode <select aria-label="Conversation mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Ask for advice</option><option value="agents">Run agents</option></select></label>
+      {mode === 'agents' && <p className="cofounder-empty">Creates a mission, analysis and drafts. Proposed follow-up tasks go to Approvals. Try “Research our competitors and prepare a launch strategy.”</p>}
       <form onSubmit={ask} className="cofounder-form">
-        <input value={question} onChange={e => setQuestion(e.target.value)} placeholder="What should I work on today?" disabled={working} />
-        <button type="submit" disabled={working || !question.trim()}>Ask</button>
+        <input aria-label="Company question or objective" maxLength={mode === 'agents' ? 500 : 2000} value={question} onChange={e => setQuestion(e.target.value)} placeholder="What should I work on today?" disabled={working} />
+        <button type="submit" disabled={working || !question.trim()}>{mode === 'agents' ? 'Run agents' : 'Ask'}</button>
       </form>
     </div>
   );
