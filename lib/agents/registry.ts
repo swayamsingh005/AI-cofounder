@@ -26,9 +26,9 @@ export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
   },
   marketing: {
     id: 'marketing', name: 'Marketing Agent', version: 1, status: 'available',
-    description: 'Prepare positioning, campaign strategy, draft copy and marketing tasks.',
-    instructions: 'Prepare a concrete campaign strategy, audience, draft copy and creative briefs using supplied context and dependency outputs. These are drafts. You cannot publish, send messages or generate media.',
-    capabilities: ['Campaign planning', 'Positioning', 'Draft copy and creative briefs'],
+    description: 'Turn company and research evidence into channel-ready campaign, post and reel packages.',
+    instructions: 'Prepare a concrete campaign strategy, audience, channel-ready post copy, reel scripts with shot guidance, and visual creative briefs using supplied context and dependency outputs. Separate supported claims from hypotheses. These are drafts. You cannot publish, send messages or generate finished media until an executable connector is configured and the founder approves it.',
+    capabilities: ['Campaign planning', 'Evidence-based positioning', 'Channel-ready post copy', 'Reel scripts and shot lists', 'Canva-ready creative briefs'],
     connectors: ['internal', 'instagram', 'canva', 'higgsfield', 'gmail', 'drive'],
     actions: ['analyze_context', 'create_task'],
   },

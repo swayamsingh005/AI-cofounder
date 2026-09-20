@@ -20,7 +20,7 @@ export default function AgentsPanel({ companyId, runs, connections, unavailable 
         <p>{agent.description}</p>
         {current && <p><b>Current objective:</b> {current.objective}</p>}
         <ul>{agent.capabilities.map(c => <li key={c}>{c}</li>)}</ul>
-        <p><b>Tools</b></p><ul>{agent.connectors.map(id => <li key={id}>{id === 'internal' ? 'Company context — available' : id === 'web' ? 'Web search — coming soon' : (CONNECTORS.find(c => c.id === id)?.name ?? id) + ' — ' + connectorStatus(id, connections.find(c => c.provider === id))}</li>)}</ul>
+        <p><b>Tools</b></p><ul>{agent.connectors.map(id => <li key={id}>{id === 'internal' ? 'Company context — available' : id === 'web' ? 'Web research — available' : (CONNECTORS.find(c => c.id === id)?.name ?? id) + ' — ' + connectorStatus(id, connections.find(c => c.provider === id))}</li>)}</ul>
         {recent[0] && <p>Recent activity: {recent[0].output?.summary ?? recent[0].error_message ?? recent[0].objective}</p>}
       </article>;
     })}</div>

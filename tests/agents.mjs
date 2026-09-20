@@ -40,7 +40,7 @@ test('four requested workflows route and pass structured dependencies', async ()
     assert.equal(finished.length,expected.length);
   }
   assert.deepEqual(planGoal('Launch our new physical fitness bottle.').map(s=>s.agentId), ['research','marketing']);
-  assert.deepEqual(planGoal('Launch our new SaaS feature.').map(s=>s.agentId), ['coding','marketing']);
+  assert.deepEqual(planGoal('Launch our new SaaS feature.').map(s=>s.agentId), ['research','coding','marketing']);
 });
 test('CEO selects specialists from the business need and never invents a software requirement', () => {
   const physical = fallbackCeoPlan('Launch a reusable fitness bottle for college students');
@@ -95,5 +95,13 @@ test('GitHub analysis explicitly excludes unrelated company priorities', async (
   await executeAnalysis('coding','analyze_github_issues',{goal:'Analyze the highest-priority issue',context:'Payment plan',evidence:[{id:'g1',category:'github',content:'Issue #1: Replace starter README'}],dependencies:[]},async(system)=>{captured=system;return JSON.stringify(githubOutput)});
   assert.match(captured,/GitHub-issue-only analysis/);
   assert.match(captured,/Do not propose tasks from company plans/);
+});
+test('Marketing Agent is instructed to create usable post, reel and Canva-ready drafts without claiming publication', async () => {
+  let captured='';
+  await executeAnalysis('marketing','analyze_context',{goal:'Prepare a launch campaign',context:'Company profile',evidence:[],dependencies:[]},async(system)=>{captured=system;return JSON.stringify({summary:'Draft marketing package prepared.',findings:[],drafts:['Campaign brief','Post copy','Reel script','Creative brief'],unknowns:[],actions:[]})});
+  assert.match(captured,/channel-ready post copy/);
+  assert.match(captured,/reel script/);
+  assert.match(captured,/Canva/);
+  assert.match(captured,/Never claim.*published/);
 });
 

@@ -25,7 +25,7 @@ export function fallbackCeoPlan(input: string, primaryObjective = 'Validate the 
   const text = input.trim();
   const needsSoftware = SOFTWARE.test(text);
   const chosen = new Set<AgentId>();
-  if (RESEARCH.test(text) || (!needsSoftware && (!MARKETING.test(text) || /\blaunch\b/i.test(text)))) chosen.add('research');
+  if (RESEARCH.test(text) || /\blaunch\b/i.test(text) || (!needsSoftware && !MARKETING.test(text))) chosen.add('research');
   if (needsSoftware) chosen.add('coding');
   if (MARKETING.test(text)) chosen.add('marketing');
   if (!chosen.size) chosen.add('research');
