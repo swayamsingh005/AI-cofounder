@@ -25,5 +25,8 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
   replies.push([200,[{id:42,environment:'Preview'}]],[200,[{state:'success',environment_url:'https://launchai-preview.vercel.app',updated_at:'2026-09-20'}]]);
   const preview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme');
   assert.equal(preview.provider,'vercel'); assert.equal(preview.status,'success'); assert.match(preview.url,/vercel\.app/);
+  replies.push([200,[]],[200,{object:{sha:'c'.repeat(40)}}],[200,{statuses:[{context:'Vercel',state:'success',target_url:'https://vercel.com/team/project/deployment'}]}],[200,[{body:'| Actions |\n| [Preview](https://owner-project.vercel.app) |'}]]);
+  const statusPreview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme',3);
+  assert.equal(statusPreview.status,'success'); assert.equal(statusPreview.url,'https://owner-project.vercel.app');
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});

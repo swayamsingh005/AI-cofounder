@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub to read preview status.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub to read preview status.');
       const repository=String(action.output_payload?.repository??action.input_payload?.repository??''), branch=String(action.output_payload?.branch??action.input_payload?.branch??'');
-      const preview=await findGitHubPreviewDeployment(token,repository,branch);
+      const preview=await findGitHubPreviewDeployment(token,repository,branch,Number(action.output_payload?.pull_request_number??0));
       checked(await db.from('ai_actions').update({output_payload:{...(action.output_payload??{}),preview}}).eq('id',recordId).select('id').single());
       return Response.json({ok:true,result:preview});
     }

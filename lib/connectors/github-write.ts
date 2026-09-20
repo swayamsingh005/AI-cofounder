@@ -77,17 +77,33 @@ export async function createGitHubFilePullRequest(token:string,input:GitHubFileC
   return {repository:change.repository,branch:change.branch,path:change.path,pull_request_url:String(pull.html_url??''),pull_request_number:Number(pull.number??0),commit_created:true,merged:false,deployed:false};
 }
 
-export async function findGitHubPreviewDeployment(token:string,repositoryValue:string,branch:string) {
+export async function findGitHubPreviewDeployment(token:string,repositoryValue:string,branch:string,pullNumber?:number) {
   const repository=repositoryName(repositoryValue), repo=encodeURIComponent(repository).replace('%2F','/');
   if(!safeBranch.test(branch)) throw new Error('Invalid AI Co-Founder branch name.');
-  const deployments=await request(token,`/repos/${repo}/deployments?ref=${encodeURIComponent(branch)}&per_page=20`);
-  if(!Array.isArray(deployments)||!deployments.length) return {status:'pending',url:'',provider:'vercel',message:'Preview deployment has not appeared yet.'};
-  for(const deployment of deployments as Record<string,unknown>[]) {
+  const deploymentResponse=await request(token,`/repos/${repo}/deployments?ref=${encodeURIComponent(branch)}&per_page=20`);
+  const deployments=Array.isArray(deploymentResponse)?deploymentResponse as Record<string,unknown>[]:[];
+  for(const deployment of deployments) {
     const id=Number(deployment.id); if(!Number.isSafeInteger(id)) continue;
     const statuses=await request(token,`/repos/${repo}/deployments/${id}/statuses?per_page=10`);
     if(!Array.isArray(statuses)) continue;
     const status=(statuses as Record<string,unknown>[]).find(item=>typeof item.environment_url==='string'&&item.environment_url);
     if(status) return {status:String(status.state??'pending'),url:String(status.environment_url),provider:'vercel',environment:String(deployment.environment??'Preview'),updated_at:String(status.updated_at??'')};
+  }
+  const ref=await request(token,`/repos/${repo}/git/ref/heads/${encodeURIComponent(branch)}`), sha=String((ref.object as Record<string,unknown>)?.sha??'');
+  if(/^[0-9a-f]{40}$/i.test(sha)) {
+    const combined=await request(token,`/repos/${repo}/commits/${sha}/status`), statuses=Array.isArray(combined.statuses)?combined.statuses as Record<string,unknown>[]:[];
+    const vercel=statuses.find(item=>String(item.context??'').toLowerCase().includes('vercel'));
+    if(vercel) {
+      let url=typeof vercel.target_url==='string'&&/^https:\/\/vercel\.com\//.test(vercel.target_url)?vercel.target_url:'';
+      if(Number.isInteger(pullNumber)&&Number(pullNumber)>0) {
+        const comments=await request(token,`/repos/${repo}/issues/${pullNumber}/comments?per_page=100`);
+        if(Array.isArray(comments)) for(const comment of comments as Record<string,unknown>[]) {
+          const match=String(comment.body??'').match(/\[Preview\]\((https:\/\/[a-z0-9.-]+\.vercel\.app(?:\/[^)]*)?)\)/i);
+          if(match) { url=match[1]; break; }
+        }
+      }
+      return {status:String(vercel.state??'pending'),url,provider:'vercel',environment:'Preview',updated_at:String(vercel.updated_at??'')};
+    }
   }
   return {status:'pending',url:'',provider:'vercel',message:'Vercel is still preparing the preview URL.'};
 }
