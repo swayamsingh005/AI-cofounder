@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
-      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>groqComplete(system,user,{json:true,maxTokens:8000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
+      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>groqComplete(system,user,{json:true,maxTokens:3000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
       const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
       const input=validateGitHubFileChange({repository,branch,path:draft.path,content:draft.content,title:draft.title,body:draft.body});
       checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:input}));
