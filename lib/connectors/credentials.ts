@@ -18,19 +18,29 @@ export function decryptSecret(payload:{ciphertext:string;iv:string;tag:string}) 
   decipher.setAuthTag(Buffer.from(payload.tag,'base64'));
   return Buffer.concat([decipher.update(Buffer.from(payload.ciphertext,'base64')),decipher.final()]).toString('utf8');
 }
-export async function saveGitHubToken(connectionId:string,userId:string,token:string) {
-  const encrypted=encryptSecret(token), admin=createAdminClient();
-  const {error}=await admin.from('connector_credentials').upsert({connection_id:connectionId,user_id:userId,provider:'github',...encrypted,updated_at:new Date().toISOString()},{onConflict:'connection_id'});
-  if(error) throw new Error('GitHub was authorized, but its secure credential could not be saved.');
+type SecureProvider='github'|'vercel'|'supabase';
+export async function saveConnectorCredential(connectionId:string,userId:string,provider:SecureProvider,value:string) {
+  const encrypted=encryptSecret(value), admin=createAdminClient();
+  const {error}=await admin.from('connector_credentials').upsert({connection_id:connectionId,user_id:userId,provider,...encrypted,updated_at:new Date().toISOString()},{onConflict:'connection_id'});
+  if(error) throw new Error(`${provider} was authorized, but its secure credential could not be saved.`);
 }
-export async function readGitHubToken(connectionId:string,userId:string) {
+export async function readConnectorCredential(connectionId:string,userId:string,provider:SecureProvider) {
   const admin=createAdminClient();
-  const {data,error}=await admin.from('connector_credentials').select('ciphertext,iv,tag').eq('connection_id',connectionId).eq('user_id',userId).eq('provider','github').maybeSingle();
+  const {data,error}=await admin.from('connector_credentials').select('ciphertext,iv,tag').eq('connection_id',connectionId).eq('user_id',userId).eq('provider',provider).maybeSingle();
   if(error || !data) return null;
   return decryptSecret(data);
 }
-export async function deleteGitHubToken(connectionId:string,userId:string) {
+export async function deleteConnectorCredential(connectionId:string,userId:string,provider:SecureProvider) {
   const admin=createAdminClient();
-  const {error}=await admin.from('connector_credentials').delete().eq('connection_id',connectionId).eq('user_id',userId).eq('provider','github');
-  if(error) throw new Error('The saved GitHub credential could not be removed.');
+  const {error}=await admin.from('connector_credentials').delete().eq('connection_id',connectionId).eq('user_id',userId).eq('provider',provider);
+  if(error) throw new Error(`The saved ${provider} credential could not be removed.`);
+}
+export async function saveGitHubToken(connectionId:string,userId:string,token:string) {
+  return saveConnectorCredential(connectionId,userId,'github',token);
+}
+export async function readGitHubToken(connectionId:string,userId:string) {
+  return readConnectorCredential(connectionId,userId,'github');
+}
+export async function deleteGitHubToken(connectionId:string,userId:string) {
+  return deleteConnectorCredential(connectionId,userId,'github');
 }

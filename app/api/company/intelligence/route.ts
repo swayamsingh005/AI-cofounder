@@ -1,7 +1,7 @@
 import { createClient, hasSupabaseConfig } from '../../../../lib/supabase/server';
 import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../../lib/intelligence/engine';
 import { repositoryName } from '../../../../lib/connectors/base';
-import { deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
+import { deleteConnectorCredential, deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { createGitHubFilePullRequest, draftGitHubIssueChange, draftGitHubObjectiveChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
 import { codingComplete, groqComplete } from '../../../../lib/ai';
@@ -55,6 +55,17 @@ export async function POST(request: Request) {
       if(!connection) throw new Error('GitHub is not connected.');
       if(connection.connection_type==='oauth') await deleteGitHubToken(connection.id,userId);
       checked(await db.from('connections').update({status:'disconnected',connection_type:'public_read',metadata:{},updated_at:new Date().toISOString()}).eq('id',connection.id));
+    } else if(op==='select_connector_project') {
+      const provider=String(body.provider),projectId=String(body.projectId??'').trim(),projectName=String(body.projectName??'').trim();
+      if(!['vercel','supabase'].includes(provider)||!projectId||projectId.length>160||!projectName||projectName.length>200)throw new Error('Choose a valid connected project.');
+      const connection=checked(await db.from('connections').select('id,connection_type,metadata').eq('company_id',companyId).eq('provider',provider).eq('status','connected').single());
+      if(!connection||connection.connection_type!=='oauth')throw new Error(`Connect ${provider} first.`);
+      checked(await db.from('connections').update({metadata:{...(connection.metadata??{}),project_id:projectId,project_name:projectName},updated_at:new Date().toISOString()}).eq('id',connection.id).select('id').single());
+    } else if(op==='disconnect_connector') {
+      const provider=String(body.provider) as 'vercel'|'supabase';if(!['vercel','supabase'].includes(provider))throw new Error('Unsupported connector.');
+      const connection=checked(await db.from('connections').select('id').eq('company_id',companyId).eq('provider',provider).single());if(!connection)throw new Error(`${provider} is not connected.`);
+      await deleteConnectorCredential(connection.id,userId,provider);
+      checked(await db.from('connections').update({status:'disconnected',metadata:{},updated_at:new Date().toISOString()}).eq('id',connection.id).select('id').single());
     }
     else if(op==='draft_github_change') {
       const issueNumber=Number(body.issueNumber), key=typeof body.key==='string'&&UUID.test(body.key)?body.key:crypto.randomUUID();

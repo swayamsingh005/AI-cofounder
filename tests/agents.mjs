@@ -67,7 +67,8 @@ test('missing evidence and model failures never return fake success', async () =
   await assert.rejects(executeAnalysis('research','analyze_context',input,async()=>{throw new Error('timeout');}),/timeout/);
   await assert.rejects(executeAnalysis('research','analyze_context',input,async()=>'{bad json'));
   assert.equal(connectorStatus('github',{status:'connected',connection_type:'public_read'}),'Public read only');
-  assert.equal(connectorStatus('vercel',{status:'connected'}),'Coming soon');
+  assert.equal(connectorStatus('vercel',{status:'connected',connection_type:'oauth'}),'Connected');
+  assert.equal(connectorStatus('supabase',{status:'connected',connection_type:'oauth'}),'Connected');
   assert.equal(redact('ghp_'+'a'.repeat(25)),'[credential removed]');
 });
 test('model list overflow is safely bounded before strict validation', async () => {
