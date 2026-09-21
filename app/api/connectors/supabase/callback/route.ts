@@ -12,14 +12,21 @@ export async function GET(request:Request) {
   const db=await createClient(), {data:claims}=await db.auth.getClaims(), userId=claims?.claims?.sub;
   if(!userId) return Response.redirect(new URL('/auth',request.url));
   const {data:company}=await db.from('companies').select('id').eq('id',companyId).eq('user_id',userId).maybeSingle(); if(!company)return fail('company-not-found');
+  let stage='token-exchange';
   try {
     const tokenResponse=await fetch('https://api.supabase.com/v1/oauth/token',{method:'POST',headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded',Authorization:`Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}`},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:new URL('/api/connectors/supabase/callback',request.url).toString(),code_verifier:verifier}),cache:'no-store',signal:AbortSignal.timeout(15000)});
     const token=await tokenResponse.json() as {access_token?:string;refresh_token?:string;expires_in?:number}; if(!tokenResponse.ok||!token.access_token)throw new Error('exchange');
+    stage='organization-read';
     const orgsResponse=await fetch('https://api.supabase.com/v1/organizations',{headers:{Authorization:`Bearer ${token.access_token}`},cache:'no-store',signal:AbortSignal.timeout(15000)});
     const orgs=await orgsResponse.json() as {name?:string;slug?:string}[]; if(!orgsResponse.ok)throw new Error('profile');
+    stage='connection-save';
     const {data:connection,error}=await db.from('connections').upsert({company_id:companyId,user_id:userId,provider:'supabase',display_name:orgs[0]?.name??'Supabase',status:'connected',connection_type:'oauth',permissions:['projects:read','environment:read','database:read'],metadata:{organization:orgs[0]?.slug??'',token_expires_at:Date.now()+(token.expires_in??3600)*1000},updated_at:new Date().toISOString()},{onConflict:'company_id,provider'}).select('id').single();
     if(error||!connection)throw new Error('connection');
+    stage='credential-save';
     await saveConnectorCredential(connection.id,userId,'supabase',JSON.stringify({access_token:token.access_token,refresh_token:token.refresh_token??''}));
     return Response.redirect(new URL(`/company/${companyId}/connections?supabase=connected`,request.url));
-  } catch { return fail('authorization-failed'); }
+  } catch(error) {
+    console.error('[supabase-oauth] callback failed',{stage,message:error instanceof Error?error.message:'unknown'});
+    return fail(`${stage}-failed`);
+  }
 }
