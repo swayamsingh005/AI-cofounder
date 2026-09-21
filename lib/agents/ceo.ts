@@ -11,7 +11,7 @@ export type CeoPlan = {
 };
 
 const ALL_AGENTS: AgentId[] = ['research', 'coding', 'marketing'];
-const SOFTWARE = /\b(app|website|web app|saas|software|platform|api|dashboard|portal|marketplace|mobile|automation|code|github|database|auth|bug|deploy)\b/i;
+const SOFTWARE = /\b(app|website|web ?app|landing page|webpage|frontend|backend|saas|software|platform|api|dashboard|portal|marketplace|mobile|automation|code|coding|github|database|auth|bug|feature|deploy|build|develop|implement)\b/i;
 const RESEARCH = /\b(research|validate|market|customer|competitor|demand|evidence|industry|feasibility|unknown)\b/i;
 const MARKETING = /\b(marketing|campaign|content|social|reel|post|brand|audience|positioning|launch|promotion|sales|lead)\b/i;
 

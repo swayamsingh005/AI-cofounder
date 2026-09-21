@@ -89,7 +89,11 @@ export function calculateCompanyPulse(input: PulseInput): CompanyPulse {
     },
   ];
   const available = dimensions.flatMap(dimension => dimension.score == null ? [] : [dimension.score]);
-  const score = available.length ? bounded(available.reduce((sum, value) => sum + value, 0) / available.length) : null;
+  // Overall Pulse is an evidence-weighted company score. Missing outcome connectors contribute
+  // zero until evidence exists, rather than disappearing from the denominator and making every
+  // newly created company with a complete profile look like the same 33/100.
+  const weights: Record<PulseDimension['key'], number> = { product: 0.2, validation: 0.3, growth: 0.15, revenue: 0.15, execution: 0.2 };
+  const score = available.length ? bounded(dimensions.reduce((sum, dimension) => sum + (dimension.score ?? 0) * weights[dimension.key], 0)) : null;
   const coverage = bounded((available.length / dimensions.length) * 100);
   const label = score == null ? 'No evidence yet' : score < 35 ? 'Limited evidence' : score < 70 ? 'Developing evidence' : 'Strong evidence coverage';
   return {
@@ -108,7 +112,7 @@ export function pulseSnapshot(pulse: CompanyPulse) {
     revenue_score: byKey.revenue,
     execution_score: byKey.execution,
     reasoning: {
-      metric: 'evidence_coverage_v1', coverage: pulse.coverage,
+      metric: 'weighted_evidence_v2', coverage: pulse.coverage,
       available_dimensions: pulse.availableDimensions, total_dimensions: pulse.totalDimensions,
       label: pulse.label, note: pulse.note,
       dimensions: Object.fromEntries(pulse.dimensions.map(dimension => [dimension.key, {

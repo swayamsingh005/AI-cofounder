@@ -5,6 +5,7 @@ import ReportActions from "../../../components/report-actions";
 import RecomputeAction from "../../../components/recompute-action";
 import BuildCompanyCta from "../../../components/build-company-cta";
 import AiOrb from "../../../components/ai-orb";
+import LocalTime from "../../../components/local-time";
 
 type Confidence = "verified" | "estimate" | "assumption";
 type Source = { title: string; url: string; domain: string };
@@ -81,7 +82,7 @@ export default async function Report({ params }: { params: Promise<{ id: string 
         <div className="report-details">
           <span>REPORT DETAILS</span>
           <dl>
-            <div><dt>Generated on</dt><dd>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.created_at))}</dd></div>
+            <div><dt>Generated on</dt><dd><LocalTime iso={report.created_at}/></dd></div>
             <div><dt>Idea</dt><dd>{report.title}</dd></div>
             {intake.geography && <div><dt>Geography</dt><dd>{intake.geography}</dd></div>}
             {intake.customer && <div><dt>Target customer</dt><dd>{intake.customer}</dd></div>}

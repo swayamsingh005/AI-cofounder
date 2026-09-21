@@ -21,7 +21,7 @@ test('pulse uses recorded evidence and exposes coverage', () => {
   assert.equal(pulse.dimensions[2].score,null);
   assert.equal(pulse.dimensions[3].score,null);
   assert.equal(pulse.dimensions[4].score,50);
-  assert.equal(pulse.score,60);
+  assert.equal(pulse.score,39);
   assert.equal(pulse.coverage,60);
   assert.match(pulse.note,/not company value/);
 });
@@ -38,10 +38,10 @@ test('source-grounded Research Agent findings contribute visible pulse evidence'
 test('zero validation is visible while unsupported integrations stay unavailable', () => {
   const pulse = calculateCompanyPulse({profile:completeProfile,tasks:Array(12).fill({status:'todo'}),memories:[]});
   assert.deepEqual(pulse.dimensions.map(d=>d.score),[100,0,null,null,0]);
-  assert.equal(pulse.score,33);
+  assert.equal(pulse.score,20);
   const snapshot=pulseSnapshot(pulse);
-  assert.equal(snapshot.overall_score,33);
-  assert.equal(snapshot.reasoning.metric,'evidence_coverage_v1');
+  assert.equal(snapshot.overall_score,20);
+  assert.equal(snapshot.reasoning.metric,'weighted_evidence_v2');
   assert.equal(snapshot.reasoning.available_dimensions,3);
 });
 

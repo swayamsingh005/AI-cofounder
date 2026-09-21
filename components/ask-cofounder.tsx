@@ -72,7 +72,11 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
       const data = await response.json();
       if (!response.ok) { setError(data.error || "Could not reach the Co-Founder."); retry.current = null; setQuestion(q); setWorking(false); return; }
       setExchanges(prev => [...prev, { question: q, answer: data.answer }]);
-      if (mode === 'agents') router.refresh();
+      if (mode === 'agents') {
+        const codingPrepared=Array.isArray(data.runs)&&data.runs.some((run:{agent_id?:string;output?:unknown})=>run.agent_id==='coding'&&run.output);
+        if(codingPrepared) router.push(`/company/${companyId}/approvals`);
+        else router.push(`/company/${companyId}/agents`);
+      }
       retry.current = null;
     } catch {
       setError("Could not reach the server.");
@@ -130,14 +134,14 @@ export default function AskCofounder({ companyId }: { companyId: string }) {
             {exchange.actionStatus && <small className="cofounder-action-status">{exchange.actionStatus}</small>}
           </div>
         ))}
-        {working && <p className="cofounder-thinking">Thinking…</p>}
+        {working && <p className="cofounder-thinking">{mode==='agents'?'The CEO is assigning specialists and waiting for their results…':'The CEO is thinking…'}</p>}
       </div>
       {error && <p className="cofounder-error">{error}</p>}
       <label className="cofounder-mode">CEO mode <select aria-label="CEO mode" value={mode} disabled={working} onChange={e => setMode(e.target.value as 'ask' | 'agents')}><option value="ask">Discuss with CEO</option><option value="agents">Assign specialists</option></select></label>
       {mode === 'agents' && <p className="cofounder-empty">The CEO selects only the specialists needed, creates a bounded mission and sends consequential follow-up work to Approvals.</p>}
       <form onSubmit={ask} className="cofounder-form">
         <input aria-label="Company question or objective" maxLength={mode === 'agents' ? 500 : 2000} value={question} onChange={e => setQuestion(e.target.value)} placeholder="What should I work on today?" disabled={working} />
-        <button type="submit" disabled={working || !question.trim()}>{mode === 'agents' ? 'Ask CEO to assign' : 'Ask CEO'}</button>
+        <button type="submit" disabled={working || !question.trim()}>{working?(mode==='agents'?'Assigning…':'Thinking…'):(mode === 'agents' ? 'Ask CEO to assign' : 'Ask CEO')}</button>
       </form>
     </div>
   );

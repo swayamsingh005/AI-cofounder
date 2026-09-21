@@ -4,6 +4,7 @@ import { CONNECTORS, connectorStatus } from '../lib/connectors/registry';
 import type { AgentRun } from '../lib/agents/runtime';
 import type { V3Record } from '../lib/intelligence/data';
 import AgentStatusRefresh from './agent-status-refresh';
+import LocalTime from './local-time';
 
 export default function AgentsPanel({ companyId, runs, connections, unavailable = false, demo = false }: { companyId: string; runs: AgentRun[]; connections: V3Record[]; unavailable?: boolean; demo?: boolean }) {
   return <section className="v3-module">
@@ -33,7 +34,7 @@ export default function AgentsPanel({ companyId, runs, connections, unavailable 
         {run.output.unknowns.map((u,i) => <p key={i}>Unknown: {u}</p>)}
         {!!run.output.sources?.length && <><b>Sources</b><ul>{run.output.sources.map(source=><li key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a> · {source.domain}</li>)}</ul></>}
       </details>}
-      <small>{new Date(run.created_at).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC</small>
+      <small><LocalTime iso={run.created_at}/></small>
       <div className="v3-button-row"><Link href={demo ? '/demo/v3?section=approvals' : `/company/${companyId}/approvals`}>Review approvals</Link><Link href={demo ? '/demo/v3?section=executions' : `/company/${companyId}/executions`}>Execution history</Link></div>
     </article>) : <p>No agent runs yet.</p>}
   </section>;

@@ -50,6 +50,7 @@ test('CEO selects specialists from the business need and never invents a softwar
   const software = fallbackCeoPlan('Build a SaaS dashboard for local clinics');
   assert.equal(software.needsSoftware, true);
   assert.deepEqual(software.selectedAgents.map(item=>item.agentId), ['coding']);
+  assert.deepEqual(planGoal('Build a landing page for the product').map(step=>step.agentId), ['coding']);
   const guarded = normalizeCeoPlan({ needsSoftware:false, selectedAgents:[{agentId:'coding',reason:'Build a website'}] }, 'Sell handmade candles');
   assert.equal(guarded.selectedAgents.some(item=>item.agentId === 'coding'), false);
 });

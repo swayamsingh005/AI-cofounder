@@ -9,6 +9,8 @@ import { type AgentOutput } from './schema';
 import { type AgentId } from './registry';
 import { refreshIntelligence, syncGitHub } from '../intelligence/engine';
 import { readGitHubToken } from '../connectors/credentials';
+import { draftGitHubObjectiveChange, validateGitHubWorkspaceChange } from '../connectors/github-write';
+import { repositoryName } from '../connectors/base';
 
 export type AgentRun = {
   id: string; request_key: string; agent_id: AgentId; objective: string;
@@ -35,13 +37,17 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
   try {
     const ctx = await loadCompanyContext(db, companyId);
     if (!ctx) throw new Error('Company context is unavailable.');
-    const needsGitHub = runs.some(run => run.action_type === 'analyze_github_issues');
-    if (needsGitHub) {
-      const connectionResult = await db.from('connections').select('id,connection_type,status').eq('company_id', companyId).eq('provider', 'github').maybeSingle();
-      if (connectionResult.error || !connectionResult.data || connectionResult.data.status === 'disconnected') throw new Error('Connect GitHub before running the Coding Agent.');
-      const token = connectionResult.data.connection_type === 'oauth' ? await readGitHubToken(connectionResult.data.id, userId) : undefined;
-      if (connectionResult.data.connection_type === 'oauth' && !token) throw new Error('Reconnect GitHub before running the Coding Agent.');
-      await syncGitHub(db, companyId, userId, token ?? undefined);
+    const hasCoding = runs.some(run => run.agent_id === 'coding');
+    const needsIssueSync = runs.some(run => run.action_type === 'analyze_github_issues');
+    let codingToken: string | undefined;
+    let codingRepository = '';
+    if (hasCoding) {
+      const connectionResult = await db.from('connections').select('id,connection_type,status,metadata').eq('company_id', companyId).eq('provider', 'github').maybeSingle();
+      if (connectionResult.error || !connectionResult.data || connectionResult.data.status !== 'connected' || connectionResult.data.connection_type !== 'oauth') throw new Error('Reconnect GitHub with repository access before asking the Coding Agent to build software.');
+      codingToken = (await readGitHubToken(connectionResult.data.id, userId)) ?? undefined;
+      if (!codingToken) throw new Error('Reconnect GitHub before asking the Coding Agent to build software.');
+      codingRepository = repositoryName(String(connectionResult.data.metadata?.repository ?? ''));
+      if (needsIssueSync) await syncGitHub(db, companyId, userId, codingToken);
     }
     const evidence: Evidence[] = [
       ...ctx.recentMemories.map(m => ({ id: m.id, category: 'memory', content: m.title + ': ' + m.content })),
@@ -74,6 +80,13 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
       }, config.maxActions);
       if(run.agent_id==='research') output={...output,sources:webResearch.sources.map((source,index)=>({id:`web-${index+1}`,title:source.title,url:source.url,domain:source.domain}))};
       runs = await operation('finish', { runId: run.id, output, usage: { model: process.env.GROQ_MODEL ?? 'default candidate', modelCalls: 1, retries: 0, maxOutputTokens: config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
+      if(run.agent_id==='coding' && codingToken && codingRepository) {
+        const draft=await draftGitHubObjectiveChange(codingToken,codingRepository,run.objective,(system,user)=>groqComplete(system,user,{json:true,maxTokens:4000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
+        const branch=`ai-cofounder/build-${requestKey.slice(0,8)}`;
+        const input=validateGitHubWorkspaceChange({repository:codingRepository,branch,files:draft.files,title:draft.title,body:draft.body});
+        const prepared=await admin.from('ai_actions').upsert({company_id:companyId,user_id:userId,idempotency_key:`agent-build:${requestKey}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective:run.objective,agent_run_id:run.id}},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true});
+        if(prepared.error) throw new Error('The Coding Agent finished its analysis but could not save the repository build for approval.');
+      }
       if(run.agent_id==='research') {
         const grounded=output.findings.filter(f=>f.kind==='observation'&&f.evidenceIds.some(id=>id.startsWith('web-')));
         if(grounded.length) {
@@ -93,10 +106,11 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
 }
 export function workflowAnswer(runs: AgentRun[]) {
   const grounded=runs.some(r=>r.agent_id==='research'&&r.output?.sources?.length);
+  const codingPrepared=runs.some(r=>r.agent_id==='coding'&&r.output);
   return runs.map(r => {
     const output = r.output;
     return `${r.agent_id.toUpperCase()} AGENT — ${r.status.replaceAll('_', ' ')}
 ${output ? [output.summary, ...output.findings.map(f => f.kind + ': ' + f.content), ...output.drafts, ...output.unknowns.map(u => 'Unknown: ' + u)].join('\n') : r.error_message ?? r.objective}
 ${r.status === 'waiting_approval' ? 'Review proposed tasks in the existing Approvals page.' : ''}`;
-  }).join('\n\n') + `\n\n${grounded?'Research findings include the recorded web sources shown in the run. ':'Internal analysis and drafts only. '}No publishing, code changes or production deployment occurred.`;
+  }).join('\n\n') + `\n\n${codingPrepared?'The Coding Agent prepared a repository build in Approvals. Review its exact files before creating the GitHub branch and pull request. ':grounded?'Research findings include the recorded web sources shown in the run. ':'Internal analysis and drafts only. '}No publishing, merge or production deployment occurred.`;
 }

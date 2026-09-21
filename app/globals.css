@@ -1740,6 +1740,12 @@ html[data-theme='dark'] .decision-form input,html[data-theme='dark'] .decision-f
 .report-v2 .source-appendix-v2>span{color:#77768e!important}
 .report-v2 .source-appendix-v2 ol{color:#8a89a3!important}
 .report-v2 .source-appendix-v2 a{color:#a78bfa!important}
+.report-v2 .decision-frame{background:#14122a!important;border-color:#2e2c52!important}
+.report-v2 .decision-frame>div:last-child{border-left-color:#2e2c52!important}
+.report-v2 .decision-frame>div>span{color:#a78bfa!important}
+.report-v2 .decision-frame h2,.report-v2 .decision-frame h3,.report-v2 .decision-frame strong,.report-v2 .decision-frame b{color:#f5f5fa!important}
+.report-v2 .decision-frame p,.report-v2 .decision-frame li,.report-v2 .decision-frame li p{color:#c9c8dc!important}
+.report-v2 .decision-frame li>b{background:#29265d!important;color:#c5c0ff!important}
 /* ============================================================================
    Dashboard v2 (final redesign step) — stat cards, multi-mission display,
    enhanced AI panel (orb, recent conversations, tip of the day).
