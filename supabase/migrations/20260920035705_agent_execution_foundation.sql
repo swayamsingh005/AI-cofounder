@@ -184,3 +184,5 @@ begin
 end $$;
 create trigger settle_agent_approval after update of status on public.ai_actions for each row when(old.status is distinct from new.status) execute function public.settle_agent_approval();
 revoke all on function public.settle_agent_approval() from public,anon,authenticated;
+
+;
