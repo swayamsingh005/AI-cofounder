@@ -37,11 +37,18 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
   replies.push([200,{object:{sha:'d'.repeat(40)}}],[200,{check_runs:[{name:'build',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/1'},{name:'test',status:'completed',conclusion:'success',html_url:'https://github.com/owner/repo/actions/runs/2'}]}]);
   const validation=await findGitHubValidationChecks('secret-token','owner/repo','ai-cofounder/update-readme');
   assert.equal(validation.status,'passed'); assert.match(validation.summary,/All 2/);
-  replies.push([200,{default_branch:'main'}],[200,{tree:[{type:'blob',path:'src/app.ts',size:30}]}],[200,{encoding:'base64',content:Buffer.from('export const app = true;').toString('base64')}]);
-  const objectiveDraft=await draftGitHubObjectiveChange('secret-token','owner/repo','Add a protected dashboard',async(system,user)=>{
-    assert.match(system,/controlled AI software builder/); assert.match(user,/protected dashboard/);
-    return JSON.stringify({files:[{path:'src/app.ts',content:'export const dashboard = true;'},{path:'src/app.test.ts',content:'// dashboard access test'}],title:'Add protected dashboard',body:'Adds the focused dashboard slice and a test.'});
+  replies.push([200,{default_branch:'main'}],[200,{tree:[{type:'blob',path:'README.md',size:30},{type:'blob',path:'package.json',size:30},{type:'blob',path:'app/globals.css',size:30},{type:'blob',path:'app/page.tsx',size:30}]}],
+    [200,{encoding:'base64',content:Buffer.from('export default function Page(){return <main/>}').toString('base64')}],
+    [200,{encoding:'base64',content:Buffer.from('main { color: white; }').toString('base64')}],
+    [200,{encoding:'base64',content:Buffer.from('{"scripts":{"build":"next build"}}').toString('base64')}],
+    [200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
+  const objectiveDraft=await draftGitHubObjectiveChange('secret-token','owner/repo','Build a modern landing page',async(system,user)=>{
+    assert.match(system,/controlled AI software builder/); assert.match(system,/1 to 3 objects/); assert.match(user,/modern landing page/);
+    const snapshot=JSON.parse(user).repositorySnapshot;
+    assert.deepEqual(snapshot.slice(0,2).map(file=>file.path),['app/page.tsx','app/globals.css']);
+    assert.ok(user.length<9000);
+    return JSON.stringify({files:[{path:'app/page.tsx',content:'export default function Page(){return <main>Modern landing page</main>}'},{path:'app/globals.css',content:'main { color: white; background: navy; }'}],title:'Build modern landing page',body:'Builds the focused landing page slice.'});
   });
-  assert.equal(objectiveDraft.files.length,2); assert.equal(objectiveDraft.files[1].path,'src/app.test.ts');
+  assert.equal(objectiveDraft.files.length,2); assert.equal(objectiveDraft.files[1].path,'app/globals.css');
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});
