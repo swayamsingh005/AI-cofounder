@@ -70,18 +70,31 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
       const suppliedEvidence = (githubOnly ? githubEvidence : [...evidence,...webEvidence]).slice(0,24);
       const dependencies = runs.filter(r => run.depends_on.includes(r.step_index) && r.output).map(r => ({ agentId: r.agent_id, output: r.output as AgentOutput }));
       let inputCharacters = 0;
-      let output = await executeAnalysis(run.agent_id, run.action_type, {
-        goal: run.objective,
-        context: githubOnly ? 'Analyze only the connected GitHub issue evidence supplied in this request.' : formatCompanyContext(ctx).slice(0,10000),
-        evidence: suppliedEvidence.map(e => ({ ...e, content: e.content.slice(0,800) })), dependencies,
-      }, (system, user) => {
-        inputCharacters = system.length + user.length;
-        return groqComplete(system, user, { json: true, maxTokens: config.maxTokens, temperature: 0.2, timeoutMs: config.timeoutMs, maxAttempts: 1 });
-      }, run.agent_id==='coding'?0:config.maxActions);
+      let preparedDraft:Awaited<ReturnType<typeof draftGitHubObjectiveChange>>|null=null;
+      let output:AgentOutput;
+      if(run.agent_id==='coding') {
+        if(!codingToken||!codingRepository) throw new Error('Reconnect GitHub before asking the Coding Agent to build software.');
+        // A coding request needs one model call that produces files. A separate analysis call
+        // previously consumed the provider quota and could leave behind a misleading task record.
+        preparedDraft=await draftGitHubObjectiveChange(codingToken,codingRepository,run.objective,(system,user)=>{
+          inputCharacters=system.length+user.length;
+          return groqComplete(system,user,{json:true,maxTokens:2400,temperature:0.1,timeoutMs:45000,maxAttempts:1});
+        });
+        output={summary:'Repository files are prepared for founder review.',findings:[],drafts:[`Prepared ${preparedDraft.files.length} file${preparedDraft.files.length===1?'':'s'}: ${preparedDraft.files.map(file=>file.path).join(', ')}`],unknowns:[],sources:[],actions:[]};
+      } else {
+        output = await executeAnalysis(run.agent_id, run.action_type, {
+          goal: run.objective,
+          context: githubOnly ? 'Analyze only the connected GitHub issue evidence supplied in this request.' : formatCompanyContext(ctx).slice(0,10000),
+          evidence: suppliedEvidence.map(e => ({ ...e, content: e.content.slice(0,800) })), dependencies,
+        }, (system, user) => {
+          inputCharacters = system.length + user.length;
+          return groqComplete(system, user, { json: true, maxTokens: config.maxTokens, temperature: 0.2, timeoutMs: config.timeoutMs, maxAttempts: 1 });
+        }, config.maxActions);
+      }
       if(run.agent_id==='research') output={...output,sources:webResearch.sources.map((source,index)=>({id:`web-${index+1}`,title:source.title,url:source.url,domain:source.domain}))};
       runs = await operation('finish', { runId: run.id, output, usage: { model: process.env.GROQ_MODEL ?? 'default candidate', modelCalls: 1, retries: 0, maxOutputTokens: config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
-      if(run.agent_id==='coding' && codingToken && codingRepository) {
-        const draft=await draftGitHubObjectiveChange(codingToken,codingRepository,run.objective,(system,user)=>groqComplete(system,user,{json:true,maxTokens:2800,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
+      if(run.agent_id==='coding' && codingToken && codingRepository && preparedDraft) {
+        const draft=preparedDraft;
         const branch=`ai-cofounder/build-${requestKey.slice(0,8)}`;
         const input=validateGitHubWorkspaceChange({repository:codingRepository,branch,files:draft.files,title:draft.title,body:draft.body});
         const prepared=await admin.from('ai_actions').upsert({company_id:companyId,user_id:userId,idempotency_key:`agent-build:${requestKey}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective:run.objective,agent_run_id:run.id}},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true});
