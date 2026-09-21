@@ -10,7 +10,7 @@ export type AgentDefinition = {
 export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
   coding: {
     id: 'coding', name: 'Coding Agent', version: 1, status: 'available',
-    description: 'Plan software work and prepare bounded, reviewable repository changes from GitHub issues.',
+    description: 'Turn founder objectives or GitHub issues into bounded, reviewable repository changes.',
     instructions: 'Prioritize recorded issues and development tasks. In the approved GitHub workflow you may inspect a bounded repository snapshot and prepare up to five complete file changes. Every external change requires founder approval. You cannot merge a pull request or deploy production.',
     capabilities: ['Technical planning', 'Controlled repository workspace', 'Multi-file change drafts', 'GitHub pull requests', 'Repository check and Vercel preview status'],
     connectors: ['internal', 'github', 'vercel', 'supabase', 'vscode', 'drive'],
