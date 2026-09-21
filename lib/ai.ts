@@ -10,6 +10,29 @@
 
 export type Source = { title: string; url: string; domain: string; excerpt?: string };
 
+export async function codingComplete(system: string, user: string, opts: { maxTokens?: number; timeoutMs?: number } = {}): Promise<string> {
+  const { generateText } = await import('ai');
+  const model = process.env.CODING_MODEL?.trim() || 'openai/gpt-5.6-sol';
+  const fallbackModels = (process.env.CODING_FALLBACK_MODELS ?? 'anthropic/claude-sonnet-4.6').split(',').map(value=>value.trim()).filter(Boolean);
+  try {
+    const result = await generateText({
+      model,
+      system,
+      prompt:user,
+      maxOutputTokens:opts.maxTokens ?? 12000,
+      temperature:0.1,
+      abortSignal:AbortSignal.timeout(opts.timeoutMs ?? 120000),
+      providerOptions:{gateway:{models:fallbackModels,tags:['agent:coding','product:ai-cofounder']}},
+    });
+    if(!result.text.trim()) throw new Error('The coding model returned an empty response.');
+    return result.text;
+  } catch(error) {
+    const message=error instanceof Error?error.message:String(error);
+    if(/unauthorized|authentication|api key|oidc|401/i.test(message)) throw new Error('Coding AI is not connected. Enable Vercel AI Gateway for this project, then retry.');
+    throw new Error(`Coding AI request failed: ${message.slice(0,240)}`);
+  }
+}
+
 // If GROQ_MODEL is set, that's the only model tried — trust an explicit choice. If it's not set,
 // try this short list in order, moving to the next only on a "model not found"-shaped error (not on
 // auth/rate-limit/timeout errors, which trying a different model name won't fix). This is a best-effort

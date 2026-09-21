@@ -2,7 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '../supabase/admin';
 import { loadCompanyContext, formatCompanyContext } from '../company-context';
-import { groqComplete, tavilySearch } from '../ai';
+import { codingComplete, groqComplete, tavilySearch } from '../ai';
 import { limits, planGoal } from './planner';
 import { executeAnalysis, type Evidence } from './execution';
 import { type AgentOutput } from './schema';
@@ -78,7 +78,7 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
         // previously consumed the provider quota and could leave behind a misleading task record.
         preparedDraft=await draftGitHubObjectiveChange(codingToken,codingRepository,run.objective,(system,user)=>{
           inputCharacters=system.length+user.length;
-          return groqComplete(system,user,{json:true,maxTokens:2400,temperature:0.1,timeoutMs:45000,maxAttempts:1});
+          return codingComplete(system,user,{maxTokens:12000,timeoutMs:120000});
         });
         output={summary:'Repository files are prepared for founder review.',findings:[],drafts:[`Prepared ${preparedDraft.files.length} file${preparedDraft.files.length===1?'':'s'}: ${preparedDraft.files.map(file=>file.path).join(', ')}`],unknowns:[],sources:[],actions:[]};
       } else {
@@ -92,7 +92,7 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
         }, config.maxActions);
       }
       if(run.agent_id==='research') output={...output,sources:webResearch.sources.map((source,index)=>({id:`web-${index+1}`,title:source.title,url:source.url,domain:source.domain}))};
-      runs = await operation('finish', { runId: run.id, output, usage: { model: process.env.GROQ_MODEL ?? 'default candidate', modelCalls: 1, retries: 0, maxOutputTokens: config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
+      runs = await operation('finish', { runId: run.id, output, usage: { model: run.agent_id==='coding'?(process.env.CODING_MODEL??'openai/gpt-5.6-sol'):(process.env.GROQ_MODEL ?? 'default candidate'), modelCalls: 1, retries: 0, maxOutputTokens: run.agent_id==='coding'?12000:config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
       if(run.agent_id==='coding' && codingToken && codingRepository && preparedDraft) {
         const draft=preparedDraft;
         const branch=`ai-cofounder/build-${requestKey.slice(0,8)}`;
