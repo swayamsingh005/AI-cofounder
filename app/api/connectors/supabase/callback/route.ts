@@ -15,7 +15,12 @@ export async function GET(request:Request) {
   let stage='token-exchange';
   try {
     const tokenResponse=await fetch('https://api.supabase.com/v1/oauth/token',{method:'POST',headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded',Authorization:`Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}`},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:new URL('/api/connectors/supabase/callback',request.url).toString(),code_verifier:verifier}),cache:'no-store',signal:AbortSignal.timeout(15000)});
-    const token=await tokenResponse.json() as {access_token?:string;refresh_token?:string;expires_in?:number}; if(!tokenResponse.ok||!token.access_token)throw new Error('exchange');
+    const token=await tokenResponse.json() as {access_token?:string;refresh_token?:string;expires_in?:number;error?:string};
+    if(!tokenResponse.ok||!token.access_token) {
+      const oauthError=typeof token.error==='string'&&/^[a-z_]{1,60}$/.test(token.error)?token.error:'rejected';
+      stage=`token-exchange-${oauthError}`;
+      throw new Error(oauthError);
+    }
     stage='organization-read';
     const orgsResponse=await fetch('https://api.supabase.com/v1/organizations',{headers:{Authorization:`Bearer ${token.access_token}`},cache:'no-store',signal:AbortSignal.timeout(15000)});
     const orgs=await orgsResponse.json() as {name?:string;slug?:string}[]; if(!orgsResponse.ok)throw new Error('profile');
