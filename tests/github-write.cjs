@@ -50,5 +50,17 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
     return JSON.stringify({files:[{path:'app/page.tsx',content:'export default function Page(){return <main>Modern landing page</main>}'},{path:'app/globals.css',content:'main { color: white; background: navy; }'}],title:'Build modern landing page',body:'Builds the focused landing page slice.'});
   });
   assert.equal(objectiveDraft.files.length,2); assert.equal(objectiveDraft.files[1].path,'app/globals.css');
+  replies.push([200,{default_branch:'main',size:0}]);
+  const emptyDraft=await draftGitHubObjectiveChange('secret-token','owner/empty','Create a product landing page',async(system,user)=>{
+    assert.match(system,/repository is empty/i);
+    assert.equal(JSON.parse(user).repositorySnapshot.length,4);
+    return JSON.stringify({files:[
+      {path:'package.json',content:'{"scripts":{"build":"next build"},"dependencies":{"next":"^16","react":"^19","react-dom":"^19"}}'},
+      {path:'app/layout.tsx',content:'export default function Layout({children}){return <html><body>{children}</body></html>}'},
+      {path:'app/page.tsx',content:'export default function Page(){return <main>Product</main>}'},
+      {path:'app/globals.css',content:'body{margin:0}'}
+    ],title:'Create product starter',body:'Creates a runnable starter app.'});
+  });
+  assert.equal(emptyDraft.emptyRepository,true); assert.equal(emptyDraft.files.length,4);
   console.log('PASS approved GitHub branch, commit and pull-request connector');
 }).catch(error=>{console.error(error);process.exitCode=1});

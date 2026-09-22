@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       const validation=await validateDraftInSandbox(token,repository,draft);
       const branch=`ai-cofounder/build-${key.slice(0,8)}`;
       const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
-      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective,validation}}));
+      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective,validation,empty_repository:Boolean(draft.emptyRepository)}}));
     }
     else if(op==='refresh_preview' && recordId) {
       const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','completed').single());

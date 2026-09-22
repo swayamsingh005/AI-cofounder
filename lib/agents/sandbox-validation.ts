@@ -27,7 +27,7 @@ export async function validateDraftInSandbox(token: string, repository: string, 
   let sandbox: Sandbox | undefined;
   try {
     sandbox = await Sandbox.create({
-      source: { type: 'git', url: `https://github.com/${repository}.git`, username: 'x-access-token', password: token, depth: 1 },
+      ...(!draft.emptyRepository?{source: { type: 'git' as const, url: `https://github.com/${repository}.git`, username: 'x-access-token', password: token, depth: 1 }}:{}),
       image: 'vercel/sandbox/universal:latest',
       timeout: 5 * 60 * 1000,
       resources: { vcpus: 2 },
@@ -35,6 +35,7 @@ export async function validateDraftInSandbox(token: string, repository: string, 
       env: { CI: 'true' },
     });
     const cwd = `/vercel/sandbox/${repoName}`;
+    if(draft.emptyRepository) await sandbox.runCommand('mkdir',['-p',cwd]);
     await sandbox.writeFiles(draft.files.map(file => ({ path: `${cwd}/${file.path}`, content: file.content })));
 
     const packageJson = await sandbox.readFileToBuffer({ path: `${cwd}/package.json` });
