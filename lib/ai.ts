@@ -29,6 +29,8 @@ export async function codingComplete(system: string, user: string, opts: { maxTo
   } catch(error) {
     const message=error instanceof Error?error.message:String(error);
     if(/unauthorized|authentication|api key|oidc|401/i.test(message)) throw new Error('Coding AI is not connected. Enable Vercel AI Gateway for this project, then retry.');
+    if(/payment|required|credit|balance|billing|402|spend|budget/i.test(message)) throw new Error('Coding AI has no available model credits. Add a payment method or credits in Vercel AI Gateway, then retry.');
+    if(/rate.?limit|too many requests|429/i.test(message)) throw new Error('The coding model is temporarily rate limited. Wait a moment and retry.');
     throw new Error(`Coding AI request failed: ${message.slice(0,240)}`);
   }
 }
