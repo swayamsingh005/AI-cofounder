@@ -11,7 +11,8 @@ export function useIntelligence(companyId: string, demo=false) {
     setBusy(true); setActiveOp(String(payload.op ?? '')); setMessage(''); setFailed(false);
     try {
       if(demo) { setMessage('Demo simulation only. No real accounts, records, or deployments were changed.'); return true; }
-      const response=await fetch('/api/company/intelligence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({companyId,...payload}),signal:AbortSignal.timeout(55000)});
+      const longBuild=['draft_github_objective','draft_github_change'].includes(String(payload.op??''));
+      const response=await fetch('/api/company/intelligence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({companyId,...payload}),signal:AbortSignal.timeout(longBuild?290000:55000)});
       const data=await response.json();
       if(!response.ok) throw new Error(data.error || 'Operation failed.');
       setMessage('Saved. The workspace has been refreshed.');router.refresh();return true;

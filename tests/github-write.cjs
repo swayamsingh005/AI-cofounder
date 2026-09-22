@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,draftGitHubObjectiveChange,findGitHubPreviewDeployment,findGitHubValidationChecks}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,draftGitHubObjectiveChange,findGitHubPreviewDeployment,findGitHubValidationChecks,parseGitHubDraft}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
@@ -11,6 +11,9 @@ const workspace={repository:'owner/repo',branch:'ai-cofounder/build-feature',fil
 assert.equal(validateGitHubWorkspaceChange(workspace).files.length,2);
 assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:Array(6).fill(workspace.files[0])}),/1 to 5 files/);
 assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:[workspace.files[0],workspace.files[0]]}),/duplicate/);
+assert.equal(parseGitHubDraft('```json\n{"files":[],"title":"T","body":"B"}\n```').title,'T');
+assert.equal(parseGitHubDraft('Result:\n{"files":[],"title":"T2","body":"B2"}').title,'T2');
+assert.throws(()=>parseGitHubDraft('not json'),/malformed structured output/);
 
 const replies=[
   [200,{default_branch:'main'}],[200,{object:{sha:'a'.repeat(40)}}],[201,{}],
@@ -43,7 +46,7 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
     [200,{encoding:'base64',content:Buffer.from('{"scripts":{"build":"next build"}}').toString('base64')}],
     [200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
   const objectiveDraft=await draftGitHubObjectiveChange('secret-token','owner/repo','Build a modern landing page',async(system,user)=>{
-    assert.match(system,/controlled AI software builder/); assert.match(system,/1 to 3 objects/); assert.match(user,/modern landing page/);
+    assert.match(system,/controlled AI software builder/); assert.match(system,/1 to 5 objects/); assert.match(user,/modern landing page/);
     const snapshot=JSON.parse(user).repositorySnapshot;
     assert.deepEqual(snapshot.slice(0,2).map(file=>file.path),['app/page.tsx','app/globals.css']);
     assert.ok(user.length<9000);

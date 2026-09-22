@@ -11,6 +11,7 @@ import { refreshIntelligence, syncGitHub } from '../intelligence/engine';
 import { readGitHubToken } from '../connectors/credentials';
 import { draftGitHubObjectiveChange, validateGitHubWorkspaceChange } from '../connectors/github-write';
 import { repositoryName } from '../connectors/base';
+import { validateDraftInSandbox } from './sandbox-validation';
 
 export type AgentRun = {
   id: string; request_key: string; agent_id: AgentId; objective: string;
@@ -78,7 +79,7 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
         // previously consumed the provider quota and could leave behind a misleading task record.
         preparedDraft=await draftGitHubObjectiveChange(codingToken,codingRepository,run.objective,(system,user)=>{
           inputCharacters=system.length+user.length;
-          return codingComplete(system,user,{maxTokens:12000,timeoutMs:120000});
+          return codingComplete(system,user,{maxTokens:12000,timeoutMs:90000});
         });
         output={summary:'Repository files are prepared for founder review.',findings:[],drafts:[`Prepared ${preparedDraft.files.length} file${preparedDraft.files.length===1?'':'s'}: ${preparedDraft.files.map(file=>file.path).join(', ')}`],unknowns:[],sources:[],actions:[]};
       } else {
@@ -95,9 +96,10 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
       runs = await operation('finish', { runId: run.id, output, usage: { model: run.agent_id==='coding'?(process.env.CODING_MODEL??'openai/gpt-5.6-sol'):(process.env.GROQ_MODEL ?? 'default candidate'), modelCalls: 1, retries: 0, maxOutputTokens: run.agent_id==='coding'?12000:config.maxTokens, inputCharacters, outputCharacters: JSON.stringify(output).length, durationMs: Date.now() - start, registryVersion: 1 } }) as AgentRun[];
       if(run.agent_id==='coding' && codingToken && codingRepository && preparedDraft) {
         const draft=preparedDraft;
+        const validation=await validateDraftInSandbox(codingToken,codingRepository,draft);
         const branch=`ai-cofounder/build-${requestKey.slice(0,8)}`;
         const input=validateGitHubWorkspaceChange({repository:codingRepository,branch,files:draft.files,title:draft.title,body:draft.body});
-        const prepared=await admin.from('ai_actions').upsert({company_id:companyId,user_id:userId,idempotency_key:`agent-build:${requestKey}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective:run.objective,agent_run_id:run.id}},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true});
+        const prepared=await admin.from('ai_actions').upsert({company_id:companyId,user_id:userId,idempotency_key:`agent-build:${requestKey}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective:run.objective,agent_run_id:run.id,validation,empty_repository:Boolean(draft.emptyRepository)}},{onConflict:'company_id,idempotency_key',ignoreDuplicates:true});
         if(prepared.error) throw new Error('The Coding Agent finished its analysis but could not save the repository build for approval.');
       }
       if(run.agent_id==='research') {
@@ -111,7 +113,7 @@ export async function runWorkflow(db: SupabaseClient, companyId: string, userId:
     }
     return runs;
   } catch (error) {
-    const message = error instanceof Error && /No saved GitHub|source-grounded research|Invalid|Unknown evidence|permission|limit|require/i.test(error.message)
+    const message = error instanceof Error && /Coding AI|No saved GitHub|source-grounded research|Invalid|Unknown evidence|permission|limit|require/i.test(error.message)
       ? error.message : 'Agent analysis failed or timed out. No external changes occurred. Review the run and start a new request to retry.';
     await operation('fail', { error: message });
     throw new Error(message);

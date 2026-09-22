@@ -4,7 +4,7 @@ import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteConnectorCredential, deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { createGitHubFilePullRequest, draftGitHubIssueChange, draftGitHubObjectiveChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
-import { codingComplete, groqComplete } from '../../../../lib/ai';
+import { codingComplete } from '../../../../lib/ai';
 import { validateDraftInSandbox } from '../../../../lib/agents/sandbox-validation';
 
 export const maxDuration = 300;
@@ -74,10 +74,11 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
-      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>groqComplete(system,user,{json:true,maxTokens:3000,temperature:0.1,timeoutMs:45000,maxAttempts:1}));
+      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>codingComplete(system,user,{maxTokens:8000,timeoutMs:90000}));
+      const validation=await validateDraftInSandbox(token,repository,draft);
       const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
       const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
-      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:input}));
+      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,validation}}));
     }
     else if(op==='draft_github_objective') {
       const objective=typeof body.objective==='string'?body.objective.trim():'', key=typeof body.key==='string'&&UUID.test(body.key)?body.key:crypto.randomUUID();
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a workspace change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
-      const draft=await draftGitHubObjectiveChange(token,repository,objective,(system,user)=>codingComplete(system,user,{maxTokens:12000,timeoutMs:120000}));
+      const draft=await draftGitHubObjectiveChange(token,repository,objective,(system,user)=>codingComplete(system,user,{maxTokens:12000,timeoutMs:90000}));
       const validation=await validateDraftInSandbox(token,repository,draft);
       const branch=`ai-cofounder/build-${key.slice(0,8)}`;
       const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});

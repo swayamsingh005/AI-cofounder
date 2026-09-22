@@ -6,7 +6,7 @@ import { loadIntelligence } from "../../../../lib/intelligence/data";
 import { runWorkflow, workflowAnswer } from "../../../../lib/agents/runtime";
 import { UUID } from "../../../../lib/agents/schema";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const SYSTEM_PROMPT = `You are the CEO Agent and primary AI Co-Founder for this specific company — not a generic chatbot. You own the founder conversation, understand the business, decide which specialist is needed, and coordinate Coding, Research and Marketing Agents. You have the company's real context below: its profile, current goal, active mission, tasks, past decisions, and company memory. Answer from that context, not from general startup advice that would apply to any company.
 

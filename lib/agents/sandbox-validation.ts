@@ -29,7 +29,7 @@ export async function validateDraftInSandbox(token: string, repository: string, 
     sandbox = await Sandbox.create({
       ...(!draft.emptyRepository?{source: { type: 'git' as const, url: `https://github.com/${repository}.git`, username: 'x-access-token', password: token, depth: 1 }}:{}),
       image: 'vercel/sandbox/universal:latest',
-      timeout: 5 * 60 * 1000,
+      timeout: 150 * 1000,
       resources: { vcpus: 2 },
       persistent: false,
       env: { CI: 'true' },
