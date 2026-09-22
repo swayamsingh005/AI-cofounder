@@ -5,8 +5,9 @@ import { deleteConnectorCredential, deleteGitHubToken, readGitHubToken } from '.
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { createGitHubFilePullRequest, draftGitHubIssueChange, draftGitHubObjectiveChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
 import { codingComplete, groqComplete } from '../../../../lib/ai';
+import { validateDraftInSandbox } from '../../../../lib/agents/sandbox-validation';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function POST(request: Request) {
   if (!hasSupabaseConfig()) return Response.json({error:'Database is not configured.'},{status:503});
@@ -85,9 +86,10 @@ export async function POST(request: Request) {
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a workspace change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
       const draft=await draftGitHubObjectiveChange(token,repository,objective,(system,user)=>codingComplete(system,user,{maxTokens:12000,timeoutMs:120000}));
+      const validation=await validateDraftInSandbox(token,repository,draft);
       const branch=`ai-cofounder/build-${key.slice(0,8)}`;
       const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
-      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective}}));
+      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective,validation}}));
     }
     else if(op==='refresh_preview' && recordId) {
       const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','completed').single());
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
       if(action.provider==='github' && action.action_type==='github.create_pull_request') {
         if(action.status==='completed') return Response.json({ok:true,result:action.output_payload});
         if(action.status!=='awaiting_approval') throw new Error('Action is not awaiting approval.');
+        if(action.input_payload?.validation?.status==='failed') throw new Error('This build failed isolated validation. Ask the Coding Agent to revise it before creating a pull request.');
         const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
         if(!connection) throw new Error('Connect GitHub first.');
         if(connection.connection_type!=='oauth') throw new Error('Reconnect GitHub before approving this action.');
