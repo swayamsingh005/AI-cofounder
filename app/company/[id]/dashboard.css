@@ -4,7 +4,9 @@
 .dashboard-refresh .topbar-company-switch{display:flex;flex-direction:column;align-items:flex-start;gap:5px;border:1px solid #202538;border-radius:9px;padding:10px 18px;min-width:180px;background:#0a0f1c}
 .dashboard-refresh .topbar-company-switch b{font-size:14px;color:#f1f2fb}.dashboard-refresh .topbar-company-switch small{font-size:11px;color:#a4abc1}
 .dashboard-refresh .topbar-quick-action{border:1px solid #5940a0;border-radius:8px;background:transparent;color:#f1f2fb;padding:11px 18px}
-.dashboard-refresh .topbar-avatar{width:44px;height:44px;background:#e8e9f0;color:#101421;font-size:15px}
+.dashboard-refresh .topbar-avatar{width:44px;height:44px;background:linear-gradient(145deg,#7c3aed 0%,#4f46e5 55%,#2563eb 100%);color:#fff;font-size:15px;border:1px solid rgba(167,139,250,.75);box-shadow:0 0 0 3px rgba(124,58,237,.12),0 8px 24px rgba(79,70,229,.28);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.dashboard-refresh .topbar-avatar:hover{transform:translateY(-1px);border-color:#c4b5fd;box-shadow:0 0 0 4px rgba(124,58,237,.16),0 10px 28px rgba(79,70,229,.36)}
+.dashboard-refresh .topbar-avatar:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
 .dashboard-refresh .company-shell-3col{grid-template-columns:230px minmax(0,1fr) 330px;background:#050914;min-height:calc(100vh - 80px)}
 .dashboard-refresh .company-sidebar{margin-top:-80px;height:100vh;position:sticky;top:0;padding:26px 15px;background:#050914;border-color:#171d2d;gap:28px}
 .dashboard-refresh .sidebar-brand{font-size:20px;white-space:nowrap;margin-bottom:16px;color:#f3f3ff}
