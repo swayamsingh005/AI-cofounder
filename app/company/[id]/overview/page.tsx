@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, hasSupabaseConfig } from "../../../../lib/supabase/server";
 import { loadCompanyContext } from "../../../../lib/company-context";
-import { getOrCreateDailyBrief } from "../../../../lib/daily-brief";
+import { getDailyBrief } from "../../../../lib/daily-brief";
 import StartTaskButton from "../../../../components/start-task-button";
 import LocalTime from "../../../../components/local-time";
 
@@ -25,7 +25,7 @@ export default async function CompanyOverview({ params }: { params: Promise<{ id
   const ctx = await loadCompanyContext(supabase, id);
   if (!ctx) notFound();
 
-  const brief = await getOrCreateDailyBrief(supabase, id, claims.claims.sub);
+  const brief = await getDailyBrief(supabase, id);
 
   // All active missions, not just the primary one — the dashboard shows every mission in
   // progress, not just the one featured elsewhere on this page.

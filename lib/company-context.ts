@@ -31,34 +31,43 @@ export type CompanyContext = {
   recentDecisions: { id: string; title: string; reasoning: string | null; status: string }[];
   recentMemories: { id: string; kind: string; title: string; content: string; assumption_status?: string }[];
   recentActivity: { kind: string; title: string; createdAt: string }[];
+  unavailableSections?: string[];
 };
 
 /** Fetches everything in parallel, scoped to one company, trusting RLS to enforce ownership —
  * callers must still separately confirm the requesting user owns companyId before calling this
  * (see requireCompanyOwnership) so a stray query never silently returns nothing instead of denying access. */
 export async function loadCompanyContext(supabase: SupabaseClient, companyId: string): Promise<CompanyContext | null> {
-  const [companyRes, profileRes, goalRes, missionRes, decisionsRes, memoriesRes, activityRes] = await Promise.all([
-    supabase.from("companies").select("id,name,stage,industry").eq("id", companyId).maybeSingle(),
-    supabase.from("company_profiles").select("*").eq("company_id", companyId).maybeSingle(),
-    supabase.from("goals").select("id,title,description,target,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle(),
-    supabase.from("missions").select("id,objective,why_it_matters,success_criteria,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle(),
-    supabase.from("decisions").select("id,title,reasoning,status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(5),
-    supabase.from("memories").select("id,kind,title,content,assumption_status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(12),
-    supabase.from("activity_events").select("kind,title,created_at").eq("company_id", companyId).order("created_at", { ascending: false }).limit(8),
-  ]);
-  if ([companyRes, profileRes, goalRes, missionRes, decisionsRes, memoriesRes, activityRes].some(result => result.error)) {
-    throw new Error('Company context could not be loaded completely.');
+  const unavailableSections: string[] = [];
+  async function optional<T>(section: string, query: PromiseLike<{ data: T; error: unknown }>): Promise<{ data: T | null }> {
+    try {
+      const result = await query;
+      if (!result.error) return { data: result.data };
+    } catch {
+      // A transport failure must not discard the other successfully loaded rows.
+    }
+    unavailableSections.push(section);
+    return { data: null };
   }
+  const [companyRes, profileRes, goalRes, missionRes, decisionsRes, memoriesRes, activityRes] = await Promise.all([
+    optional('company', supabase.from("companies").select("id,name,stage,industry").eq("id", companyId).maybeSingle()),
+    optional('profile', supabase.from("company_profiles").select("*").eq("company_id", companyId).maybeSingle()),
+    optional('goal', supabase.from("goals").select("id,title,description,target,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle()),
+    optional('mission', supabase.from("missions").select("id,objective,why_it_matters,success_criteria,progress,status").eq("company_id", companyId).eq("is_primary", true).eq("status", "active").maybeSingle()),
+    optional('decisions', supabase.from("decisions").select("id,title,reasoning,status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(5)),
+    optional('memories', supabase.from("memories").select("id,kind,title,content,assumption_status").eq("company_id", companyId).order("created_at", { ascending: false }).limit(12)),
+    optional('activity', supabase.from("activity_events").select("kind,title,created_at").eq("company_id", companyId).order("created_at", { ascending: false }).limit(8)),
+  ]);
   if (!companyRes.data) return null;
 
   let tasks: CompanyContext["tasks"] = [];
   if (missionRes.data) {
-    const { data, error } = await supabase.from("tasks").select("id,title,status,priority").eq("company_id", companyId).eq("mission_id", missionRes.data.id).order("created_at", { ascending: true }).limit(20);
-    if (error) throw new Error('Company tasks could not be loaded.');
+    const { data } = await optional('tasks', supabase.from("tasks").select("id,title,status,priority").eq("company_id", companyId).eq("mission_id", missionRes.data.id).order("created_at", { ascending: true }).limit(20));
     tasks = data ?? [];
   }
 
   return {
+    unavailableSections,
     company: companyRes.data,
     profile: profileRes.data ? {
       description: profileRes.data.description, problem: profileRes.data.problem, solution: profileRes.data.solution,
@@ -80,6 +89,7 @@ export async function loadCompanyContext(supabase: SupabaseClient, companyId: st
  * rather than JSON in the prompt — cheaper in tokens and reads more naturally to the model. */
 export function formatCompanyContext(ctx: CompanyContext): string {
   const lines: string[] = [];
+  if (ctx.unavailableSections?.length) lines.push(`UNAVAILABLE CONTEXT: ${ctx.unavailableSections.join(', ')}. These queries failed; missing records are unknown, not evidence that none exist.`);
   lines.push(`COMPANY: ${ctx.company.name} (stage: ${ctx.company.stage}${ctx.company.industry ? `, industry: ${ctx.company.industry}` : ""})`);
   if (ctx.profile) {
     const p = ctx.profile;

@@ -3,6 +3,7 @@ import { githubConnector } from '../connectors/github';
 import { calculateCompanyPulse, pulseSnapshot } from './pulse';
 import { groqComplete } from '../ai';
 import { loadCompanyContext, formatCompanyContext } from '../company-context';
+import { COMPANY_EVENT_TYPES } from './event-types';
 
 export function checked<T>(result: { data: T; error: { message: string } | null }): T {
   if (result.error) throw new Error('The database could not save this operation. Refresh and try again.');
@@ -26,11 +27,11 @@ export async function refreshIntelligence(db: SupabaseClient, companyId: string,
   });
   checked(await db.from('company_pulse_snapshots').insert({ company_id:companyId,user_id:userId,...pulseSnapshot(pulse) }));
   const today = new Date().toISOString().slice(0,10);
-  for (const task of tasks ?? []) {
-    const flagged = task.source !== 'ai' && (task.status === 'blocked' || (task.due_date && task.due_date < today && task.status !== 'completed'));
-    if (flagged) checked(await db.from('company_insights').upsert({ company_id:companyId,user_id:userId,dedupe_key:`task:${task.id}`,type:'execution',title:`${task.status === 'blocked' ? 'Blocked' : 'Overdue'}: ${task.title}`,description:'Recorded task state needs your attention. The underlying cause has not been established.',severity:'high',confidence:1,evidence:[{ task_id:task.id,status:task.status,due_date:task.due_date }],recommended_action:`Review the blocker and agree a next step for: ${task.title}` },{onConflict:'company_id,dedupe_key',ignoreDuplicates:true}));
-    else checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('dedupe_key',`task:${task.id}`).in('status',['new','reviewed','investigating']));
-  }
+  const flagged = (tasks ?? []).filter(task => task.source !== 'ai' && (task.status === 'blocked' || (task.due_date && task.due_date < today && task.status !== 'completed')));
+  const flaggedIds = new Set(flagged.map(task => task.id));
+  const resolvedKeys = (tasks ?? []).filter(task => !flaggedIds.has(task.id)).map(task => `task:${task.id}`);
+  if (flagged.length) checked(await db.from('company_insights').upsert(flagged.map(task => ({ company_id:companyId,user_id:userId,dedupe_key:`task:${task.id}`,type:'execution',title:`${task.status === 'blocked' ? 'Blocked' : 'Overdue'}: ${task.title}`,description:'Recorded task state needs your attention. The underlying cause has not been established.',severity:'high',confidence:1,evidence:[{ task_id:task.id,status:task.status,due_date:task.due_date }],recommended_action:`Review the blocker and agree a next step for: ${task.title}` })),{onConflict:'company_id,dedupe_key',ignoreDuplicates:true}));
+  if (resolvedKeys.length) checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).in('dedupe_key',resolvedKeys).in('status',['new','reviewed','investigating']));
 }
 export async function syncGitHub(db: SupabaseClient, companyId: string, userId: string, accessToken?: string) {
   const connection = checked(await db.from('connections').select('*').eq('company_id',companyId).eq('provider','github').single());
@@ -43,11 +44,10 @@ export async function syncGitHub(db: SupabaseClient, companyId: string, userId: 
   try {
     const snapshot = await githubConnector.sync(String(connection.metadata.repository ?? ''),accessToken);
     if (snapshot.events.length) checked(await db.from('company_events').upsert(snapshot.events.map(e=>({...e,company_id:companyId,user_id:userId,source:'github'})),{onConflict:'company_id,source,external_id',ignoreDuplicates:true}));
-    for (const event of snapshot.events) {
-      const key=`github-issue:${event.payload.repository}:${event.payload.number}`;
-      if(event.event_type==='issue_opened') checked(await db.from('company_insights').upsert({company_id:companyId,user_id:userId,dedupe_key:key,type:'product',title:`Open GitHub issue: ${event.title}`.slice(0,240),description:'A public repository issue is open. Its severity and impact on your company have not been verified.',severity:'info',confidence:1,evidence:[{source:'github',...event.payload,observed_update:event.occurred_at}],recommended_action:`Triage ${event.title}`.slice(0,200)},{onConflict:'company_id,dedupe_key',ignoreDuplicates:true}));
-      else checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).eq('dedupe_key',key).neq('status','dismissed'));
-    }
+    const openEvents = snapshot.events.filter(event => event.event_type === COMPANY_EVENT_TYPES.issueOpened);
+    const closedKeys = snapshot.events.filter(event => event.event_type === COMPANY_EVENT_TYPES.issueClosed).map(event => `github-issue:${event.payload.repository}:${event.payload.number}`);
+    if (openEvents.length) checked(await db.from('company_insights').upsert(openEvents.map(event => ({company_id:companyId,user_id:userId,dedupe_key:`github-issue:${event.payload.repository}:${event.payload.number}`,type:'product',title:`Open GitHub issue: ${event.title}`.slice(0,240),description:'A public repository issue is open. Its severity and impact on your company have not been verified.',severity:'info',confidence:1,evidence:[{source:'github',...event.payload,observed_update:event.occurred_at}],recommended_action:`Triage ${event.title}`.slice(0,200)})),{onConflict:'company_id,dedupe_key',ignoreDuplicates:true}));
+    if (closedKeys.length) checked(await db.from('company_insights').update({status:'resolved',resolved_at:new Date().toISOString()}).eq('company_id',companyId).in('dedupe_key',closedKeys).neq('status','dismissed'));
     if(snapshot.events.length) checked(await db.from('company_events').update({processed:true}).eq('company_id',companyId).eq('source','github').in('external_id',snapshot.events.map(e=>e.external_id)));
     checked(await db.from('connections').update({status:'connected',metadata:snapshot.metadata,last_sync_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',connection.id).eq('status','syncing').eq('metadata->>repository',String(connection.metadata.repository)).select('id').single());
     checked(await db.from('connector_sync_logs').update({status:'completed',event_count:snapshot.events.length,completed_at:new Date().toISOString()}).eq('id',log.id));

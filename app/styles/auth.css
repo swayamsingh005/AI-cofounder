@@ -1,0 +1,112 @@
+/* auth styles. Import order preserves the existing cascade. */
+
+.google-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #506452;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.google-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #0a110b;
+}
+.google-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.google-button span {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #4285f4;
+  font: 700 14px Arial;
+  box-shadow: 0 1px 2px #0002;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 4px;
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.4px;
+}
+.auth-divider:before,
+.auth-divider:after {
+  content: "";
+  height: 1px;
+  flex: 1;
+}
+.auth-page {
+  min-height: 100vh;
+  padding: 38px;
+  display: grid;
+  place-items: center;
+}
+.auth-page > .brand {
+  position: absolute;
+  left: 42px;
+  top: 32px;
+  color: #edf4e8;
+}
+.auth-card {
+  width: min(100%, 460px);
+  border: 1px solid #314136;
+  border-radius: 20px;
+  padding: 34px;
+}
+.auth-card h1 {
+  font: 500 42px/0.98 "Playfair Display";
+  letter-spacing: -2px;
+  margin: 20px 0 13px;
+}
+.auth-card > p {
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 27px;
+}
+.auth-card form label {
+  display: block;
+  color: #dbe5d7;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 14px 0;
+}
+.auth-card input {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid #3a4b3e;
+  border-radius: 9px;
+  padding: 12px;
+  font: 13px "Manrope";
+}
+.auth-card .primary-action {
+  width: 100%;
+  margin: 12px 0 16px;
+}
+.auth-card > small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.auth-message {
+  background: #25342a;
+  border-radius: 7px;
+  padding: 8px;
+  margin-bottom: 12px !important;
+  color: #d9f3af !important;
+}

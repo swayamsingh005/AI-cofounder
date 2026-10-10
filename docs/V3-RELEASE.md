@@ -1,50 +1,70 @@
-# V3 Phase 1: connected intelligence
+# V3 release — current scope
 
-## Architecture and preserved V2
+Updated 10 October 2026. AI Co-Founder is a founder evidence workspace with reports,
+goals, missions, tasks, decisions, Company Memory, connected intelligence, approvals
+and bounded agent workflows. It is not a continuously autonomous company operator.
 
-The app remains Next.js App Router / React / TypeScript, with Supabase cookie authentication, company-owned PostgreSQL records and the existing Groq completion helper. Reports, company creation, missions, tasks, decisions, memory, chat and command bar remain in place. The original dashboard is at `/company/[id]/overview`; the company root now renders the V3 dashboard.
+## Available in the implementation
 
-Existing tables: reports, companies, company_profiles, goals, missions, milestones, tasks, decisions, memories, conversations, messages, activity_events and daily_briefs. Earlier report/evidence tables are untouched.
+- Supabase authentication, company ownership checks and PostgreSQL RLS.
+- Idea reports with sources, AI estimates and assumptions distinguished; customer
+  demand is not independently verified by the report score.
+- GitHub OAuth/repository selection, issue sync and deduplicated company events.
+- Supabase and Vercel OAuth/project selection and project context.
+- Observational insights for recorded blocked/overdue tasks and GitHub issues;
+  task and issue insight writes are batched, not one write per item.
+- AI investigations retain evidence and failure state. Conclusions are hypotheses,
+  not established causes or proof that code was inspected/fixed.
+- Prepare/edit/reject/approve supported internal actions and review exact coding
+  drafts before GitHub branch/PR creation. No automatic merge/deployment.
+- Source-grounded Research, bounded Coding and draft-only Marketing workflows.
+  See `AGENT-EXECUTION.md` for provider requirements and execution limits.
+- Explicitly enabled internal follow-up automation runs on refresh/sync; no outreach.
+- Decision events/memory preserve user versus AI authorship. Old unknown authors
+  are not silently converted into verified user or AI attribution.
+- Partial company context survives individual query failures and records which
+  sections were unavailable.
 
-Additive migrations under `supabase/migrations` create connections, company_events, company_pulse_snapshots, company_insights, investigations, ai_actions, automations, automation_runs and connector_sync_logs. All have company ownership RLS and no anonymous grants. New cross-record references use company/id composite foreign keys where applicable. Internal task updates independently verify the target company inside the transactional executor.
+## Daily brief and Company Pulse
 
-## Available now
+Dashboard reads are read-only. Explicit intelligence Refresh generates a daily
+brief only if the current UTC-date snapshot does not exist. A unique
+`(company_id, brief_date)` key and ignore-duplicate upsert preserve the first saved
+snapshot under concurrent requests. The snapshot stays fixed for that day; task
+lists and pulse still reflect current records. Attention reasons use typed signal
+constants instead of searching display text for words such as “blocked”.
 
-- Reference-inspired V3 dashboard and a clearly labelled `/demo/v3` presentation workspace.
-- Public GitHub repository reading: issue snapshot (up to 30 recently updated issue/PR records, PRs excluded), open issue search count, explicit sync, disconnect, rate-limit/timeout states and sync history.
-- Event deduplication and links to the original GitHub issue. Source text is untrusted.
-- Deterministic insights for blocked/overdue tasks and observed open GitHub issues. These are observations, not calibrated causal diagnoses.
-- AI investigations using company context, tasks, memories and recent events, with persisted evidence, failure status and retry after interrupted requests.
-- Approval centre: prepare, edit, reject and execute supported internal actions. Create task, create mission, record decision, add learning and API-supported task-status updates.
-- Row-locked, transactional execution: repeated approval returns the original result; failure rolls back record effects; outcomes enter memory and activity.
-- Owner-enabled follow-up-task automation. Runs when intelligence refreshes or GitHub syncs, once per insight. It never executes a cancelled action.
-- V2 task completions, new decisions and customer-signal memories enter the company event stream. Task completions and decisions also update memory.
-- Daily Brief reads pending approvals, high-severity insights and recent completions. Chat includes connected evidence and must not claim unsupported tool execution.
-- Assumption evidence statuses and execution-result/customer-signal memory categories.
+Pulse measures evidence coverage: completed profile fields, recorded validation
+signals/experiments/assumptions and task completion. Growth/revenue remain
+unavailable without supported measured sources. Neither pulse nor report scores
+represent valuation or probability of business success.
 
-## Explicit limits — not full autonomous V3
+## Product honesty and presentation
 
-- PostHog, Stripe and Notion are setup-gated; OAuth/private GitHub and all external write capabilities remain unimplemented.
-- No background scheduler, webhooks, production deployments, code generation/PR execution, refunds or outgoing messages. There is no claim of continuously running agents.
-- No credentials are collected for the public connector. Future OAuth needs a separate encrypted, server-only credential store (not connection metadata), key rotation and scope/revocation handling.
-- Live revenue, users, conversion and customer counts stay empty until integrations exist. GitHub counts are search-index snapshots, not real-time guarantees.
-- Company Pulse only derives task-completion percentage; other subscores and overall health remain unavailable. At the 1,000-row read cap even the execution score is withheld. It is not a business-success score.
-- Schedule, threshold and broader event automation schemas are extensible, but only refresh-triggered internal task creation is enabled.
-- Investigations are model hypotheses; they do not inspect source code or establish causality. Human validation and business-impact measurement remain necessary.
-- Lists show recent 30 records; connector sync is a bounded snapshot, not a complete historical import.
+The landing page no longer claims trusted customers, permanent free access or a
+measured setup time. Its illustrative company preview is labelled Sample. Demo
+metrics and sample-company screens are visibly labelled; real companies are not
+seeded with demonstration values. Unwired profile/preferences controls are disabled
+and labelled Coming soon rather than saved to unused browser settings.
 
-## Environment
+Global CSS is split into ordered feature styles for shared foundations, auth,
+landing, reports and company workspace/dashboard. Redundant declarations from the
+fixed dark-theme cascade were removed. Import order is intentional; changing it
+requires desktop/mobile visual verification.
 
-Uses existing `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or the existing project client's key setting) and `GROQ_API_KEY`; optional existing `GROQ_MODEL`. No new production secret or package dependency is needed. Do not place tokens in metadata or browser props. Never use a service-role key in the browser.
+## Limits and rollout
 
-## Verification
+No payments, autonomous outreach, scheduled agent worker, automatic publishing,
+production deployment or database deletion is implemented. Analytics, billing and
+other planned connectors must not appear as measured company results. Provider
+credit/authentication failures remain real blockers to live coding generation.
 
-- Production build and TypeScript checks pass.
-- `tests/v3-connectors.cjs`: fixed-origin URL validation, no auth header leakage, PR filtering, deterministic identifiers, timeout/404/rate-limit handling and honest pulse calculation. A live read of `octocat/Hello-World` passed.
-- `tests/v3-security.sql`: all fixture writes roll back. Tests approval gating, idempotency, forbidden external action, event and automation dedupe, execution memory, cross-user reads/writes, every internal action type, failed-action rollback and V2 task event bridge.
-- Browser: demo dashboard and approval screen rendered, approval simulation stayed local, no console errors or horizontal overflow at tested desktop width.
-- Authenticated browser regression and full report-generation flow require a signed-in session and have not been claimed as tested. No real company was populated with demo data.
+Apply all additive migrations in order, including both October hardening migrations,
+before deploying these changes. This review does not apply production migrations or
+prove the deployed version. Existing deployments/integrations reported working by
+the owner are separate from verification of this local patch.
 
-## Rollout / next stage
-
-Apply migrations in order before deploying the code. Keep migrations additive; reverting the UI does not require dropping any data. Next stage: authenticated acceptance testing, private GitHub OAuth, one analytics integration, a real scheduled runner with leases/retries and business-outcome measurement.
+Local acceptance commands: `npm run typecheck`, `npm run lint`,
+`npm run test:agents`, `npm run test:v3`, `npm run build`. Authenticated production
+acceptance and live model/Sandbox/GitHub side effects need a separate owner-session
+check. Tests with mocks or isolated PostgreSQL are explicitly local evidence.

@@ -1,0 +1,19 @@
+/* auth styles. Import order preserves the existing cascade. */
+
+html[data-theme="dark"] .auth-page {
+  background:
+    radial-gradient(circle at 20% 15%, #4d82cc55, transparent 25%),
+    radial-gradient(circle at 80% 85%, #1f904866, transparent 32%), #141318;
+}
+html[data-theme="dark"] .auth-card {
+  background: linear-gradient(145deg, #2a2831, #1d1c22);
+  border-color: #452276;
+  box-shadow:
+    0 20px 0 #0c0c0e,
+    0 35px 60px #000000;
+}
+html[data-theme="dark"] .auth-card input {
+  background: #1a191e;
+  border-color: #452275;
+  color: #eff5fd;
+}

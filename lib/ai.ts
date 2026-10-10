@@ -131,9 +131,12 @@ Return ONLY the corrected sentence — no quotes around it, no commentary, no ma
 export async function tavilySearch(query: string, maxResults = 6): Promise<{ text: string; sources: Source[] }> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return { text: "", sources: [] };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
   try {
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
+      signal: controller.signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ api_key: apiKey, query, search_depth: "advanced", max_results: maxResults, include_answer: false }),
     });
@@ -145,5 +148,7 @@ export async function tavilySearch(query: string, maxResults = 6): Promise<{ tex
     return { text, sources };
   } catch {
     return { text: "", sources: [] };
+  } finally {
+    clearTimeout(timeout);
   }
 }

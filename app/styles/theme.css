@@ -1,0 +1,78 @@
+/* theme styles. Import order preserves the existing cascade. */
+
+html[data-theme="dark"] .brand,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] b {
+  color: #e6f6ec;
+}
+html[data-theme="dark"] .nav-links a,
+html[data-theme="dark"] .app-nav a:not(.brand),
+html[data-theme="dark"] p,
+html[data-theme="dark"] .lead,
+html[data-theme="dark"] .section-head p {
+  color: #b1b0b8;
+}
+html[data-theme="dark"] .idea-box,
+html[data-theme="dark"] .agent-card,
+html[data-theme="dark"] .proof-card,
+html[data-theme="dark"] .workspace-side,
+html[data-theme="dark"] .run-list,
+html[data-theme="dark"] .saved-report,
+html[data-theme="dark"] .empty-report,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .plan,
+html[data-theme="dark"] .source-card {
+  background: #1c1b20;
+  border-color: #35333f;
+  box-shadow: 0 7px 0 #09090b;
+}
+html[data-theme="dark"] .idea-box textarea,
+html[data-theme="dark"] .settings-card input,
+html[data-theme="dark"] .settings-card select {
+  background: #1c1b20;
+  color: #e6f6ec;
+}
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .signin,
+html[data-theme="dark"] .plan-button {
+  background: #2a2831;
+  border-color: #464352;
+  color: #e6f6ec;
+  box-shadow: 0 3px 0 #09090b;
+}
+html[data-theme="dark"] .speech,
+html[data-theme="dark"] .character-label {
+  background: #e9f7ee;
+  color: #28272f;
+}
+html[data-theme="dark"] .report .block {
+  border-color: #35333f;
+}
+html[data-theme="dark"] .cockpit-side small {
+  color: #83d09f;
+}
+.report-shell,
+.report-shell .report {
+  background: #ffffff !important;
+  color: #100f13 !important;
+}
+.report-shell h1,
+.report-shell h2,
+.report-shell b {
+  color: #100f13 !important;
+}
+.report-shell p,
+.report-shell .block p {
+  color: #302e38 !important;
+}
+.report-shell .verdict-row,
+.report-shell .block li {
+  background: #ffffff !important;
+  border-color: #b9b8be !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] .holo-panel b {
+  color: #ffffff;
+}

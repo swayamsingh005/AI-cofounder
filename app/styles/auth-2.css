@@ -1,0 +1,8 @@
+/* auth styles. Import order preserves the existing cascade. */
+
+html[data-theme="dark"] .google-button {
+  background: #e9edff;
+  border-color: #c9d1f1;
+  color: #34323e;
+  box-shadow: 0 4px 0 #070b13;
+}

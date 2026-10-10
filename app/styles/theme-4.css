@@ -1,0 +1,247 @@
+/* theme styles. Import order preserves the existing cascade. */
+
+.report-shell .evidence-list li {
+  border-color: #3a1d63;
+  background: #1f1e24;
+}
+.report-shell .agent-chip {
+  background: linear-gradient(155deg, #2d2c35, #212027);
+  box-shadow:
+    0 10px 22px -10px #000000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.report-shell .build-company-cta {
+  background: linear-gradient(150deg, #18171c, #121215);
+  border-color: #35333f;
+}
+.report-shell .build-company-cta > span {
+  color: #9c9ba4;
+}
+.report-shell .build-company-cta p {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .company-goal,
+html[data-theme="dark"] .company-mission,
+html[data-theme="dark"] .cofounder-panel,
+html[data-theme="dark"] .decisions-panel,
+html[data-theme="dark"] .task,
+html[data-theme="dark"] .company-empty,
+html[data-theme="dark"] .company-card {
+  border-color: #2b2933;
+  background: #121215;
+}
+html[data-theme="dark"] .company-header h1,
+html[data-theme="dark"] .company-goal h2,
+html[data-theme="dark"] .company-mission h2,
+html[data-theme="dark"] .milestone h3,
+html[data-theme="dark"] .company-card h3,
+html[data-theme="dark"] .company-empty p {
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .company-goal p,
+html[data-theme="dark"] .company-mission > p,
+html[data-theme="dark"] .cofounder-answer,
+html[data-theme="dark"] .company-empty-inline,
+html[data-theme="dark"] .company-card small,
+html[data-theme="dark"] .task em {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .cofounder-question {
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .cofounder-form input {
+  background: #18171c;
+  border-color: #2b2933;
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .cofounder-block {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .task-mark {
+  background: #18171c;
+  border-color: #2b2933;
+}
+html[data-theme="dark"] .decision-add,
+html[data-theme="dark"] .decision-form-actions button[type="button"],
+html[data-theme="dark"] .decision-actions button {
+  border-color: #2b2933;
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .decision-form input,
+html[data-theme="dark"] .decision-form textarea {
+  background: #18171c;
+  border-color: #2b2933;
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .decision-panel-body p,
+html[data-theme="dark"] .decision-panel-body em,
+html[data-theme="dark"] .activity-panel li small {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .daily-brief {
+  background: #121215;
+  border-color: #2b2933;
+}
+html[data-theme="dark"] .brief-priority {
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .brief-attention span {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .command-trigger {
+  background: #18171c;
+  border-color: #2b2933;
+  color: #b4b2ba;
+  box-shadow: 0 4px 14px #000000;
+}
+html[data-theme="dark"] .command-bar {
+  background: #121215;
+  border-color: #2b2933;
+}
+html[data-theme="dark"] .command-list button {
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .command-list button:hover {
+  background: #18171c;
+}
+html[data-theme="dark"] .command-hint {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .command-form input {
+  background: #18171c;
+  border-color: #2b2933;
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .command-form-actions button[type="button"] {
+  border-color: #2b2933;
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .standalone-tasks h3 {
+  color: #e5e5e7;
+}
+html[data-theme="dark"] .next-action {
+  border-color: #2b2933;
+}
+html[data-theme="dark"] .next-action p,
+html[data-theme="dark"] .attention-list li span,
+html[data-theme="dark"] .task-preview-label {
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .task-expand,
+html[data-theme="dark"] .task-collapse {
+  border-color: #2b2933;
+  color: #b4b2ba;
+}
+html[data-theme="dark"] .sidebar-company-switch:hover,
+html[data-theme="dark"] .sidebar-link:hover {
+  background: #17161c;
+}
+html[data-theme="dark"] .sidebar-link {
+  color: #97959f;
+}
+html[data-theme="dark"] .sidebar-bottom {
+  border-color: #26242d;
+}
+html[data-theme="dark"] .company-tagline,
+html[data-theme="dark"] .cofounder-scope,
+html[data-theme="dark"] .page-intro,
+html[data-theme="dark"] .mission-why,
+html[data-theme="dark"] .mission-success,
+html[data-theme="dark"] .overview-view-all,
+html[data-theme="dark"] .task-group h3 small,
+html[data-theme="dark"] .memory-group h3 small,
+html[data-theme="dark"] .memory-group li p {
+  color: #97959f;
+}
+html[data-theme="dark"] .memory-group li {
+  border-color: #26242d;
+}
+html[data-theme="dark"] .memory-search-input {
+  background: #141317;
+  border-color: #26242d;
+  color: #e8e8ea;
+}
+html[data-theme="dark"] .task-modal {
+  background: #141317;
+  border-color: #26242d;
+}
+html[data-theme="dark"] .task-modal p,
+html[data-theme="dark"] .task-modal-priority {
+  color: #97959f;
+}
+html[data-theme="dark"] .task-modal-actions button {
+  border-color: #26242d;
+  color: #e8e8ea;
+}
+html[data-theme="dark"] .cofounder-actions button {
+  border-color: #2b2933;
+  color: #b4b2ba;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] .hero,
+html[data-theme="dark"] .app-shell,
+html[data-theme="dark"] .auth-page {
+  background:
+    radial-gradient(circle at 82% 6%, #4c1d9540, transparent 32%),
+    radial-gradient(circle at 6% 88%, #1e3a8a3d, transparent 36%), #0c0c1a;
+}
+html[data-theme="dark"] .agent-section:before {
+  background:
+    radial-gradient(circle at 12% 90%, #4c1d9530, transparent 26%),
+    radial-gradient(circle at 90% 8%, #1e3a8a30, transparent 26%);
+}
+.report-shell {
+  background:
+    radial-gradient(circle at 82% 8%, #4c1d9540, transparent 30%),
+    radial-gradient(circle at 8% 30%, #1e3a8a35, transparent 34%), #0c0c1a;
+  color: #e8e8f5;
+}
+
+html[data-theme="dark"] .idea-box,
+html[data-theme="dark"] .agent-card,
+html[data-theme="dark"] .proof-card,
+html[data-theme="dark"] .workspace-side,
+html[data-theme="dark"] .run-list,
+html[data-theme="dark"] .saved-report,
+html[data-theme="dark"] .empty-report,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .plan,
+html[data-theme="dark"] .source-card,
+html[data-theme="dark"] .block,
+html[data-theme="dark"] .agent-chip,
+html[data-theme="dark"] .side-card,
+html[data-theme="dark"] .scorecard,
+html[data-theme="dark"] .decision-frame,
+html[data-theme="dark"] .verdict-row,
+html[data-theme="dark"] .company-goal,
+html[data-theme="dark"] .company-mission,
+html[data-theme="dark"] .cofounder-panel,
+html[data-theme="dark"] .decisions-panel,
+html[data-theme="dark"] .activity-panel,
+html[data-theme="dark"] .task,
+html[data-theme="dark"] .company-empty,
+html[data-theme="dark"] .company-card,
+html[data-theme="dark"] .daily-brief,
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .v2-card,
+html[data-theme="dark"] .task-modal,
+html[data-theme="dark"] .command-bar,
+html[data-theme="dark"] .memory-group li {
+  background: #161629 !important;
+  border-color: #2e2c52 !important;
+}
+html[data-theme="dark"] .company-shell-3col {
+  background: #0c0c1a;
+}
+html[data-theme="dark"] .company-sidebar,
+html[data-theme="dark"] .company-ai-region {
+  border-color: #2e2c52;
+}
+html[data-theme="dark"] .command-trigger,
+html[data-theme="dark"] .cofounder-form input,
+html[data-theme="dark"] .memory-search-input,
+html[data-theme="dark"] .decision-form input,
+html[data-theme="dark"] .decision-form textarea {
+  background: #191933;
+  border-color: #2e2c52;
+}

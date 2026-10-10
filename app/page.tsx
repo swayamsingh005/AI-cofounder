@@ -2,15 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import AiOrb from "../components/ai-orb";
+import Link from 'next/link';
 
 const FEATURES = [
-  { icon: "💡", title: "Validate Ideas", body: "Get AI-powered market research, customer insights and feasibility reports in minutes." },
+  { icon: "💡", title: "Explore Ideas", body: "Review AI-assisted research, sources and assumptions, then validate demand with customers." },
   { icon: "🎯", title: "Plan & Strategize", body: "Create goals, missions and actionable roadmaps aligned with your company vision." },
   { icon: "🚀", title: "Build Faster", body: "Break down execution into tasks, track progress and get AI guidance at every step." },
-  { icon: "📈", title: "Grow Intelligently", body: "Connect your data, unlock insights and make better decisions that drive real growth." },
+  { icon: "📈", title: "Review Evidence", body: "Connect supported tools, review recorded signals and choose your next action." },
 ];
-
-const INTEGRATIONS = ["bubble", "Webflow", "Stripe", "Supabase", "Next.js", "Calendly", "Vercel"];
 
 export default function Home() {
   const router = useRouter();
@@ -18,13 +17,13 @@ export default function Home() {
   return (
     <main className="landing-v2">
       <nav className="landing-nav">
-        <a className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI co-founder <span className="beta-badge">Beta</span></a>
+        <Link className="brand" href="/"><img src="/logo-mark.png" alt="" className="brand-mark" /> AI co-founder <span className="beta-badge">Beta</span></Link>
         <div className="nav-links">
           <a href="#features">How it works</a>
           <a href="/pricing">Pricing</a>
           <a href="/reports">My reports</a>
           <a className="log-in" href="/auth">Log in</a>
-          <button className="cta-primary" onClick={() => router.push("/new")}>Start building for free <span>→</span></button>
+          <button className="cta-primary" onClick={() => router.push("/new")}>Explore your idea <span>→</span></button>
         </div>
       </nav>
 
@@ -32,13 +31,13 @@ export default function Home() {
         <div className="hero-copy-v2">
           <div className="hero-badge">🚀 Your AI Partner in Building Extraordinary Companies.</div>
           <h1><em>Think bigger.</em><br />Build smarter.</h1>
-          <p>AI Co-founder is your always-on partner from idea to scale. Validate, plan, build and grow your company with AI that truly understands your business.</p>
+          <p>Turn your idea into a structured plan with a CEO Agent. Review company evidence, coordinate focused agent work and approve proposed changes.</p>
           <div className="hero-cta-row">
-            <button className="cta-primary large" onClick={() => router.push("/new")}>Start building for free <span>→</span></button>
+            <button className="cta-primary large" onClick={() => router.push("/new")}>Explore your idea <span>→</span></button>
             <a href="#features" className="cta-ghost">▶ See how it works</a>
           </div>
           <div className="hero-trust">
-            <span>✓ No credit card</span><span>✓ Setup in 30 seconds</span><span>✓ Free forever plan</span>
+            <span>✓ Explore your idea</span><span>✓ Review the evidence</span><span>✓ Approve proposed actions</span>
           </div>
         </div>
 
@@ -46,7 +45,7 @@ export default function Home() {
           <div className="preview-glow" />
           <div className="preview-panel">
             <div className="preview-top">
-              <span className="preview-company">● LedgerAI <small>Active company</small></span>
+              <span className="preview-company">● LedgerAI <small>Sample company · Illustrative data</small></span>
             </div>
             <p className="preview-greeting">Good morning, Founder 👋</p>
             <small className="preview-sub">Here&rsquo;s what&rsquo;s happening today.</small>
@@ -68,11 +67,6 @@ export default function Home() {
             <div><b>AI Co-founder</b><small>I&rsquo;ve analyzed your data and found 3 things that need attention.</small></div>
           </div>
         </div>
-      </section>
-
-      <section className="trusted-by">
-        <span>Trusted by ambitious founders and teams</span>
-        <div className="logo-row">{INTEGRATIONS.map(name => <span key={name}>{name}</span>)}</div>
       </section>
 
       <section id="features" className="feature-grid-section">

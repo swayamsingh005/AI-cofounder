@@ -53,6 +53,12 @@ test('CEO selects specialists from the business need and never invents a softwar
   assert.deepEqual(planGoal('Build a landing page for the product').map(step=>step.agentId), ['coding']);
   const guarded = normalizeCeoPlan({ needsSoftware:false, selectedAgents:[{agentId:'coding',reason:'Build a website'}] }, 'Sell handmade candles');
   assert.equal(guarded.selectedAgents.some(item=>item.agentId === 'coding'), false);
+  for (const idea of ['Build a handmade candle business','Develop a mobile food stall','Implement a recruitment strategy','Launch a marketplace for weekend street vendors','Sell candles without a website']) {
+    assert.equal(fallbackCeoPlan(idea).needsSoftware,false,idea);
+  }
+  const modelNo = normalizeCeoPlan({needsSoftware:false,selectedAgents:[]},'Build a SaaS dashboard');
+  assert.equal(modelNo.needsSoftware,false);
+  assert.equal(modelNo.selectedAgents.some(item=>item.agentId==='coding'),false);
 });
 test('malformed outputs, impersonation, permission downgrades and invented evidence fail', () => {
   for (const change of [{agentId:'coding'},{riskLevel:'low'},{approvalRequirement:'AUTO'}]) assert.throws(()=>parseOutput({...output,...change},'research',new Set(['m1'])));

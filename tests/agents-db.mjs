@@ -22,6 +22,16 @@ async function main() {
   // Existing V3 approval, automation, event bridge and tenant tests remain intact.
   await db.exec(fs.readFileSync('tests/v3-security.sql','utf8'));
   console.log('PASS existing V3 SQL regression suite');
+  await db.exec(`set role authenticated; select set_config('request.jwt.claims','{"sub":"${owner}","role":"authenticated"}',false)`);
+  const userDecision = (await db.query("insert into decisions(company_id,user_id,title) values($1,$2,'Founder choice') returning id",[company,owner])).rows[0];
+  assert.equal((await db.query("select source from memories where company_id=$1 and kind='decision' and title='Founder choice'",[company])).rows[0].source,'user');
+  assert.equal((await db.query("select payload->>'author' author from company_events where payload->>'record_id'=$1",[userDecision.id])).rows[0].author,'user');
+  const aiDecisionAction = (await db.query("insert into ai_actions(company_id,user_id,idempotency_key,action_type,title) values($1,$2,'author-test','record_decision','AI choice') returning id",[company,owner])).rows[0];
+  const aiDecisionResult = (await db.query('select execute_internal_action($1,true) result',[aiDecisionAction.id])).rows[0].result;
+  assert.ok(aiDecisionResult.record_id);
+  assert.equal((await db.query('select source from decisions where id=$1',[aiDecisionResult.record_id])).rows[0].source,'ai');
+  assert.equal((await db.query("select source from memories where company_id=$1 and kind='decision' and title='AI choice'",[company])).rows[0].source,'ai');
+  console.log('PASS founder and approved AI decision authorship');
   const call=async(key,op,data={})=>(await db.query('select agent_workflow($1,$2,$3,$4,$5::jsonb) result',[company,owner,key,op,JSON.stringify(data)])).rows[0].result;
   const key='00000000-0000-4000-8000-000000000020';
   const plan={goal:'Research competitors and prepare a launch strategy',steps:[{agentId:'research',objective:'Research competitors',actionType:'analyze_context',dependsOn:[]},{agentId:'marketing',objective:'Prepare launch strategy',actionType:'analyze_context',dependsOn:[0]}]};
@@ -87,10 +97,22 @@ async function main() {
   await db.query("update agent_runs set created_at=now()-interval '5 minutes' where request_key=$1",[key4]);
   const recovered=await call(key4,'recover');
   assert.deepEqual(recovered.map(r=>r.status),['failed','cancelled']);
+  const recoveryEvents = (await db.query("select count(*)::int n from activity_events where agent_run_id=any($1::uuid[]) and kind='agent_failed'", [stale.map(r=>r.id)])).rows[0].n;
+  await call(key4,'recover');
+  assert.equal((await db.query("select count(*)::int n from activity_events where agent_run_id=any($1::uuid[]) and kind='agent_failed'", [stale.map(r=>r.id)])).rows[0].n, recoveryEvents);
+  const workflowDefinition = (await db.query("select pg_get_functiondef('public.agent_workflow(uuid,uuid,uuid,text,jsonb)'::regprocedure) definition")).rows[0].definition;
+  assert.match(workflowDefinition, /for update skip locked loop/i);
   const secondCompany='00000000-0000-4000-8000-000000000011';
   await db.query("insert into companies(id,user_id,name) values($1,$2,'Other workspace')",[secondCompany,owner]);
   await assert.rejects(db.query("insert into memories(company_id,user_id,kind,title,content,source_run_id) values($1,$2,'learning','Invalid','Invalid',$3)",[secondCompany,owner,runs[0].id]));
   console.log('PASS atomic rollback, rejected approvals, stale-run recovery and cross-company foreign keys');
+  await db.exec(`set role authenticated; select set_config('request.jwt.claims','{"sub":"${owner}","role":"authenticated"}',false)`);
+  await db.query('delete from companies where id=$1',[company]);
+  await db.exec('reset role');
+  for (const table of ['agent_runs','ai_actions','memories','activity_events']) {
+    assert.equal((await db.query('select count(*)::int n from '+table+' where company_id=$1',[company])).rows[0].n,0);
+  }
+  console.log('PASS company deletion cascades through agent records');
   await db.close();
 }
 main().catch(e=>{console.error(e.message);process.exitCode=1;});

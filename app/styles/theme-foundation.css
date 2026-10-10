@@ -1,0 +1,90 @@
+/* theme-foundation styles. Import order preserves the existing cascade. */
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] .brand {
+  font-family:
+    Manrope,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif !important;
+  letter-spacing: -0.01em;
+}
+html[data-theme="dark"] .agent-chip.tilt-3d:hover,
+html[data-theme="dark"] .block.tilt-3d:hover,
+html[data-theme="dark"] .verdict-row.tilt-3d,
+html[data-theme="dark"] .side-card,
+html[data-theme="dark"] .scorecard {
+  box-shadow:
+    0 1px 0 #ffffff08 inset,
+    0 8px 24px -12px #000000aa !important;
+}
+html[data-theme="dark"] .tilt-3d::after {
+  opacity: 0 !important;
+}
+html[data-theme="dark"] .block,
+html[data-theme="dark"] .agent-chip,
+html[data-theme="dark"] .side-card,
+html[data-theme="dark"] .source-card,
+html[data-theme="dark"] .scorecard,
+html[data-theme="dark"] .decision-frame,
+html[data-theme="dark"] .verdict-row,
+html[data-theme="dark"] .company-goal,
+html[data-theme="dark"] .company-mission,
+html[data-theme="dark"] .cofounder-panel,
+html[data-theme="dark"] .decisions-panel,
+html[data-theme="dark"] .activity-panel,
+html[data-theme="dark"] .task,
+html[data-theme="dark"] .company-empty,
+html[data-theme="dark"] .company-card,
+html[data-theme="dark"] .daily-brief,
+html[data-theme="dark"] .agent-card,
+html[data-theme="dark"] .proof-card,
+html[data-theme="dark"] .workspace-side,
+html[data-theme="dark"] .run-list,
+html[data-theme="dark"] .saved-report,
+html[data-theme="dark"] .empty-report,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .plan,
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .v2-card {
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] .block,
+html[data-theme="dark"] .agent-chip,
+html[data-theme="dark"] .side-card,
+html[data-theme="dark"] .source-card,
+html[data-theme="dark"] .scorecard,
+html[data-theme="dark"] .decision-frame,
+html[data-theme="dark"] .verdict-row,
+html[data-theme="dark"] .company-goal,
+html[data-theme="dark"] .company-mission,
+html[data-theme="dark"] .cofounder-panel,
+html[data-theme="dark"] .decisions-panel,
+html[data-theme="dark"] .activity-panel,
+html[data-theme="dark"] .task,
+html[data-theme="dark"] .company-empty,
+html[data-theme="dark"] .company-card,
+html[data-theme="dark"] .daily-brief,
+html[data-theme="dark"] .build-company-cta {
+  border-radius: 8px !important;
+}
+html[data-theme="dark"] .command-bar {
+  border-radius: 10px !important;
+}
+html[data-theme="dark"] .company-goal,
+html[data-theme="dark"] .company-mission,
+html[data-theme="dark"] .cofounder-panel,
+html[data-theme="dark"] .decisions-panel,
+html[data-theme="dark"] .activity-panel {
+  padding: 16px 18px !important;
+}
+html[data-theme="dark"] .company-workspace {
+  padding-top: 44px !important;
+}
+html[data-theme="dark"] .company-grid {
+  gap: 20px !important;
+}

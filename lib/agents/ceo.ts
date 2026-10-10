@@ -11,7 +11,10 @@ export type CeoPlan = {
 };
 
 const ALL_AGENTS: AgentId[] = ['research', 'coding', 'marketing'];
-const SOFTWARE = /\b(app|website|web ?app|landing page|webpage|frontend|backend|saas|software|platform|api|dashboard|portal|marketplace|mobile|automation|code|coding|github|database|auth|bug|feature|deploy|build|develop|implement)\b/i;
+// Business verbs and words such as "mobile", "platform" and "feature" do not
+// establish a software requirement on their own.
+const SOFTWARE = /\b(app|website|web ?app|landing page|webpage|frontend|backend|saas|software|api|dashboard|portal|coding|github|database)\b/i;
+const NO_SOFTWARE = /\b(?:no|without|does(?:n't| not) need|do(?:n't| not) need|not required to build)\s+(?:an?\s+|any\s+)?(?:software|website|app|coding)\b|\b(?:software|website|app|coding)\s+(?:is\s+)?not\s+(?:needed|required)\b/i;
 const RESEARCH = /\b(research|validate|market|customer|competitor|demand|evidence|industry|feasibility|unknown)\b/i;
 const MARKETING = /\b(marketing|campaign|content|social|reel|post|brand|audience|positioning|launch|promotion|sales|lead)\b/i;
 
@@ -23,7 +26,8 @@ const reason: Record<AgentId, string> = {
 
 export function fallbackCeoPlan(input: string, primaryObjective = 'Validate the idea and choose the next evidence-based action.'): CeoPlan {
   const text = input.trim();
-  const needsSoftware = SOFTWARE.test(text);
+  const softwareText = text.replace(NO_SOFTWARE, '');
+  const needsSoftware = SOFTWARE.test(softwareText);
   const chosen = new Set<AgentId>();
   if (RESEARCH.test(text) || /\blaunch\b/i.test(text) || (!needsSoftware && !MARKETING.test(text))) chosen.add('research');
   if (needsSoftware) chosen.add('coding');
@@ -55,7 +59,12 @@ export function normalizeCeoPlan(value: unknown, input: string): CeoPlan {
     if (agentId === 'coding' && !needsSoftware) continue;
     selected.push({ agentId: agentId as AgentId, reason: typeof row.reason === 'string' ? row.reason.slice(0, 240) : reason[agentId as AgentId], sequence: selected.length + 1 });
   }
-  if (!selected.length) return fallbackCeoPlan(input, typeof raw.primaryObjective === 'string' ? raw.primaryObjective.slice(0, 240) : base.primaryObjective);
+  if (!selected.length) {
+    // Preserve an explicit model boolean even when its assignment list is absent
+    // or invalid; do not reintroduce Coding through keyword fallback.
+    selected.push(...base.selectedAgents.filter(item => item.agentId !== 'coding' || needsSoftware));
+    if (!selected.length) selected.push({ agentId: 'research', reason: reason.research, sequence: 1 });
+  }
   const selectedIds = new Set(selected.map(item => item.agentId));
   return {
     businessType: typeof raw.businessType === 'string' ? raw.businessType.slice(0, 120) : base.businessType,

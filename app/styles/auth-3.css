@@ -1,0 +1,16 @@
+/* auth styles. Import order preserves the existing cascade. */
+
+html[data-theme="dark"] .auth-card h1 {
+  color: #f4f8fe;
+}
+html[data-theme="dark"] .auth-card > p,
+html[data-theme="dark"] .auth-card > small {
+  color: #9fbbe3;
+}
+html[data-theme="dark"] .auth-divider {
+  color: #95b4e0;
+}
+html[data-theme="dark"] .auth-divider:before,
+html[data-theme="dark"] .auth-divider:after {
+  background: #452275;
+}

@@ -6,6 +6,7 @@ import { createAdminClient } from '../../../../lib/supabase/admin';
 import { createGitHubFilePullRequest, draftGitHubIssueChange, draftGitHubObjectiveChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
 import { codingComplete } from '../../../../lib/ai';
 import { validateDraftInSandbox } from '../../../../lib/agents/sandbox-validation';
+import { generateDailyBrief } from '../../../../lib/daily-brief';
 
 export const maxDuration = 300;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -170,6 +171,7 @@ export async function POST(request: Request) {
     } else if(op!=='refresh') throw new Error('Unknown operation.');
     if(['refresh','sync','connect','select_github_repository','approve'].includes(String(op))) {
       await refreshIntelligence(db,companyId,userId);
+      if (op === 'refresh') await generateDailyBrief(db,companyId,userId);
       checked(await db.rpc('run_insight_automation',{p_company:companyId}));
     }
     console.info('[company/intelligence] operation completed', { companyId, op });
