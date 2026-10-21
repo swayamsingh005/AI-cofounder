@@ -31,11 +31,9 @@ export default async function CompanyLayout({ children, params }: { children: Re
   const { data: company } = await supabase.from("companies").select("id,name,stage").eq("id", id).eq("user_id", userId).maybeSingle();
   if (!company) notFound();
 
+  const { data: conversations } = await supabase.from("conversations").select("id,title,updated_at").eq("company_id", id).order("updated_at", { ascending: false }).limit(3);
   const tip = TIPS[new Date().getDate() % TIPS.length];
-  const [{ data: conversations }, intelligence] = await Promise.all([
-    supabase.from("conversations").select("id,title,updated_at").eq("company_id", id).order("updated_at", { ascending: false }).limit(3),
-    loadIntelligence(supabase, id),
-  ]);
+  const intelligence = await loadIntelligence(supabase, id);
 
   // Real account data only — a name if Google sign-in captured one, otherwise the email's first
   // letter. Never a fabricated placeholder.
@@ -55,20 +53,17 @@ export default async function CompanyLayout({ children, params }: { children: Re
             <div className="cofounder-panel-header">
               <span>✦ AI Co-Founder</span>
               <AiOrb size={64} />
-              <small className="cofounder-scope">Ask about {company.name}, your priorities, or the next decision.</small>
+              <small className="cofounder-scope">I&rsquo;m here to help you build, decide and grow {company.name}.</small>
             </div>
+            <V3Status companyId={id} data={intelligence} />
             <AskCofounder companyId={company.id} />
-            <details className="cofounder-more">
-              <summary>Agent status and shortcuts</summary>
-              <V3Status companyId={id} data={intelligence} />
-              {!!conversations?.length && (
-                <div className="recent-conversations">
-                  <span>RECENT CONVERSATIONS</span>
-                  <ul>{conversations.map(c => <li key={c.id}><b>{c.title || "Untitled conversation"}</b><small><LocalTime iso={c.updated_at} /></small></li>)}</ul>
-                </div>
-              )}
-            </details>
-            <div className="cofounder-tip"><span>ONE USEFUL REMINDER</span><p>&ldquo;{tip}&rdquo;</p></div>
+            {!!conversations?.length && (
+              <div className="recent-conversations">
+                <span>RECENT CONVERSATIONS</span>
+                <ul>{conversations.map(c => <li key={c.id}><b>{c.title || "Untitled conversation"}</b><small><LocalTime iso={c.updated_at} /></small></li>)}</ul>
+              </div>
+            )}
+            <div className="cofounder-tip"><span>CO-FOUNDER TIP OF THE DAY</span><p>&ldquo;{tip}&rdquo;</p></div>
           </div>
         </aside>
       </div>
