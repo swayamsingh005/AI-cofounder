@@ -1,7 +1,7 @@
-import { connectorStatus } from '../lib/connectors/registry';
 import Link from 'next/link';
 import type { IntelligenceData } from '../lib/intelligence/data';
 import { PROVIDERS } from '../lib/connectors/base';
+import { connectorStatus } from '../lib/connectors/registry';
 import { V3Button } from './v3-controls';
 import StartTaskButton from './start-task-button';
 import type { DailyBrief } from '../lib/daily-brief';
@@ -9,42 +9,72 @@ import { calculateCompanyPulse, type CompanyPulse } from '../lib/intelligence/pu
 
 export type DashboardProps={companyId:string;name:string;displayName:string;data:IntelligenceData;missions:{id:string;objective:string;progress:number}[];tasks:{id:string;title:string;status:string;priority:string}[];goal:{title:string;progress:number}|null;brief:DailyBrief|null;pulse?:CompanyPulse;demo?:boolean};
 function Bar({value,tone='purple'}:{value:number;tone?:string}) {return <div className={`v3-track ${tone}`}><i style={{width:`${Math.max(0,Math.min(100,value))}%`}}/></div>;}
+
 export default function V3Dashboard({companyId,name,displayName,data,missions,tasks,goal,brief,pulse,demo=false}:DashboardProps) {
-  const href=(s:string)=>demo?`/demo/v3?section=${s}`:`/company/${companyId}/${s}`;
-  const github=data.connections.find(c=>c.provider==='github'&&c.status==='connected');
-  const issues=typeof github?.metadata?.open_issues==='number'?github.metadata.open_issues:null;
-  const metrics=[{name:'Revenue',value:demo?'₹2.45L':'—',hint:demo?'Sample · ↑ 18%':'Connect billing data',icon:'◈',tone:'cyan'}, {name:'Website users',value:demo?'12,430':'—',hint:demo?'Sample · ↑ 32%':'Connect analytics',icon:'▣',tone:'blue'}, {name:'Signup conversion',value:demo?'18.6%':'—',hint:demo?'Sample · ↓ 12%':'Connect funnel data',icon:'◎',tone:'pink'}, {name:'Active customers',value:demo?'8':'—',hint:demo?'Sample · ↑ 2':'Connect billing data',icon:'♧',tone:'green'}, {name:'Open issues',value:demo?'3':issues??'—',hint:demo?'Sample · ↓ 5':github?'GitHub snapshot':'Connect GitHub',icon:'⑂',tone:'purple'}];
+  const href=(section:string)=>demo?`/demo/v3?section=${section}`:`/company/${companyId}/${section}`;
   const livePulse=pulse??calculateCompanyPulse({profile:null,tasks,memories:[]});
-  const scores=demo?[85,72,64,71,82]:livePulse.dimensions.map(dimension=>dimension.score);
-  const ringScore=demo?78:livePulse.score;
-  const pendingBuild=data.actions.find(action=>action.provider==='github'&&action.action_type==='github.create_pull_request'&&action.status==='awaiting_approval');
-  const insight=data.insights.find(i=>!['resolved','dismissed'].includes(i.status??'')&&i.severity!=='info');
+  const pendingActions=data.actions.filter(action=>action.status==='awaiting_approval');
+  const pendingBuild=pendingActions.find(action=>action.provider==='github'&&action.action_type==='github.create_pull_request');
+  const insight=data.insights.find(item=>!['resolved','dismissed'].includes(item.status??'')&&item.severity!=='info');
+  const connectedTools=data.connections.filter(connection=>connection.status==='connected');
   const ranks:Record<string,number>={critical:0,high:1,medium:2,low:3};
-  const priorities=tasks.filter(t=>t.status!=='completed').sort((a,b)=>(ranks[a.priority]??4)-(ranks[b.priority]??4)).slice(0,5);
-  return <section className="v3-dashboard">
-    <div className="v3-page-heading"><div><h1>Welcome back{displayName?`, ${displayName}`:''}! <span aria-hidden="true">☀️</span></h1><p>Your company, in focus. Here’s what’s happening with {name}.</p></div><span className="v3-badge">{demo?'SAMPLE DATA':'Latest available data'}</span></div>
-    {demo&&<div className="v3-demo-banner">Presentation demo · All metrics and activity below are simulated. No external accounts are connected.</div>}
-    {data.unavailable&&<p className="v3-error" role="alert">Some V3 data could not be loaded. Existing workspace tools remain available.</p>}
-    <div className="v3-metrics">{metrics.map((m,i)=><article className={`v3-card v3-metric ${m.tone}`} key={m.name}><div><span className="v3-metric-icon">{m.icon}</span><small>{m.name}</small></div><strong>{m.value}</strong><small>{m.hint}</small>{demo?<svg viewBox="0 0 160 24" aria-hidden="true"><path d={['M0 20L15 21L25 18L38 20L50 20L62 21L75 17L86 20L99 19L115 14L126 17L141 12L160 10','M0 22L15 19L30 11L45 6L60 13L75 17L90 9L105 13L120 6L135 12L160 9','M0 13L15 16L30 8L45 7L60 15L75 18L90 14L105 21L120 19L135 23L160 22'][i%3]} fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>:<div className="v3-metric-rule"/>}</article>)}</div>
-    <div className="v3-dashboard-grid">
-      <article className="v3-card v3-pulse">
-        <div className="v3-card-heading"><h2><span className="v3-accent">◧</span> Company Pulse</h2><span className="v3-badge">{demo?'Sample':'Evidence based'}</span></div>
-        <p>{demo?'Simulated presentation score.':`${livePulse.label} · ${livePulse.coverage}% evidence coverage`}</p>
-        <div className="v3-pulse-body">
-          <div className={`v3-ring ${demo?'is-demo':''}`} style={ringScore==null?undefined:{background:`conic-gradient(#22e8a2 0deg,#11e3df ${ringScore*3.6}deg,#173e53 ${ringScore*3.6}deg)`}} aria-label={demo?'Demo pulse 78 out of 100':ringScore==null?'No Pulse evidence':`Evidence Pulse ${ringScore} out of 100, based on ${livePulse.availableDimensions} of ${livePulse.totalDimensions} signals`}><div><strong>{demo?'78':livePulse.score??'—'}</strong><small>{demo?'/ 100':livePulse.score==null?'No evidence':`${livePulse.availableDimensions}/${livePulse.totalDimensions} signals`}</small></div></div>
-          <div className="v3-scores">{(demo?['Product','Market validation','Growth','Revenue','Execution']:livePulse.dimensions.map(dimension=>dimension.label)).map((label,index)=><div className="v3-score" key={label} title={demo?undefined:livePulse.dimensions[index].evidence}><span>{label}</span><Bar value={scores[index]??0} tone={index===4?'green':index===2?'yellow':'cyan'}/><b>{scores[index]??'—'}</b></div>)}</div>
-        </div>
-        {!demo&&<details><summary>How this score is calculated</summary>{livePulse.dimensions.map(dimension=><p key={dimension.key}><b>{dimension.label}: {dimension.score??'Unavailable'}</b><br/>{dimension.evidence}{dimension.nextStep&&<><br/>Next: {dimension.nextStep}</>}</p>)}</details>}
-        <small>{demo?'Simulated score for presentation.':livePulse.note}</small>
-      </article>
-      <article className="v3-card v3-insight"><div className="v3-card-heading"><h2><span className="v3-ai-icon">AI</span> Next item to review</h2><Link href={pendingBuild?href('approvals'):href('insights')}>View all →</Link></div><h3>{pendingBuild?`Coding build ready for approval: ${pendingBuild.title}`:insight?.title??'No urgent evidence warning'}</h3><p>{pendingBuild?'The Coding Agent prepared a repository change from your objective. Review the exact files before GitHub is changed.':insight?.description??'No high-priority warning is supported by the current evidence. Informational connector items remain available on the Insights page.'}</p><div className="v3-button-row">{pendingBuild?<><Link className="v3-button v3-primary" href={href('approvals')}>Review coding build</Link><Link className="v3-button" href={href('agents')}>See agent run</Link></>:insight?<><Link className="v3-button v3-primary" href={href('insights')}>Review insight</Link><Link className="v3-button" href={href('investigations')}>See investigations</Link></>:<><V3Button companyId={companyId} op="refresh" demo={demo}>Refresh intelligence</V3Button><Link className="v3-button" href={href('insights')}>View informational items</Link></>}</div></article>
-      <article className="v3-card"><div className="v3-card-heading"><h2>Active Missions</h2><Link href={demo?'/demo/v3?section=insights':href('mission')}>View all →</Link></div>{missions.length?missions.slice(0,3).map((m,i)=><div className="v3-mission" key={m.id}><span className={`v3-number tone-${i}`}>{i+1}</span><div><b>{m.objective}</b><Bar value={m.progress} tone={i===0?'green':i===2?'blue':'purple'}/><small>Linked task completion</small></div><strong>{m.progress}%</strong></div>):<p>No active missions yet. Your existing mission planner is ready when you are.</p>}</article>
-      <article className="v3-card"><div className="v3-card-heading"><h2>Today’s Priorities</h2><Link href={demo?'/demo/v3?section=approvals':href('tasks')}>See all tasks →</Link></div>{priorities.length?priorities.map(t=><div className="v3-task-row" key={t.id}><span className={`v3-priority ${t.priority}`} aria-label={t.priority}>●</span><span>{t.title}</span>{demo?<Link className="v3-button" href={href('approvals')}>Review demo action</Link>:<StartTaskButton taskId={t.id}/>}</div>):<p>No open tasks. Set your next objective from Quick Actions.</p>}<small>Starting a task changes its status; it does not execute development work.</small></article>
-      <article className="v3-card"><div className="v3-card-heading"><h2>Connected Tools</h2><Link href={href('connections')}>Manage →</Link></div><div className="v3-tools">{PROVIDERS.map(p=>{const c=data.connections.find(c=>c.provider===p.id);return <Link href={href('connections')} className="v3-tool" key={p.id}><span className={`v3-tool-icon ${p.id}`}>{p.icon}</span><b>{p.name}</b><small className={c?.status==='connected'?'v3-green':''}>{demo?'Demo data':connectorStatus(p.id,c)}</small></Link>})}</div></article>
-      <article className="v3-card" id="activity"><div className="v3-card-heading"><h2>Recent Activity</h2><Link href={href('events')}>View all →</Link></div>{data.events.length?data.events.slice(0,4).map(e=><div className="v3-event" key={e.id}><span className="v3-event-dot">✓</span><div><b>{e.title}</b><small>{demo?'Demo event':e.source} · {(e.occurred_at??e.created_at).slice(0,10)}</small></div></div>):<p>No connected events yet. Your V2 activity remains in the <Link href={href('overview')+'#activity'}>workspace overview</Link>.</p>}</article>
-      <article className="v3-card" id="daily-brief"><div className="v3-card-heading"><h2>Daily Brief & Next Best Action</h2><V3Button companyId={companyId} op="refresh" demo={demo}>Refresh</V3Button></div><div id="next-action"><h3>{brief?.nextBestAction.title??'Generate today’s brief'}</h3><p>{brief?.nextBestAction.reason??'Choose Refresh to save today’s snapshot from your company records.'}</p>{brief?.nextBestAction.taskId&&!demo&&<StartTaskButton taskId={brief.nextBestAction.taskId}/>}</div><Link href={href('approvals')}>Prepare an internal action →</Link></article>
-      <article className="v3-card" id="primary-goal"><div className="v3-card-heading"><h2>Moving towards your vision</h2><Link href={demo?'/demo/v3?section=approvals':href('overview')}>Workspace overview →</Link></div><h3>{goal?.title??'No primary goal yet'}</h3><Bar value={goal?.progress??0}/><p>{goal?`${demo?'Sample · ':''}${goal.progress}% of linked tasks complete · Validate business outcomes separately.`:'Set a primary goal to see linked task progress.'}</p></article>
+  const priorities=tasks.filter(task=>task.status!=='completed').toSorted((a,b)=>(ranks[a.priority]??4)-(ranks[b.priority]??4)).slice(0,4);
+  const nextTitle=pendingBuild?`Review coding build: ${pendingBuild.title}`:insight?.title??brief?.nextBestAction.title??priorities[0]?.title??'Choose your next company objective';
+  const nextDetail=pendingBuild?'The code and isolated checks are ready. Nothing will deploy until you approve it.':insight?.description??brief?.nextBestAction.reason??'Your workspace is clear. Set one concrete outcome for the team to work towards.';
+  const nextHref=pendingBuild?href('approvals'):insight?href('insights'):priorities[0]?href('tasks'):href('agents');
+  const scores=demo?[85,72,64,71,82]:livePulse.dimensions.map(dimension=>dimension.score);
+
+  return <section className="v3-dashboard v3-dashboard-simple">
+    <div className="v3-page-heading v3-simple-heading">
+      <div><span className="v3-eyebrow">TODAY</span><h1>{displayName?`Good to see you, ${displayName}`:'Your company workspace'}</h1><p>One clear view of what needs attention at {name}.</p></div>
+      <Link className="v3-button" href={href('agents')}>Open AI team</Link>
     </div>
-    <footer className="v3-footer">AI Co-Founder <span>From idea to impact. Together.</span></footer>
+    {demo&&<div className="v3-demo-banner">Presentation demo · All information below is simulated.</div>}
+    {data.unavailable&&<p className="v3-error" role="alert">Some workspace data could not be loaded. Try refreshing before taking action.</p>}
+
+    <article className="v3-card v3-focus-card">
+      <div className="v3-focus-copy"><span>YOUR NEXT MOVE</span><h2>{nextTitle}</h2><p>{nextDetail}</p></div>
+      <Link className="v3-button v3-primary" href={nextHref}>{pendingBuild?'Review and approve':'Open next step'} →</Link>
+    </article>
+
+    <div className="v3-summary-row" aria-label="Workspace summary">
+      <Link href={href('tasks')} className="v3-summary-item"><small>Open tasks</small><strong>{tasks.filter(task=>task.status!=='completed').length}</strong><span>{priorities.filter(task=>['high','critical'].includes(task.priority)).length} high priority</span></Link>
+      <Link href={href('mission')} className="v3-summary-item"><small>Active missions</small><strong>{missions.length}</strong><span>{missions.filter(mission=>mission.progress>0).length} in progress</span></Link>
+      <Link href={href('approvals')} className="v3-summary-item"><small>Waiting for you</small><strong>{pendingActions.length}</strong><span>approval{pendingActions.length===1?'':'s'}</span></Link>
+      <Link href={href('connections')} className="v3-summary-item"><small>Connected tools</small><strong>{connectedTools.length}</strong><span>of {PROVIDERS.length} available</span></Link>
+    </div>
+
+    <div className="v3-simple-grid">
+      <article className="v3-card">
+        <div className="v3-card-heading"><h2>Today’s work</h2><Link href={href('tasks')}>View all →</Link></div>
+        {priorities.length?priorities.map(task=><div className="v3-task-row" key={task.id}><span className={`v3-priority ${task.priority}`} aria-label={task.priority}>●</span><span>{task.title}</span>{demo?<Link className="v3-button" href={href('approvals')}>Review</Link>:<StartTaskButton taskId={task.id}/>}</div>):<div className="v3-calm-empty"><b>No urgent tasks</b><p>Your list is clear. Create work only when it supports the current goal.</p></div>}
+      </article>
+
+      <article className="v3-card">
+        <div className="v3-card-heading"><h2>Active missions</h2><Link href={href('mission')}>View all →</Link></div>
+        {missions.length?missions.slice(0,3).map((mission,index)=><div className="v3-mission" key={mission.id}><span className={`v3-number tone-${index}`}>{index+1}</span><div><b>{mission.objective}</b><Bar value={mission.progress} tone={index===0?'green':index===2?'blue':'purple'}/></div><strong>{mission.progress}%</strong></div>):<div className="v3-calm-empty"><b>No active mission</b><p>Start with one measurable outcome rather than several parallel projects.</p></div>}
+      </article>
+    </div>
+
+    <details className="v3-secondary-section">
+      <summary><span><b>Company health and history</b><small>Pulse, goal, connected tools and recent activity</small></span><em>Show details</em></summary>
+      <div className="v3-dashboard-grid v3-secondary-grid">
+        <article className="v3-card v3-pulse">
+          <div className="v3-card-heading"><h2>Company Pulse</h2><span className="v3-badge">Evidence based</span></div>
+          <p>{demo?'Simulated presentation score.':`${livePulse.label} · ${livePulse.coverage}% evidence coverage`}</p>
+          <div className="v3-pulse-body">
+            <div className={`v3-ring ${demo?'is-demo':''}`} style={livePulse.score==null?undefined:{background:`conic-gradient(#22e8a2 0deg,#11e3df ${livePulse.score*3.6}deg,#173e53 ${livePulse.score*3.6}deg)`}}><div><strong>{demo?'78':livePulse.score??'—'}</strong><small>{livePulse.score==null?'Not enough data':'out of 100'}</small></div></div>
+            <div className="v3-scores">{(demo?['Product','Market validation','Growth','Revenue','Execution']:livePulse.dimensions.map(dimension=>dimension.label)).map((label,index)=><div className="v3-score" key={label}><span>{label}</span><Bar value={scores[index]??0}/><b>{scores[index]??'—'}</b></div>)}</div>
+          </div>
+          <small>{demo?'Simulated score for presentation.':livePulse.note}</small>
+        </article>
+
+        <article className="v3-card" id="primary-goal"><div className="v3-card-heading"><h2>Primary goal</h2><Link href={href('overview')}>Open goal →</Link></div><h3>{goal?.title??'No primary goal yet'}</h3><Bar value={goal?.progress??0}/><p>{goal?`${goal.progress}% of linked tasks complete. Business outcomes should be validated separately.`:'Set one primary goal to align the team.'}</p><div id="daily-brief"><h3>{brief?.nextBestAction.title??'Daily brief is ready when you need it'}</h3><p>{brief?.nextBestAction.reason??'Refresh intelligence to create a brief from recorded company evidence.'}</p><V3Button companyId={companyId} op="refresh" demo={demo}>Refresh brief</V3Button></div></article>
+
+        <article className="v3-card"><div className="v3-card-heading"><h2>Connected tools</h2><Link href={href('connections')}>Manage →</Link></div><div className="v3-tools">{PROVIDERS.map(provider=>{const connection=data.connections.find(item=>item.provider===provider.id);return <Link href={href('connections')} className="v3-tool" key={provider.id}><span className={`v3-tool-icon ${provider.id}`}>{provider.icon}</span><b>{provider.name}</b><small className={connection?.status==='connected'?'v3-green':''}>{demo?'Demo':connectorStatus(provider.id,connection)}</small></Link>})}</div></article>
+
+        <article className="v3-card" id="activity"><div className="v3-card-heading"><h2>Recent activity</h2><Link href={href('events')}>View all →</Link></div>{data.events.length?data.events.slice(0,4).map(event=><div className="v3-event" key={event.id}><span className="v3-event-dot">✓</span><div><b>{event.title}</b><small>{demo?'Demo event':event.source} · {(event.occurred_at??event.created_at).slice(0,10)}</small></div></div>):<p>No connected activity yet.</p>}</article>
+      </div>
+    </details>
   </section>;
 }
