@@ -3,9 +3,10 @@ import { checked, investigate, refreshIntelligence, syncGitHub } from '../../../
 import { repositoryName } from '../../../../lib/connectors/base';
 import { deleteConnectorCredential, deleteGitHubToken, readGitHubToken } from '../../../../lib/connectors/credentials';
 import { createAdminClient } from '../../../../lib/supabase/admin';
-import { createGitHubFilePullRequest, draftGitHubIssueChange, draftGitHubObjectiveChange, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange, validateGitHubWorkspaceChange } from '../../../../lib/connectors/github-write';
-import { codingComplete } from '../../../../lib/ai';
-import { validateDraftInSandbox } from '../../../../lib/agents/sandbox-validation';
+import { createGitHubBranchDeployment, findGitHubPreviewDeployment, findGitHubValidationChecks, validateGitHubFileChange } from '../../../../lib/connectors/github-write';
+import { stopSandboxPreview } from '../../../../lib/agents/sandbox-validation';
+import { codingAgentWorkflow } from '../../../../lib/agents/coding-workflow';
+import { resumeHook, start } from 'workflow/api';
 import { generateDailyBrief } from '../../../../lib/daily-brief';
 
 export const maxDuration = 300;
@@ -31,6 +32,13 @@ export async function POST(request: Request) {
     const recordId = typeof body.id==='string' && UUID.test(body.id) ? body.id : '';
     if (op === 'agent_status') {
       checked(await createAdminClient().rpc('agent_workflow', { p_company: companyId, p_user: userId, p_key: crypto.randomUUID(), p_op: 'recover', p_data: {} }));
+    } else if(op==='answer_coding_clarification' && recordId) {
+      const answer=typeof body.answer==='string'?body.answer.trim():'';
+      if(!answer||answer.length>2000) throw new Error('Provide a clarification of up to 2,000 characters.');
+      const action=checked(await db.from('ai_actions').select('id,status,input_payload').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','draft').single());
+      if(!action||action.input_payload?.workflow_progress?.phase!=='awaiting_clarification') throw new Error('This Coding Agent run is not waiting for clarification.');
+      await resumeHook(`coding-clarification-${recordId}`,{answer});
+      return Response.json({ok:true,result:{actionId:recordId,status:'resumed'}},{status:202});
     } else if(op==='connect') {
       if(typeof body.repository!=='string') throw new Error('Enter owner/repository.');
       const repository=repositoryName(body.repository);
@@ -71,15 +79,18 @@ export async function POST(request: Request) {
     }
     else if(op==='draft_github_change') {
       const issueNumber=Number(body.issueNumber), key=typeof body.key==='string'&&UUID.test(body.key)?body.key:crypto.randomUUID();
+      if(!Number.isInteger(issueNumber)||issueNumber<1||issueNumber>100000000) throw new Error('Enter a valid GitHub issue number.');
       const connection=checked(await db.from('connections').select('id,connection_type,metadata').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
-      const draft=await draftGitHubIssueChange(token,repository,issueNumber,(system,user)=>codingComplete(system,user,{maxTokens:8000,timeoutMs:90000}));
-      const validation=await validateDraftInSandbox(token,repository,draft);
-      const branch=`ai-cofounder/issue-${issueNumber}-${key.slice(0,8)}`;
-      const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
-      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,validation}}));
+      const action=checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-draft:${key}`,provider:'github',action_type:'github.create_pull_request',title:`Building GitHub issue #${issueNumber}`,description:'The Coding Agent is working in a durable background run.',risk_level:'medium',status:'draft',requires_approval:true,input_payload:{repository,issue_number:issueNumber,workflow_progress:{phase:'queued',percent:0,detail:'Build queued.',updated_at:new Date().toISOString()}}}).select('id,input_payload').single());
+      if(!action) throw new Error('The durable coding run could not be created.');
+      const workflow=await start(codingAgentWorkflow,[{actionId:action.id,companyId,userId,mode:'issue',issueNumber}]);
+      const latest=checked(await db.from('ai_actions').select('input_payload').eq('id',action.id).single());
+      if(!latest) throw new Error('The durable coding run could not be updated.');
+      checked(await db.from('ai_actions').update({input_payload:{...latest.input_payload,workflow_run_id:workflow.runId}}).eq('id',action.id).select('id').single());
+      return Response.json({ok:true,result:{actionId:action.id,runId:workflow.runId,status:'queued'}} ,{status:202});
     }
     else if(op==='draft_github_objective') {
       const objective=typeof body.objective==='string'?body.objective.trim():'', key=typeof body.key==='string'&&UUID.test(body.key)?body.key:crypto.randomUUID();
@@ -87,11 +98,27 @@ export async function POST(request: Request) {
       if(!connection||connection.connection_type!=='oauth') throw new Error('Reconnect GitHub with repository access first.');
       const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before preparing a workspace change.');
       const repository=repositoryName(String(connection.metadata?.repository??''));
-      const draft=await draftGitHubObjectiveChange(token,repository,objective,(system,user)=>codingComplete(system,user,{maxTokens:12000,timeoutMs:90000}));
-      const validation=await validateDraftInSandbox(token,repository,draft);
-      const branch=`ai-cofounder/build-${key.slice(0,8)}`;
-      const input=validateGitHubWorkspaceChange({repository,branch,files:draft.files,title:draft.title,body:draft.body});
-      checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:draft.title,description:draft.body,risk_level:'medium',status:'awaiting_approval',requires_approval:true,input_payload:{...input,objective,validation,empty_repository:Boolean(draft.emptyRepository)}}));
+      if(!objective||objective.length>1000) throw new Error('Describe a software objective of up to 1,000 characters.');
+      const action=checked(await db.from('ai_actions').insert({company_id:companyId,user_id:userId,idempotency_key:`github-objective:${key}`,provider:'github',action_type:'github.create_pull_request',title:'Coding Agent build in progress',description:objective,risk_level:'medium',status:'draft',requires_approval:true,input_payload:{repository,objective,workflow_progress:{phase:'queued',percent:0,detail:'Build queued.',updated_at:new Date().toISOString()}}}).select('id,input_payload').single());
+      if(!action) throw new Error('The durable coding run could not be created.');
+      const workflow=await start(codingAgentWorkflow,[{actionId:action.id,companyId,userId,mode:'create',objective}]);
+      const latest=checked(await db.from('ai_actions').select('input_payload').eq('id',action.id).single());
+      if(!latest) throw new Error('The durable coding run could not be updated.');
+      checked(await db.from('ai_actions').update({input_payload:{...latest.input_payload,workflow_run_id:workflow.runId}}).eq('id',action.id).select('id').single());
+      return Response.json({ok:true,result:{actionId:action.id,runId:workflow.runId,status:'queued'}},{status:202});
+    }
+    else if(op==='revise_github_action' && recordId) {
+      const instruction=typeof body.instruction==='string'?body.instruction.trim():'';
+      if(!instruction||instruction.length>2000) throw new Error('Describe one revision of up to 2,000 characters.');
+      const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','awaiting_approval').single());
+      if(!action) throw new Error('Pending Coding Agent workspace not found.');
+      const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+      if(!connection||connection.connection_type!=='oauth'||!await readGitHubToken(connection.id,userId)) throw new Error('Reconnect GitHub before revising this workspace.');
+      const payload=action.input_payload as Record<string,unknown>;
+      checked(await db.from('ai_actions').update({status:'draft',error_message:null,input_payload:{...payload,workflow_progress:{phase:'queued',percent:0,detail:'Revision queued.',updated_at:new Date().toISOString()}}}).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
+      const workflow=await start(codingAgentWorkflow,[{actionId:recordId,companyId,userId,mode:'revise',instruction}]);
+      checked(await db.from('ai_actions').update({input_payload:{...payload,workflow_run_id:workflow.runId,workflow_progress:{phase:'queued',percent:0,detail:'Revision queued.',updated_at:new Date().toISOString()}}}).eq('id',recordId).select('id').single());
+      return Response.json({ok:true,result:{actionId:recordId,runId:workflow.runId,status:'queued'}},{status:202});
     }
     else if(op==='refresh_preview' && recordId) {
       const action=checked(await db.from('ai_actions').select('*').eq('company_id',companyId).eq('id',recordId).eq('provider','github').eq('action_type','github.create_pull_request').eq('status','completed').single());
@@ -141,15 +168,22 @@ export async function POST(request: Request) {
       if(action.provider==='github' && action.action_type==='github.create_pull_request') {
         if(action.status==='completed') return Response.json({ok:true,result:action.output_payload});
         if(action.status!=='awaiting_approval') throw new Error('Action is not awaiting approval.');
-        if(action.input_payload?.validation?.status==='failed') throw new Error('This build failed isolated validation. Ask the Coding Agent to revise it before creating a pull request.');
-        const connection=checked(await db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single());
+        if(action.input_payload?.validation?.status==='failed') throw new Error('This build failed isolated validation. Ask the Coding Agent to revise it before deployment.');
+        const [connection,vercel]=await Promise.all([
+          db.from('connections').select('id,connection_type').eq('company_id',companyId).eq('provider','github').eq('status','connected').single(),
+          db.from('connections').select('id,metadata').eq('company_id',companyId).eq('provider','vercel').eq('status','connected').maybeSingle(),
+        ]).then(([githubResult,vercelResult])=>[checked(githubResult),checked(vercelResult)] as const);
         if(!connection) throw new Error('Connect GitHub first.');
         if(connection.connection_type!=='oauth') throw new Error('Reconnect GitHub before approving this action.');
+        if(!vercel||typeof vercel.metadata?.project_id!=='string'||!vercel.metadata.project_id) throw new Error('Connect Vercel and choose the deployment project before approving this build.');
         const token=await readGitHubToken(connection.id,userId); if(!token) throw new Error('Reconnect GitHub before approving this action.');
+        await stopSandboxPreview(action.input_payload?.validation);
         checked(await db.from('ai_actions').update({status:'executing',approved_by:userId,approved_at:new Date().toISOString()}).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
         try {
-          const result=await createGitHubFilePullRequest(token,action.input_payload as Parameters<typeof createGitHubFilePullRequest>[1]);
-          checked(await db.from('ai_actions').update({status:'completed',executed_at:new Date().toISOString(),output_payload:result,error_message:null}).eq('id',recordId).select('id').single());
+          const result=await createGitHubBranchDeployment(token,action.input_payload as Parameters<typeof createGitHubBranchDeployment>[1]);
+          let preview=await findGitHubPreviewDeployment(token,result.repository,result.branch);
+          for(let attempt=0;attempt<3&&!preview.url;attempt+=1){await new Promise(resolve=>setTimeout(resolve,2500));preview=await findGitHubPreviewDeployment(token,result.repository,result.branch);}
+          checked(await db.from('ai_actions').update({status:'completed',executed_at:new Date().toISOString(),output_payload:{...result,preview,vercel_project_id:vercel.metadata.project_id},error_message:null}).eq('id',recordId).select('id').single());
         } catch(error) {
           checked(await db.from('ai_actions').update({status:'failed',executed_at:new Date().toISOString(),error_message:error instanceof Error?error.message:'GitHub action failed.'}).eq('id',recordId).select('id').single());
           throw error;
@@ -158,7 +192,11 @@ export async function POST(request: Request) {
         const result=checked(await db.rpc('execute_internal_action',{p_action:recordId,p_approve:true}));
         if(result?.error) throw new Error(result.error);
       }
-    } else if(op==='reject' && recordId) checked(await db.from('ai_actions').update({status:'cancelled'}).eq('company_id',companyId).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
+    } else if(op==='reject' && recordId) {
+      const action=checked(await db.from('ai_actions').select('input_payload').eq('company_id',companyId).eq('id',recordId).eq('status','awaiting_approval').single());
+      await stopSandboxPreview(action?.input_payload?.validation);
+      checked(await db.from('ai_actions').update({status:'cancelled'}).eq('company_id',companyId).eq('id',recordId).eq('status','awaiting_approval').select('id').single());
+    }
     else if(op==='modify' && recordId) {
       if(typeof body.title!=='string' || !body.title.trim()) throw new Error('A title is required.');
       checked(await db.from('ai_actions').update({title:body.title.trim().slice(0,200),description:String(body.description??'').slice(0,3000)}).eq('company_id',companyId).eq('id',recordId).eq('status','awaiting_approval').select('id').single());

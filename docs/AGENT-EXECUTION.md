@@ -14,7 +14,7 @@ terms and does not infer software from general business verbs.
 | Agent | Implemented | Boundary |
 |---|---|---|
 | Research | Tavily search, source-linked findings, internal evidence synthesis and saved Company Memory | Source citations do not independently verify an AI interpretation; unavailable search fails honestly |
-| Coding | Bounded repository snapshots, up to five replacement/new files, empty-repository starters, isolated validation, approved GitHub branches and pull requests | No automatic merge or production deployment; requires provider access and available model credits |
+| Coding | Bounded repository snapshots, up to twelve replacement/new files per revision, conversational revisions, empty-repository starters, isolated validation and approved Vercel preview deployments | No automatic merge or production deployment; requires provider access and available model credits |
 | Marketing | Campaign plans, post drafts, reel scripts, shot guidance and creative briefs | No publishing, autonomous outreach or finished-media generation |
 
 GitHub OAuth supports repository selection and authenticated reads/writes within
@@ -35,12 +35,19 @@ updates linked tasks and stores provenance in existing actions, memory and activ
 Request keys deduplicate workflows. Structured dependency results are passed between
 selected agents. Analysis and drafting do not mean that external work has completed.
 
+Coding requests, GitHub-issue builds and conversational revisions start a Vercel
+Workflow run and return immediately. The run checkpoints planning, generation,
+isolated validation and review-workspace persistence. Progress is saved in the
+action record and the Coding Workspace refreshes it automatically, so closing or
+refreshing the browser does not cancel the work. Failed revisions preserve the
+previous reviewable workspace.
+
 Coding drafts are validated in `@vercel/sandbox`, then saved for founder review.
-The sandbox is nonpersistent, has two virtual CPUs and a 150-second timeout. It
+The sandbox is nonpersistent, has two virtual CPUs and a 12-minute validation cap. It
 installs dependencies using the repository lockfile where available, then runs
 available typecheck, test and build scripts. Failure/unavailability is recorded;
 there is no claim of successful validation without passed checks. The exact files
-and validation results are reviewable before approved branch/PR creation. GitHub
+and validation results are reviewable before an approved branch commit triggers its Vercel preview. GitHub
 checks and preview deployment status can be refreshed afterward.
 
 ## Limits and failure handling
@@ -52,12 +59,10 @@ agent workflows allows 12,000 output tokens and a 90-second model timeout. These
 are configured bounds, not measured billing. Tavily search aborts after 10 seconds
 and returns empty results on HTTP, transport or timeout failure.
 
-One active workflow per company and hourly workflow limits are enforced in SQL.
-There is no durable background worker or scheduled recovery. Queued/running work
-older than the SQL recovery cutoff (two minutes from creation) is recovered on a
-status refresh/new workflow. Recovery uses advisory locking plus row locking with
-`FOR UPDATE SKIP LOCKED`. This cutoff is an operational limit for long workflows;
-local locking tests do not prove distributed-worker behavior.
+One active multi-agent analysis workflow per company and hourly workflow limits are
+enforced in SQL. Coding work uses Vercel Workflow's durable event log and retryable
+steps instead of the older request-bound runtime. The existing two-minute SQL
+recovery cutoff still applies only to the separate multi-agent analysis RPC.
 
 ## Schema and provenance
 
@@ -98,5 +103,5 @@ sample data never populates a real company.
 
 Production acceptance still requires applying the new migrations and an owner
 session: connect/select a repository, prepare a focused change, inspect validation,
-approve its PR and inspect repository checks/preview. Paid provider execution is
+approve its preview deployment and inspect repository checks. Paid provider execution is
 not established by local stubs or by successful OAuth connection.

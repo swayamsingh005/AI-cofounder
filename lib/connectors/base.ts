@@ -1,6 +1,6 @@
 import { CONNECTORS } from './registry';
 export const PROVIDERS = [
-  ...CONNECTORS.filter(c => ['github','vercel','supabase','notion'].includes(c.id)).map(c => ({ id: c.id, name: c.name, icon: c.id==='supabase'?'S':c.id==='vercel'?'▲':'⌘', available: c.available, description: c.id==='github'?'Repository code, issues and pull requests':c.id==='vercel'?'Projects, deployments and previews':c.id==='supabase'?'Auth, database and storage project context':'Planned integration · not executable' })),
+  ...CONNECTORS.filter(c => ['github','vercel','supabase','notion'].includes(c.id)).map(c => ({ id: c.id, name: c.name, icon: c.id==='supabase'?'S':c.id==='vercel'?'▲':'⌘', available: c.available, description: c.id==='github'?'Repository code, issues and deployment branches':c.id==='vercel'?'Projects, deployments and previews':c.id==='supabase'?'Auth, database and storage project context':'Planned integration · not executable' })),
   { id: 'posthog', name: 'PostHog', icon: '◩', available: false, description: 'Analytics integration needs setup' },
   { id: 'stripe', name: 'Stripe', icon: 'S', available: false, description: 'Billing integration needs setup' },
 ] as const;

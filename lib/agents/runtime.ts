@@ -127,5 +127,5 @@ export function workflowAnswer(runs: AgentRun[]) {
     return `${r.agent_id.toUpperCase()} AGENT — ${r.status.replaceAll('_', ' ')}
 ${output ? [output.summary, ...output.findings.map(f => f.kind + ': ' + f.content), ...output.drafts, ...output.unknowns.map(u => 'Unknown: ' + u)].join('\n') : r.error_message ?? r.objective}
 ${r.status === 'waiting_approval' ? 'Review proposed tasks in the existing Approvals page.' : ''}`;
-  }).join('\n\n') + `\n\n${codingPrepared?'The Coding Agent prepared a repository build in Approvals. Review its exact files before creating the GitHub branch and pull request. ':grounded?'Research findings include the recorded web sources shown in the run. ':'Internal analysis and drafts only. '}No publishing, merge or production deployment occurred.`;
+  }).join('\n\n') + `\n\n${codingPrepared?'The Coding Agent prepared a repository build in the Coding Workspace. Review its exact files and live preview before approving the branch deployment. ':grounded?'Research findings include the recorded web sources shown in the run. ':'Internal analysis and drafts only. '}No merge or production deployment occurred.`;
 }

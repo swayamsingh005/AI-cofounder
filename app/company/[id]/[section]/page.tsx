@@ -6,7 +6,7 @@ import AgentsPanel from '../../../../components/agents-panel';
 import type { AgentRun } from '../../../../lib/agents/runtime';
 export default async function IntelligencePage({params}:{params:Promise<{id:string;section:string}>}) {
   const {id,section}=await params;
-  if(!['agents','connections','insights','investigations','approvals','automations','executions','events'].includes(section)) notFound();
+  if(!['agents','coding','connections','insights','investigations','approvals','automations','executions','events'].includes(section)) notFound();
   const db=await createClient();
   const {data:claims}=await db.auth.getClaims();
   if(!claims?.claims?.sub) notFound();

@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubFilePullRequest,draftGitHubIssueChange,draftGitHubObjectiveChange,findGitHubPreviewDeployment,findGitHubValidationChecks,parseGitHubDraft}=require('../.v3-test-build/connectors/github-write.js');
+const {validateGitHubFileChange,validateGitHubWorkspaceChange,createGitHubBranchDeployment,draftGitHubIssueChange,draftGitHubObjectiveChange,reviseGitHubWorkspaceDraft,findGitHubPreviewDeployment,findGitHubValidationChecks,parseGitHubDraft}=require('../.v3-test-build/connectors/github-write.js');
 
 const valid={repository:'owner/repo',branch:'ai-cofounder/update-readme',path:'README.md',content:'# Product',title:'Update README',body:'Closes #1'};
 assert.equal(validateGitHubFileChange(valid).path,'README.md');
@@ -9,7 +9,7 @@ assert.throws(()=>validateGitHubFileChange({...valid,path:'.env.local'}),/protec
 assert.throws(()=>validateGitHubFileChange({...valid,branch:'main'}),/Invalid AI Co-Founder branch/);
 const workspace={repository:'owner/repo',branch:'ai-cofounder/build-feature',files:[{path:'src/feature.ts',content:'export const ready = true;'},{path:'src/feature.test.ts',content:'// meaningful repository test'}],title:'Build feature',body:'Closes #2'};
 assert.equal(validateGitHubWorkspaceChange(workspace).files.length,2);
-assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:Array(6).fill(workspace.files[0])}),/1 to 5 files/);
+assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:Array.from({length:13},(_,index)=>({path:`src/file-${index}.ts`,content:'export {}'}))}),/1 to 12 files/);
 assert.throws(()=>validateGitHubWorkspaceChange({...workspace,files:[workspace.files[0],workspace.files[0]]}),/duplicate/);
 assert.equal(parseGitHubDraft('```json\n{"files":[],"title":"T","body":"B"}\n```').title,'T');
 assert.equal(parseGitHubDraft('Result:\n{"files":[],"title":"T2","body":"B2"}').title,'T2');
@@ -17,19 +17,24 @@ assert.throws(()=>parseGitHubDraft('not json'),/malformed structured output/);
 
 const replies=[
   [200,{default_branch:'main'}],[200,{object:{sha:'a'.repeat(40)}}],[201,{}],
-  [201,{sha:'b'.repeat(40)}],[201,{sha:'c'.repeat(40)}],[201,{sha:'d'.repeat(40)}],[200,{}],[200,[]],[201,{html_url:'https://github.com/owner/repo/pull/2',number:2}],
+  [201,{sha:'b'.repeat(40)}],[201,{sha:'c'.repeat(40)}],[201,{sha:'d'.repeat(40)}],[200,{}],
 ];
 const calls=[];
 global.fetch=async(url,init)=>{calls.push([url,init]);const [status,body]=replies.shift();return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})};
-createGitHubFilePullRequest('secret-token',valid).then(async result=>{
-  assert.equal(result.pull_request_number,2); assert.equal(result.merged,false); assert.equal(result.deployed,false);
+createGitHubBranchDeployment('secret-token',valid).then(async result=>{
+  assert.equal(result.deployment_requested,true); assert.equal(result.production,false);
   assert.equal(calls.some(([,init])=>String(init.headers.Authorization).includes('secret-token')),true);
-  assert.equal(calls.some(([url])=>String(url).endsWith('/pulls')),true);
+  assert.equal(calls.some(([url])=>String(url).endsWith('/pulls')),false);
   replies.push([200,{default_branch:'main'}],[200,{number:1,title:'Replace README',body:'Add product setup instructions.'}],[200,{tree:[{type:'blob',path:'README.md',size:20}]}],[200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
   const draft=await draftGitHubIssueChange('secret-token','owner/repo',1,async(system,user)=>{
     assert.match(system,/bounded coding agent/); assert.match(user,/Replace README/);
     return JSON.stringify({files:[{path:'README.md',content:'# Product\n\nSetup instructions.'}],title:'Replace starter README',body:'Closes #1'});
   });
+  const revised=await reviseGitHubWorkspaceDraft('owner/repo','ai-cofounder/build-feature','Improve the empty state',workspace,[{role:'user',content:'Build the feature'}],async(system,user)=>{
+    assert.match(system,/iterative coding agent/);assert.match(user,/Improve the empty state/);
+    return JSON.stringify({files:[{path:'src/feature.ts',content:'export const ready = "improved";'}],title:'Improve feature',body:'Improved the empty state.'});
+  });
+  assert.equal(revised.files[0].path,'src/feature.ts');
   assert.equal(draft.files[0].path,'README.md'); assert.match(draft.files[0].content,/Setup instructions/);
   replies.push([200,[{id:42,environment:'Preview'}]],[200,[{state:'success',environment_url:'https://launchai-preview.vercel.app',updated_at:'2026-09-20'}]]);
   const preview=await findGitHubPreviewDeployment('secret-token','owner/repo','ai-cofounder/update-readme');
@@ -46,7 +51,7 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
     [200,{encoding:'base64',content:Buffer.from('{"scripts":{"build":"next build"}}').toString('base64')}],
     [200,{encoding:'base64',content:Buffer.from('# Starter').toString('base64')}]);
   const objectiveDraft=await draftGitHubObjectiveChange('secret-token','owner/repo','Build a modern landing page',async(system,user)=>{
-    assert.match(system,/controlled AI software builder/); assert.match(system,/1 to 5 objects/); assert.match(user,/modern landing page/);
+    assert.match(system,/controlled AI software builder/); assert.match(system,/1 to 12 objects/); assert.match(user,/modern landing page/);
     const snapshot=JSON.parse(user).repositorySnapshot;
     assert.deepEqual(snapshot.slice(0,2).map(file=>file.path),['app/page.tsx','app/globals.css']);
     assert.ok(user.length<9000);
@@ -65,5 +70,5 @@ createGitHubFilePullRequest('secret-token',valid).then(async result=>{
     ],title:'Create product starter',body:'Creates a runnable starter app.'});
   });
   assert.equal(emptyDraft.emptyRepository,true); assert.equal(emptyDraft.files.length,4);
-  console.log('PASS approved GitHub branch, commit and pull-request connector');
+  console.log('PASS approved GitHub branch and preview-deployment connector');
 }).catch(error=>{console.error(error);process.exitCode=1});

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export const INTAKE_KEY = "cofounder-intake";
+const INTAKE_KEY = "cofounder-intake";
 
 export default function NewIdea() { return <Suspense fallback={<main className="app-shell" />}><IntakeForm /></Suspense>; }
 

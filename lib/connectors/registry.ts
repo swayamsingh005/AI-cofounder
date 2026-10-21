@@ -1,7 +1,7 @@
 export const CONNECTORS = [
   { id: 'supabase', name: 'Supabase', available: true, capabilities: ['Select a project', 'Read project configuration', 'Prepare approved development migrations'] },
   { id: 'vercel', name: 'Vercel', available: true, capabilities: ['Select a project', 'Read deployments and build status', 'Prepare approved previews'] },
-  { id: 'github', name: 'GitHub', available: true, capabilities: ['Read synced issues', 'Controlled repository snapshots', 'Create approved multi-file branches and pull requests', 'Read repository checks and Vercel preview status'] },
+  { id: 'github', name: 'GitHub', available: true, capabilities: ['Read synced issues', 'Controlled repository snapshots', 'Create approved multi-file deployment branches', 'Read repository checks and Vercel preview status'] },
   { id: 'gmail', name: 'Gmail', available: false, capabilities: ['Draft email'] },
   { id: 'drive', name: 'Google Drive', available: false, capabilities: ['Read selected documents'] },
   { id: 'slack', name: 'Slack', available: false, capabilities: ['Read selected channels'] },

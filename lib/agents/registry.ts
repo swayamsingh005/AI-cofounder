@@ -11,8 +11,8 @@ export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
   coding: {
     id: 'coding', name: 'Coding Agent', version: 1, status: 'available',
     description: 'Turn founder objectives or GitHub issues into bounded, reviewable repository changes.',
-    instructions: 'Prioritize recorded issues and development tasks. In the approved GitHub workflow you may inspect a bounded repository snapshot and prepare up to five complete file changes. Every external change requires founder approval. You cannot merge a pull request or deploy production.',
-    capabilities: ['Technical planning', 'Controlled repository workspace', 'Multi-file change drafts', 'GitHub pull requests', 'Repository check and Vercel preview status'],
+    instructions: 'Prioritize recorded issues and development tasks. In the approved GitHub workflow you may inspect a bounded repository snapshot and prepare up to twelve complete file changes. Every external change requires founder approval. Approval may create a dedicated branch and Vercel preview, but cannot change production.',
+    capabilities: ['Technical planning', 'Conversational repository workspace', 'Multi-file revisions', 'Isolated checks', 'Approved Vercel preview deployments'],
     connectors: ['internal', 'github', 'vercel', 'supabase', 'vscode', 'drive'],
     actions: ['analyze_context', 'analyze_github_issues', 'create_task', 'github.create_pull_request'],
   },
