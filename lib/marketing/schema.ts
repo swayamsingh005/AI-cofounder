@@ -5,12 +5,14 @@ export type MarketingChannel = typeof MARKETING_CHANNELS[number];
 export type MarketingAssetType = 'ad'|'post'|'email'|'outreach'|'landing_page'|'reel'|'creative_brief';
 export type ConversionDestinationKind = 'product_url'|'landing_page_blueprint'|'booking_page'|'whatsapp'|'marketplace_listing'|'store_visit'|'phone_enquiry'|'lead_form'|'none';
 export type ConversionDestination = {kind:ConversionDestinationKind;label:string;url:string;rationale:string;status:'verified_preview'|'blueprint'|'non_web'};
+export type MarketingClaimReview={verified:string[];needsApproval:string[];removedSensitiveClaims:string[]};
 
 export type MarketingCampaignDraft = {
   title:string;
   audience:{segment:string;pain:string;desiredOutcome:string;geography:string};
   strategy:{positioning:string;offer:string;message:string;cta:string;successMetric:string;experiment:string};
   destination:ConversionDestination;
+  claimReview:MarketingClaimReview;
   assets:{assetType:MarketingAssetType;channel:string;title:string;content:string;creativeBrief:string}[];
   leads:{organization:string;sourceUrl:string;reason:string;score:number}[];
 };
@@ -40,11 +42,14 @@ export function parseCampaignDraft(value:unknown, allowedSourceUrls:Set<string>)
     } catch { return []; }
   }):[];
   const kind=typeof rawDestination.kind==='string'&&DESTINATION_TYPES.has(rawDestination.kind as ConversionDestinationKind)?rawDestination.kind as ConversionDestinationKind:'landing_page_blueprint';
+  const rawReview=root.claimReview&&typeof root.claimReview==='object'&&!Array.isArray(root.claimReview)?root.claimReview as Record<string,unknown>:{};
+  const list=(value:unknown)=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'&&item.trim().length>0).slice(0,12).map(item=>item.slice(0,500)):[];
   return {
     title:text(root.title,160),
     audience:{segment:text(audience.segment,500),pain:text(audience.pain,1000),desiredOutcome:text(audience.desiredOutcome,1000),geography:text(audience.geography,200)},
     strategy:{positioning:text(strategy.positioning,1500),offer:text(strategy.offer,1000),message:text(strategy.message,1500),cta:text(strategy.cta,500),successMetric:text(strategy.successMetric,500),experiment:text(strategy.experiment,1000)},
     destination:{kind,label:text(rawDestination.label,200),url:'',rationale:text(rawDestination.rationale,1000),status:kind==='landing_page_blueprint'||kind==='product_url'?'blueprint':'non_web'},
+    claimReview:{verified:list(rawReview.verified),needsApproval:list(rawReview.needsApproval),removedSensitiveClaims:list(rawReview.removedSensitiveClaims)},
     assets,leads,
   };
 }
