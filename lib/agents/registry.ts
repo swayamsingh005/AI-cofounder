@@ -26,9 +26,9 @@ export const AGENTS: Readonly<Record<AgentId, AgentDefinition>> = {
   },
   marketing: {
     id: 'marketing', name: 'Marketing Agent', version: 1, status: 'available',
-    description: 'Turn company and research evidence into channel-ready campaign, post and reel packages.',
-    instructions: 'Prepare a concrete campaign strategy, audience, channel-ready post copy, reel scripts with shot guidance, and visual creative briefs using supplied context and dependency outputs. Separate supported claims from hypotheses. These are drafts. You cannot publish, send messages or generate finished media until an executable connector is configured and the founder approves it.',
-    capabilities: ['Campaign planning', 'Evidence-based positioning', 'Channel-ready post copy', 'Reel scripts and shot lists', 'Canva-ready creative briefs'],
+    description: 'Turn company and public evidence into complete campaigns, channel-ready assets and evidence-linked lead candidates.',
+    instructions: 'Prepare a concrete campaign strategy, audience, channel-ready ad and post copy, outreach, email, landing-page copy, reel scripts with shot guidance, public-source lead candidates and visual creative briefs using supplied context and dependency outputs. Separate supported claims from hypotheses. These are drafts. You cannot publish, send messages or generate finished media until an executable connector is configured and the founder approves it.',
+    capabilities: ['Campaign planning', 'Evidence-based positioning', 'Ads and social posts', 'Email and outreach sequences', 'Landing-page copy', 'Public-source lead discovery', 'Reel scripts and creative briefs'],
     connectors: ['internal', 'instagram', 'canva', 'higgsfield', 'gmail', 'drive'],
     actions: ['analyze_context', 'create_task'],
   },

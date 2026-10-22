@@ -7,6 +7,7 @@ const NAV = [
   { href: "", label: "Dashboard" },
   { href: "/agents", label: "Agents" },
   { href: "/coding", label: "Coding Workspace" },
+  { href: "/marketing", label: "Marketing" },
   { href: "/mission", label: "Missions" },
   { href: "/tasks", label: "Tasks" },
   { href: "/decisions", label: "Decisions" },
@@ -31,7 +32,7 @@ export default function CompanySidebar({ companyId }: { companyId: string; compa
         {NAV.map(item => {
           const href = `${base}${item.href}`;
           const active = item.href === "" ? pathname === base : pathname?.startsWith(href);
-          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{({ Dashboard: "⌂", Agents: "◇", "Coding Workspace": "⌨", Missions: "◇", Tasks: "☑", Decisions: "⊞", "Company Memory": "▤", Insights: "ϟ", Investigations: "⌕", Automations: "⚙", Connections: "⌘", Approvals: "☷", "Execution History": "↺" } as Record<string, string>)[item.label]}</span>{item.label}</Link>;
+          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{({ Dashboard: "⌂", Agents: "◇", "Coding Workspace": "⌨", Marketing: "◎", Missions: "◇", Tasks: "☑", Decisions: "⊞", "Company Memory": "▤", Insights: "ϟ", Investigations: "⌕", Automations: "⚙", Connections: "⌘", Approvals: "☷", "Execution History": "↺" } as Record<string, string>)[item.label]}</span>{item.label}</Link>;
         })}
       </div>
 
