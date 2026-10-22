@@ -3,6 +3,7 @@ import { createClient, hasSupabaseConfig } from '../../../../lib/supabase/server
 import { loadCompanyContext } from '../../../../lib/company-context';
 import { generateMarketingCampaign } from '../../../../lib/marketing/generator';
 import { MARKETING_CHANNELS } from '../../../../lib/marketing/schema';
+import { verifiedCodingDestination } from '../../../../lib/marketing/destination';
 
 export const maxDuration=300;
 
@@ -26,10 +27,14 @@ export async function POST(request:Request) {
     const {db,userId}=await authenticated(request);
     const {data:company}=await db.from('companies').select('id').eq('id',companyId).eq('user_id',userId).maybeSingle();
     if(!company) return NextResponse.json({error:'Company not found.'},{status:404});
-    const context=await loadCompanyContext(db,companyId);
+    const [context,codingResult]=await Promise.all([
+      loadCompanyContext(db,companyId),
+      db.from('ai_actions').select('output_payload,input_payload').eq('company_id',companyId).eq('user_id',userId).eq('provider','github').eq('action_type','github.create_pull_request').in('status',['completed','awaiting_approval']).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+    ]);
     if(!context) return NextResponse.json({error:'Company context is unavailable.'},{status:404});
-    const draft=await generateMarketingCampaign({objective,audience,channels,context});
-    const {data:campaign,error}=await db.from('marketing_campaigns').insert({company_id:companyId,user_id:userId,title:draft.title,objective,audience:draft.audience,strategy:draft.strategy,channels,status:'draft',currency:context.profile?.targetGeography?.toLowerCase().includes('india')?'INR':'USD'}).select('id').single();
+    const codingDestination=verifiedCodingDestination(codingResult.data as {output_payload?:Record<string,unknown>;input_payload?:Record<string,unknown>}|null);
+    const draft=await generateMarketingCampaign({objective,audience,channels,context,codingDestination});
+    const {data:campaign,error}=await db.from('marketing_campaigns').insert({company_id:companyId,user_id:userId,title:draft.title,objective,audience:draft.audience,strategy:{...draft.strategy,conversionDestination:draft.destination},channels,status:'draft',currency:context.profile?.targetGeography?.toLowerCase().includes('india')?'INR':'USD'}).select('id').single();
     if(error||!campaign) throw new Error('The campaign could not be saved.');
     const [assetsResult,leadsResult]=await Promise.all([
       db.from('marketing_assets').insert(draft.assets.map(asset=>({company_id:companyId,user_id:userId,campaign_id:campaign.id,asset_type:asset.assetType,channel:asset.channel,title:asset.title,content:asset.content,creative_brief:asset.creativeBrief,status:'draft'}))),
