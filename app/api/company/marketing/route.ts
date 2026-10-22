@@ -40,7 +40,8 @@ export async function POST(request:Request) {
     return NextResponse.json({campaignId:campaign.id});
   } catch(error) {
     const message=error instanceof Error?error.message:'The Marketing Agent could not create this campaign.';
-    return NextResponse.json({error:/configured|Sign in|Cross-origin|not found|clear objective|could not be saved|could not create/i.test(message)?message:'The Marketing Agent could not create this campaign. Try again.'},{status:400});
+    console.error('[api/company/marketing] campaign generation failed',{name:error instanceof Error?error.name:'UnknownError',message:message.slice(0,300)});
+    return NextResponse.json({error:/configured|Sign in|Cross-origin|not found|clear objective|could not be saved|could not create|incomplete asset|invalid asset|too much content/i.test(message)?message:'The Marketing Agent could not create this campaign. Try again.'},{status:400});
   }
 }
 

@@ -13,21 +13,27 @@ export type MarketingCampaignDraft = {
 };
 
 const ASSET_TYPES = new Set<MarketingAssetType>(['ad','post','email','outreach','landing_page','reel','creative_brief']);
+function assetType(value:unknown):MarketingAssetType {
+  const normalized=typeof value==='string'?value.trim().toLowerCase().replace(/[ -]+/g,'_'):'';
+  const aliases:Record<string,MarketingAssetType>={social_post:'post',linkedin_post:'post',instagram_post:'post',outreach_message:'outreach',cold_email:'email',landing:'landing_page',landing_page_copy:'landing_page',video_script:'reel',reel_script:'reel'};
+  const candidate=aliases[normalized]??normalized;
+  if(!ASSET_TYPES.has(candidate as MarketingAssetType)) throw new Error('The Marketing Agent returned an invalid asset type.');
+  return candidate as MarketingAssetType;
+}
 export function parseCampaignDraft(value:unknown, allowedSourceUrls:Set<string>):MarketingCampaignDraft {
   const root=object(value);
   const audience=object(root.audience), strategy=object(root.strategy);
-  if(!Array.isArray(root.assets)||root.assets.length<3||root.assets.length>10) throw new Error('The Marketing Agent returned an incomplete asset package.');
+  if(!Array.isArray(root.assets)||root.assets.length<1||root.assets.length>10) throw new Error('The Marketing Agent returned an incomplete asset package.');
   const assets=root.assets.map(item=>{
-    const asset=object(item), assetType=asset.assetType;
-    if(typeof assetType!=='string'||!ASSET_TYPES.has(assetType as MarketingAssetType)) throw new Error('The Marketing Agent returned an invalid asset type.');
-    return {assetType:assetType as MarketingAssetType,channel:text(asset.channel,60),title:text(asset.title,200),content:text(asset.content,8000),creativeBrief:typeof asset.creativeBrief==='string'?asset.creativeBrief.slice(0,4000):''};
+    const asset=object(item), type=assetType(asset.assetType);
+    return {assetType:type,channel:text(asset.channel,60),title:text(asset.title,200),content:text(asset.content,8000),creativeBrief:typeof asset.creativeBrief==='string'?asset.creativeBrief.slice(0,4000):''};
   });
-  const leads=Array.isArray(root.leads)?root.leads.slice(0,12).map(item=>{
-    const lead=object(item), sourceUrl=text(lead.sourceUrl,1000);
-    if(!allowedSourceUrls.has(sourceUrl)) throw new Error('The Marketing Agent referenced an unknown lead source.');
-    const score=Number(lead.score);
-    if(!Number.isInteger(score)||score<0||score>100) throw new Error('The Marketing Agent returned an invalid lead score.');
-    return {organization:text(lead.organization,200),sourceUrl,reason:text(lead.reason,1000),score};
+  const leads=Array.isArray(root.leads)?root.leads.slice(0,12).flatMap(item=>{
+    try {
+      const lead=object(item), sourceUrl=text(lead.sourceUrl,1000), score=Number(lead.score);
+      if(!allowedSourceUrls.has(sourceUrl)||!Number.isInteger(score)||score<0||score>100)return [];
+      return [{organization:text(lead.organization,200),sourceUrl,reason:text(lead.reason,1000),score}];
+    } catch { return []; }
   }):[];
   return {
     title:text(root.title,160),

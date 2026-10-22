@@ -19,6 +19,7 @@ test('marketing packages accept only bounded structured drafts and trusted lead 
   const parsed=parseCampaignDraft(draft,new Set([source]));
   assert.equal(parsed.assets.length,3);
   assert.equal(parsed.leads[0].score,75);
-  assert.throws(()=>parseCampaignDraft({...draft,leads:[{...draft.leads[0],sourceUrl:'https://invented.example'}]},new Set([source])),/unknown lead source/);
+  assert.equal(parseCampaignDraft({...draft,leads:[{...draft.leads[0],sourceUrl:'https://invented.example'}]},new Set([source])).leads.length,0);
+  assert.equal(parseCampaignDraft({...draft,assets:[{...draft.assets[0],assetType:'social post'},...draft.assets.slice(1)]},new Set([source])).assets[0].assetType,'post');
   assert.throws(()=>parseCampaignDraft({...draft,assets:[{...draft.assets[0],assetType:'publish_now'},...draft.assets.slice(1)]},new Set([source])),/invalid asset type/);
 });
