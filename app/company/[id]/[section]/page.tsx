@@ -6,9 +6,10 @@ import AgentsPanel from '../../../../components/agents-panel';
 import type { AgentRun } from '../../../../lib/agents/runtime';
 import MarketingWorkspace from '../../../../components/marketing-workspace';
 import { verifiedCodingDestination } from '../../../../lib/marketing/destination';
+import ResearchWorkspace from '../../../../components/research-workspace';
 export default async function IntelligencePage({params}:{params:Promise<{id:string;section:string}>}) {
   const {id,section}=await params;
-  if(!['agents','coding','marketing','connections','insights','investigations','approvals','automations','executions','events'].includes(section)) notFound();
+  if(!['agents','coding','marketing','research','connections','insights','investigations','approvals','automations','executions','events'].includes(section)) notFound();
   const db=await createClient();
   const {data:claims}=await db.auth.getClaims();
   if(!claims?.claims?.sub) notFound();
@@ -20,6 +21,10 @@ export default async function IntelligencePage({params}:{params:Promise<{id:stri
       db.from('connections').select('id,provider,status,connection_type,created_at').eq('company_id',id),
     ]);
     return <AgentsPanel companyId={id} runs={(runs.data ?? []) as AgentRun[]} connections={connections.data ?? []} unavailable={!!runs.error || !!connections.error}/>;
+  }
+  if (section === 'research') {
+    const runs=await db.from('agent_runs').select('*').eq('company_id',id).eq('agent_id','research').order('created_at',{ascending:false}).limit(20);
+    return <ResearchWorkspace companyId={id} runs={(runs.data??[]) as AgentRun[]}/>;
   }
   if(section==='marketing') {
     const [campaigns,assets,leads,coding]=await Promise.all([

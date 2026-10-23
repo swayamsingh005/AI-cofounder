@@ -4,20 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "", label: "Dashboard" },
-  { href: "/agents", label: "Agents" },
-  { href: "/coding", label: "Coding Workspace" },
-  { href: "/marketing", label: "Marketing" },
-  { href: "/mission", label: "Missions" },
-  { href: "/tasks", label: "Tasks" },
-  { href: "/decisions", label: "Decisions" },
-  { href: "/memory", label: "Company Memory" },
-  { href: "/insights", label: "Insights" },
-  { href: "/investigations", label: "Investigations" },
-  { href: "/automations", label: "Automations" },
-  { href: "/connections", label: "Connections" },
-  { href: "/approvals", label: "Approvals" },
-  { href: "/executions", label: "Execution History" },
+  { href: "", label: "Home", icon: "⌂" },
+  { href: "/coding", label: "Coding Agent", icon: "⌨" },
+  { href: "/marketing", label: "Marketing Agent", icon: "◎" },
+  { href: "/research", label: "Research Agent", icon: "⌕" },
+  { href: "/connections", label: "Connections", icon: "⌘" },
 ];
 
 export default function CompanySidebar({ companyId }: { companyId: string; companyName: string; stage: string }) {
@@ -32,22 +23,13 @@ export default function CompanySidebar({ companyId }: { companyId: string; compa
         {NAV.map(item => {
           const href = `${base}${item.href}`;
           const active = item.href === "" ? pathname === base : pathname?.startsWith(href);
-          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{({ Dashboard: "⌂", Agents: "◇", "Coding Workspace": "⌨", Marketing: "◎", Missions: "◇", Tasks: "☑", Decisions: "⊞", "Company Memory": "▤", Insights: "ϟ", Investigations: "⌕", Automations: "⚙", Connections: "⌘", Approvals: "☷", "Execution History": "↺" } as Record<string, string>)[item.label]}</span>{item.label}</Link>;
+          return <Link key={item.href} href={href} className={active ? "sidebar-link active" : "sidebar-link"}><span aria-hidden="true">{item.icon}</span>{item.label}</Link>;
         })}
       </div>
 
-      <div className="sidebar-section">
-        <Link href={`${base}#primary-goal`} className="sidebar-link">◎ Goals</Link>
-        <Link href={`${base}#activity`} className="sidebar-link">↺ Activity Timeline</Link>
-        <span>AI INTELLIGENCE</span>
-        <Link href={`${base}#daily-brief`} className="sidebar-link">Daily Brief</Link>
-        <Link href={`${base}#next-action`} className="sidebar-link">Next Best Action</Link>
-      </div>
-
       <div className="sidebar-bottom">
-        <div className="sidebar-help"><b>Need help?</b><p>Ask your AI Co-Founder</p><Link href={`${base}#company-assistant`}>Open conversation ↗</Link></div>
-        <Link href="/reports" className="sidebar-link sidebar-link-muted">Reports</Link>
-        <Link href="/settings" className="sidebar-link sidebar-link-muted">Settings</Link>
+        <div className="sidebar-help"><b>Simple by design</b><p>Your agents keep the technical details out of the way.</p></div>
+        <Link href="/settings" className="sidebar-link sidebar-link-muted">⚙ Account settings</Link>
       </div>
     </nav>
   );
