@@ -57,3 +57,11 @@
 .marketing-workspace{max-width:1120px;margin:0 auto}.marketing-workspace .marketing-summary{display:none}.marketing-workspace .marketing-builder{border-color:#31506e;background:linear-gradient(145deg,rgba(93,55,220,.12),rgba(7,23,37,.9))}.marketing-workspace .marketing-section-heading{margin-top:28px}.marketing-assets>article{border-radius:14px}.marketing-assets pre,.landing-blueprint-copy{max-height:none;white-space:pre-wrap;font-family:inherit;line-height:1.65}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:980px){.dashboard-refresh.v3-frame .company-topbar{margin:0}.company-shell-simple{grid-template-columns:1fr}.company-shell-simple .company-sidebar{position:static;width:auto;margin:0;height:auto}.home-ceo-grid,.agent-launch-grid,.home-bottom-grid{grid-template-columns:1fr}.company-shell-simple .company-main-region{padding:22px 18px}.agent-composer{bottom:8px}}
+
+/* A comfortable prompt composer for detailed coding requests */
+.coding-agent-page .coding-start{grid-template-columns:minmax(0,1fr) auto}
+.coding-start>div{grid-column:1/-1}
+.coding-start label{grid-column:1;min-width:0}
+.coding-start textarea{width:100%;min-height:140px;font-size:15px;line-height:1.55;padding:16px}
+.coding-start>button{grid-column:2;align-self:stretch;min-width:190px}
+@media(max-width:980px){.coding-agent-page .coding-start{grid-template-columns:1fr}.coding-start label,.coding-start>button{grid-column:1}.coding-start>button{min-height:48px}}
